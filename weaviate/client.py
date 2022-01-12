@@ -38,7 +38,7 @@ class Client:
     """
 
     def __init__(self,
-            url: str,
+            url: str='http://localhost:8080',
             auth_client_secret: AuthCredentials=None,
             timeout_config: Union[Tuple[Real, Real], Real]=(2, 20)
         ):
@@ -85,9 +85,8 @@ class Client:
 
         if not isinstance(url, str):
             raise TypeError("URL is expected to be string but is " + str(type(url)))
-        if url.endswith("/"):
-            # remove trailing slash
-            url = url[:-1]
+        
+        url = url.strip('/')
 
         self._connection = Connection(
             url=url,

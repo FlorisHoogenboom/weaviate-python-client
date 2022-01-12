@@ -39,6 +39,13 @@ class TestWeaviateClient(unittest.TestCase):
                 auth_client_secret=None,
                 timeout_config=(5,20)
             )
+        with patch('weaviate.client.Connection') as mock_obj:
+            Client()
+            mock_obj.assert_called_with(
+                url='http://localhost:8080',
+                auth_client_secret=None,
+                timeout_config=(2,20)
+            )
 
     def test_is_ready(self):
         """
