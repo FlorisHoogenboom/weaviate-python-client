@@ -1,8 +1,9 @@
 """
 Connection class definition.
 """
-import datetime
+import os
 import time
+import datetime
 from typing import Tuple, Optional, Union
 from numbers import Real
 import requests
@@ -17,12 +18,16 @@ from weaviate.util import _get_valid_timeout_config
 
 class Connection:
     """
-    Connection class used to communicate to a weaviate instance.
+    Connection class used to communicate to a Weaviate instance. Has all needed RESTful API
+    implementations. If Authentication is used, it automatically gets a new token in case it
+    expired.
     """
+
     def __init__(self,
             url: str,
-            auth_client_secret: Optional[AuthCredentials] = None,
-            timeout_config: Union[Tuple[Real, Real], Real] = (2, 20),
+            auth_client_secret: Optional[AuthCredentials]=None,
+            timeout_config: Optional[Union[Tuple[Real, Real], Real]]=20,
+            session_proxies: Optional[dict]=None,
         ):
         """
         Initialize a Connection class instance.
@@ -31,13 +36,17 @@ class Connection:
         ----------
         url : str
             URL to a running weaviate instance.
-        auth_client_secret : weaviate.auth.AuthCredentials, optional
+        auth_client_secret : weaviate.auth.AuthCredentials or None, optional
             User login credentials to a weaviate instance, by default None
-        timeout_config : tuple(Real, Real) or Real, optional
+        timeout_config : tuple(Real, Real), Real or None, optional
             Set the timeout configuration for all requests to the Weaviate server. It can be a
             real number or, a tuple of two real numbers: (connect timeout, read timeout).
             If only one real number is passed then both connect and read timeout will be set to
-            that value, by default (2, 20).
+            that value, by default 20.
+        session_proxies : dict or None, optional
+            The HTTP and/or HTTPS proxies to use for the requests Session. Can be passed as a dict
+            or None to read from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY or
+            https_proxy).
 
         Raises
         ------
@@ -61,7 +70,37 @@ class Connection:
         self._auth_client_secret = auth_client_secret
         self._is_authentication_required = False
 
+        self._set_session_proxies(proxies=session_proxies)
         self._log_in()
+
+    def _set_session_proxies(self, proxies: Optional[dict]) -> None:
+        """
+        Set Session proxies.
+
+        Parameters
+        ----------
+        proxies : dict or None
+            The HTTP/HTTPS proxies.
+        """
+
+        if proxies is not None:
+            self._session.proxies = proxies
+            return
+
+        http_proxy = (os.environ.get('http_proxy'), os.environ.get('HTTP_PROXY'))
+        https_proxy = (os.environ.get('https_proxy'), os.environ.get('HTTPS_PROXY'))
+
+        if not any(http_proxy + https_proxy):
+            return
+
+        proxies = {}
+        if any(http_proxy):
+            proxies['http'] = http_proxy[0] if http_proxy[0] else http_proxy[1]
+        if any(https_proxy):
+            proxies['https'] = https_proxy[0] if https_proxy[0] else https_proxy[1]
+
+        self._session.proxies = proxies
+
 
     def _log_in(self) -> None:
         """
@@ -225,7 +264,7 @@ class Connection:
         path : str
             Sub-path to the resources. Must be a valid sub-path.
             e.g. '/meta' or '/objects', without version.
-        data_json : Optional[dict], optional
+        data_json : dict or None, optional
             JSON formatted object is used as payload for DELETE request. By default None.
 
         Returns
@@ -280,7 +319,7 @@ class Connection:
             timeout=self._timeout_config
         )
 
-    def post(self, path: str, data_json: Optional[dict]) -> requests.Response:
+    def post(self, path: str, data_json: Optional[dict]=None) -> requests.Response:
         """
         Make a POST request to the server.
 
@@ -289,8 +328,8 @@ class Connection:
         path : str
             Sub-path to the resources. Must be a valid sub-path.
             e.g. '/meta' or '/objects', without version.
-        data_json : Optional[dict]
-            JSON formatted object is used as payload for POST request.
+        data_json : dict or None, optional
+            JSON formatted object is used as payload for POST request. By default None.
 
         Returns
         -------
@@ -353,7 +392,7 @@ class Connection:
         path : str
             Sub-path to the resources. Must be a valid sub-path.
             e.g. '/meta' or '/objects', without version.
-        params : Optional[dict], optional
+        params : dict or None, optional
             Additional request parameters, by default None
 
         Returns
@@ -408,7 +447,7 @@ class Connection:
         )
 
     @property
-    def timeout_config(self) -> Tuple[Real, Real]:
+    def timeout_config(self) -> Optional[Tuple[Real, Real]]:
         """
         Getter/Setter for 'timeout_config'.
 
@@ -424,7 +463,7 @@ class Connection:
 
         Returns
         -------
-        Tuple[Real, Real]
+        Tuple[Real, Real] or None
             For Getter only: Requests Timeout configuration.
         """
 
