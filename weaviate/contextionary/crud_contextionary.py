@@ -1,7 +1,7 @@
 """
 Contextionary class definition.
 """
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
 from weaviate.connect import Connection
 
 
@@ -23,11 +23,7 @@ class Contextionary:
 
         self._connection = connection
 
-    def extend(self,
-            concept: str,
-            definition: str,
-            weight: float=1.0
-        ) -> None:
+    def extend(self, concept: str, definition: str, weight: float=1.0) -> None:
         """
         Extend the text2vec-contextionary with new concepts
 
@@ -58,16 +54,16 @@ class Contextionary:
             If 'weight' is outside the interval [0.0; 1.0].
         requests.ConnectionError
             If text2vec-contextionary could not be extended.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If the network connection to weaviate fails.
         """
 
         if not isinstance(concept, str):
-            raise TypeError("Concept must be string")
+            raise TypeError("Concept must be string.")
         if not isinstance(definition, str):
-            raise TypeError("Definition must be string")
+            raise TypeError("Definition must be string.")
         if not isinstance(weight, float):
-            raise TypeError("Weight must be float")
+            raise TypeError("Weight must be float.")
 
         if weight > 1.0 or weight < 0.0:
             raise ValueError("Weight out of limits 0.0 <= weight <= 1.0")
@@ -81,15 +77,15 @@ class Contextionary:
         try:
             response = self._connection.post(
                 path="/modules/text2vec-contextionary/extensions",
-                weaviate_object=extension,
+                data_json=extension,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('text2vec-contextionary could not be extended.')\
-                from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'text2vec-contextionary could not be extended.'
+            ) from conn_err
         if response.status_code == 200:
-            # Successfully extended
             return
-        raise UnexpectedStatusCodeException("Extend text2vec-contextionary", response)
+        raise UnsuccessfulStatusCodeError("Extend text2vec-contextionary!", response)
 
     def get_concept_vector(self, concept: str) -> dict:
         """
@@ -144,19 +140,20 @@ class Contextionary:
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
         path = "/modules/text2vec-contextionary/concepts/" + concept
         try:
             response = self._connection.get(
-                path=path
+                path=path,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('text2vec-contextionary vector was not retrieved.')\
-                from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'text2vec-contextionary vector was not retrieved due to connection error!'
+            ) from conn_err
         else:
             if response.status_code == 200:
                 return response.json()
-            raise UnexpectedStatusCodeException("text2vec-contextionary vector", response)
+            raise UnsuccessfulStatusCodeError("text2vec-contextionary vector!", response)
