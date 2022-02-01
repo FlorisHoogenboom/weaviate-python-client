@@ -3,7 +3,7 @@ Reference class definition.
 """
 from typing import Union
 from weaviate.connect import Connection
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
 from weaviate.util import get_valid_uuid
 
 
@@ -19,19 +19,16 @@ class Reference:
         Parameters
         ----------
         connection : weaviate.connect.Connection
+
             Connection object to an active and running weaviate instance.
         """
 
         self._connection = connection
 
-    def delete(self,
-            from_uuid: str,
-            from_property_name: str,
-            to_uuid: str
-        ) -> None:
+    def delete(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
         """
-        Remove a reference to another object. Equal to removing one
-        direction of an edge from the graph.
+        Remove a reference to another object. Equal to removing one direction of an edge from the
+        graph.
 
         Parameters
         ----------
@@ -106,7 +103,7 @@ class Reference:
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         TypeError
             If parameter has the wrong type.
@@ -127,22 +124,20 @@ class Reference:
         try:
             response = self._connection.delete(
                 path=path,
-                weaviate_object=beacon
+                data_json=beacon,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Reference was not deleted.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Reference was not deleted due to connection error.'
+            ) from conn_err
         if response.status_code == 204:
             return
-        raise UnexpectedStatusCodeException("Delete property reference to object", response)
+        raise UnsuccessfulStatusCodeError("Delete property reference to object", response)
 
-    def update(self,
-            from_uuid: str,
-            from_property_name: str,
-            to_uuids: Union[list, str]
-        ) -> None:
+    def replace(self, from_uuid: str, from_property_name: str, to_uuids: Union[list, str]) -> None:
         """
-        Allows to update all references in that property with a new set of references.
-        All old references will be deleted.
+        Allows to replace ALL references in that property with a new set of references.
+        NOTE: All old references will be deleted.
 
         Parameters
         ----------
@@ -167,8 +162,8 @@ class Reference:
         Examples
         --------
         You have data object 1 with reference property `wroteBooks` and currently has one reference
-        to data object 7. Now you say, I want to update the references of data object 1.wroteBooks
-        to this list 3,4,9. After the update, the data object 1.wroteBooks is now 3,4,9, but no
+        to data object 7. Now you say, I want to replace the references of data object 1.wroteBooks
+        to this list 3,4,9. After the replace, the data object 1.wroteBooks is now 3,4,9, but no
         longer contains 7.
 
         >>> client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
@@ -190,8 +185,8 @@ class Reference:
             "vectorWeights": null
         }
         Currently there is only one `Book` reference.
-        Update all the references of the Author for property name `wroteBooks`.
-        >>> client.data_object.reference.update(
+        Replace all the references of the Author for property name `wroteBooks`.
+        >>> client.data_object.reference.replace(
         ...     from_uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
         ...     from_property_name = 'wroteBooks',
         ...     to_uuids = [
@@ -222,13 +217,13 @@ class Reference:
             "vectorWeights": null
         }
         All the previous references were removed and now we have only those specified in the
-        `update` method.
+        '.replace()' method.
 
         Raises
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         TypeError
             If the parameters are of the wrong type.
@@ -251,19 +246,17 @@ class Reference:
         try:
             response = self._connection.put(
                 path=path,
-                weaviate_object=beacons
+                data_json=beacons,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Reference was not updated.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Reference was not replaced due to connection error.'
+            ) from conn_err
         if response.status_code == 200:
             return
-        raise UnexpectedStatusCodeException("Update property reference to object", response)
+        raise UnsuccessfulStatusCodeError("Update property reference to object!", response)
 
-    def add(self,
-            from_uuid: str,
-            from_property_name: str,
-            to_uuid: str
-        ) -> None:
+    def add(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
         """
         Allows to link an object to an object unidirectionally.
 
@@ -331,7 +324,7 @@ class Reference:
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         TypeError
             If the parameters are of the wrong type.
@@ -349,13 +342,15 @@ class Reference:
         try:
             response = self._connection.post(
                 path=path,
-                weaviate_object=beacons
+                data_json=beacons,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Reference was not added.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Reference was not added due to connection error.'
+            ) from conn_err
         if response.status_code == 200:
             return
-        raise UnexpectedStatusCodeException("Add property reference to object", response)
+        raise UnsuccessfulStatusCodeError("Add property reference to object!", response)
 
 
 def _get_beacon(to_uuid: str) -> dict:
@@ -380,7 +375,7 @@ def _get_beacon(to_uuid: str) -> dict:
 
 def _validate_property_name(property_name: str) -> None:
     """
-    Validate the property name.
+    Validate the property name type.
 
     Parameters
     ----------
@@ -394,5 +389,6 @@ def _validate_property_name(property_name: str) -> None:
     """
 
     if not isinstance(property_name, str):
-        raise TypeError("from_property_name must be of type 'str' but was: "\
-                        + str(type(property_name)))
+        raise TypeError(
+            f"'from_property_name' must be of type 'str'. Given type: {type(property_name)}"
+        )
