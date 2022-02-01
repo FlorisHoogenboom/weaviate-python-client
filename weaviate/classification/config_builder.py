@@ -3,7 +3,7 @@ ConfigBuilder class definition.
 """
 import time
 from typing import Dict, Any
-from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError
+from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
 from weaviate.connect import Connection
 from weaviate.util import _capitalize_first_letter
 
@@ -235,15 +235,15 @@ class ConfigBuilder:
         required_fields = ["type", "class", "basedOnProperties", "classifyProperties"]
         for field in required_fields:
             if field not in self._config:
-                raise ValueError(f"{field} is not set for this classification")
+                raise ValueError(f"{field} is not set for this classification!")
 
         if "settings" in self._config:
             if not isinstance(self._config["settings"], dict):
-                raise TypeError('"settings" should be of type dict')
+                raise TypeError('"settings" should be of type dict!')
 
         if self._config["type"] == "knn":
             if "k" not in self._config.get("settings", []):
-                raise ValueError("k is not set for this classification")
+                raise ValueError("k is not set for this classification!")
 
     def _start(self) -> dict:
         """
@@ -258,20 +258,20 @@ class ConfigBuilder:
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exception.UnsuccessfulStatusCodeError
             Unexpected error.
         """
 
         try:
             response = self._connection.post(
                 path='/classifications',
-                weaviate_object=self._config
+                data_json=self._config,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Classification may not started.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('Classification may not started.') from conn_err
         if response.status_code == 201:
             return response.json()
-        raise UnexpectedStatusCodeException("Start classification", response)
+        raise UnsuccessfulStatusCodeError("Start classification", response)
 
     def do(self) -> dict:
         """
@@ -291,7 +291,6 @@ class ConfigBuilder:
 
         # wait for completion
         classification_uuid = response["id"]
-        #print(classification_uuid)
         while self._classification.is_running(classification_uuid):
             time.sleep(2.0)
         return self._classification.get(classification_uuid)
