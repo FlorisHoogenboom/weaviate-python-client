@@ -4,7 +4,7 @@ Client class definition.
 from typing import Optional, Tuple, Union
 from numbers import Real
 from .auth import AuthCredentials
-from .exceptions import UnexpectedStatusCodeException, RequestsConnectionError
+from .exceptions import UnsuccessfulStatusCodeError, WeaviateConnectionError
 from .connect import Connection
 from .classification import Classification
 from .schema import Schema
@@ -16,19 +16,22 @@ from .gql import Query
 
 class Client:
     """
-    A python native weaviate Client class that encapsulates Weaviate functionalities in one object.
-    A Client instance creates all the needed objects to interact with Weaviate, and connects all of
-    them to the same Weaviate instance. See below the Attributes of the Client instance. For the
-    per attribute functionality see that attribute's documentation.
+    A python native Client class that encapsulates Weaviate functionalities in one object.
+    A Client instance creates all the needed objects to interact with Weaviate, and
+    connects all of them to the same Weaviate instance. See below the Attributes of the
+    Client instance. For the per attribute functionality see that attribute's
+    documentation.
 
     Attributes
     ----------
     classification : weaviate.classification.Classification
-        A Classification object instance connected to the same Weaviate instance as the Client.
+        A Classification object instance connected to the same Weaviate instance as the
+        Client.
     schema : weaviate.schema.Schema
         A Schema object instance connected to the same Weaviate instance as the Client.
     contextionary : weaviate.contextionary.Contextionary
-        A Contextionary object instance connected to the same Weaviate instance as the Client.
+        A Contextionary object instance connected to the same Weaviate instance as the
+        Client.
     batch : weaviate.batch.Batch
         A Batch object instance connected to the same Weaviate instance as the Client.
     data_object : weaviate.date.DataObject
@@ -40,7 +43,8 @@ class Client:
     def __init__(self,
             url: str='http://localhost:8080',
             auth_client_secret: AuthCredentials=None,
-            timeout_config: Union[Tuple[Real, Real], Real]=(2, 20)
+            timeout_config: Optional[Union[Tuple[Real, Real], Real]]=20,
+            session_proxies: Optional[dict]=None,
         ):
         """
         Initialize a Client class instance.
@@ -51,11 +55,15 @@ class Client:
             The URL to the weaviate instance.
         auth_client_secret : weaviate.AuthCredentials, optional
             Authentication client secret, by default None.
-        timeout_config : tuple(Real, Real) or Real, optional
+        timeout_config : tuple(Real, Real), Real or None, optional
             Set the timeout configuration for all requests to the Weaviate server. It can be a
             real number or, a tuple of two real numbers: (connect timeout, read timeout).
             If only one real number is passed then both connect and read timeout will be set to
-            that value, by default (2, 20).
+            that value, by default 20.
+        session_proxies : dict or None, optional
+            The HTTP and/or HTTPS proxies to use for the requests Session. Can be passed as a dict
+            or None to read from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY or
+            https_proxy).
 
         Examples
         --------
@@ -84,21 +92,27 @@ class Client:
         """
 
         if not isinstance(url, str):
-            raise TypeError("URL is expected to be string but is " + str(type(url)))
-        
+            raise TypeError(
+                f"'url' must be of type 'str'. Given type: {type(url)}"
+            )
+
         url = url.strip('/')
 
         self._connection = Connection(
             url=url,
             auth_client_secret=auth_client_secret,
-            timeout_config=timeout_config
+            timeout_config=timeout_config,
+            session_proxies=session_proxies,
         )
         self.classification = Classification(self._connection)
         self.schema = Schema(self._connection)
-        self.contextionary = Contextionary(self._connection)
         self.batch = Batch(self._connection)
         self.data_object = DataObject(self._connection)
         self.query = Query(self._connection)
+
+        meta = self.get_meta()
+        if 'text2vec-contextionary' in meta['modules']:
+            self.contextionary = Contextionary(self._connection)
 
     def is_ready(self) -> bool:
         """
@@ -112,12 +126,14 @@ class Client:
         """
 
         try:
-            response = self._connection.get(path="/.well-known/ready")
-            if response.status_code == 200:
-                return True
+            response = self._connection.get(
+                path="/.well-known/ready",
+            )
+        except WeaviateConnectionError:
             return False
-        except RequestsConnectionError:
-            return False
+        if response.status_code == 200:
+            return True
+        return False
 
     def is_live(self) -> bool:
         """
@@ -130,7 +146,12 @@ class Client:
             False otherwise.
         """
 
-        response = self._connection.get(path="/.well-known/live")
+        try:
+            response = self._connection.get(
+                path="/.well-known/live",
+            )
+        except WeaviateConnectionError:
+            return False
         if response.status_code == 200:
             return True
         return False
@@ -146,14 +167,21 @@ class Client:
 
         Raises
         ------
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        response = self._connection.get(path="/meta")
+        try:
+            response = self._connection.get(
+                path="/meta",
+            )
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Could not get meta data due to connection error.'
+            ) from conn_err
         if response.status_code == 200:
             return response.json()
-        raise UnexpectedStatusCodeException("Meta endpoint", response)
+        raise UnsuccessfulStatusCodeError("Meta endpoint!", response)
 
     def get_open_id_configuration(self) -> Optional[dict]:
         """
@@ -166,41 +194,49 @@ class Client:
 
         Raises
         ------
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        response = self._connection.get(path="/.well-known/openid-configuration")
+        try:
+            response = self._connection.get(
+                path="/.well-known/openid-configuration",
+            )
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Could not get openid-configuration due to connection error.'
+            ) from conn_err
         if response.status_code == 200:
             return response.json()
         if response.status_code == 404:
             return None
-        raise UnexpectedStatusCodeException("Meta endpoint", response)
+        raise UnsuccessfulStatusCodeError("Meta endpoint", response)
 
     @property
-    def timeout_config(self) -> Tuple[Real, Real]:
+    def timeout_config(self) -> Optional[Tuple[Real, Real]]:
         """
-        Getter/setter for `timeout_config`.
+        Getter/Setter for 'timeout_config'.
 
         Parameters
         ----------
-        timeout_config : tuple(Real, Real) or Real, optional
+        timeout_config : tuple(Real, Real) or Real or None
             For Getter only: Set the timeout configuration for all requests to the Weaviate server.
-            It can be a real number or, a tuple of two real numbers:
+            It can be None, a real number or a tuple of two real numbers:
                     (connect timeout, read timeout).
             If only one real number is passed then both connect and read timeout will be set to
             that value.
+            If None then the it will wait forever, until the server responds (NOT recommended).
 
         Returns
         -------
-        Tuple[Real, Real]
+        Tuple[Real, Real] or None
             For Getter only: Requests Timeout configuration.
         """
 
         return self._connection.timeout_config
 
     @timeout_config.setter
-    def timeout_config(self, timeout_config: Union[Tuple[Real, Real], Real]):
+    def timeout_config(self, timeout_config: Optional[Union[Tuple[Real, Real], Real]]):
         """
         Setter for `timeout_config`. (docstring should be only in the Getter)
         """
