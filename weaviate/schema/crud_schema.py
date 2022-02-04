@@ -4,12 +4,12 @@ Schema class definition.
 from typing import Union, Optional
 from weaviate.connect import Connection
 from weaviate.util import _get_dict_from_object, _is_sub_schema, _capitalize_first_letter
-from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError
+from weaviate.exceptions import UnsuccessfulStatusCodeError, WeaviateConnectionError
 from weaviate.schema.validate_schema import validate_schema, check_class
 from weaviate.schema.properties import Property
 
 
-_PRIMITIVE_WEAVIATE_TYPES_SET = set(
+PRIMITIVE_WEAVIATE_TYPES = set(
     [
         "string",
         "string[]",
@@ -60,7 +60,7 @@ class Schema:
         Parameters
         ----------
         schema : dict or str
-            Schema as a python dict, or the path to a json file or a url of a json file.
+            Schema as a 'dict', or the path to a JSON file or a url of a JSON file.
 
         Examples
         --------
@@ -93,11 +93,11 @@ class Schema:
             If the 'schema' is neither a string nor a dict.
         ValueError
             If 'schema' can not be converted into a weaviate schema.
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
-        weaviate.SchemaValidationException
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If weaviate reported a none OK status.
+        weaviate.exceptions.SchemaValidationError
             If the 'schema' could not be validated against the standard format.
         """
 
@@ -147,11 +147,11 @@ class Schema:
             If the 'schema_class' is neither a string nor a dict.
         ValueError
             If 'schema_class' can not be converted into a weaviate schema.
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
-        weaviate.SchemaValidationException
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If weaviate reported a none OK status.
+        weaviate.exceptions.SchemaValidationError
             If the 'schema_class' could not be validated against the standard format.
         """
 
@@ -177,25 +177,29 @@ class Schema:
         Raises
         ------
         TypeError
-            If 'class_name' argument not of type str.
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
+            If 'class_name' argument not of type 'str'.
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If weaviate reported a none OK status.
         """
 
         if not isinstance(class_name, str):
-            raise TypeError(f"Class name was {type(class_name)} instead of str")
+            raise TypeError(
+                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+            )
 
         path = f"/schema/{_capitalize_first_letter(class_name)}"
         try:
             response = self._connection.delete(
-                path=path
+                path=path,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Deletion of class.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Deletion of class failed due to connection error.'
+            ) from conn_err
         if response.status_code != 200:
-            raise UnexpectedStatusCodeException("Delete class from schema", response)
+            raise UnsuccessfulStatusCodeError("Delete class from schema!", response)
 
     def delete_all(self) -> None:
         """
@@ -248,8 +252,7 @@ class Schema:
         Returns
         -------
         bool
-            True if a schema is present,
-            False otherwise.
+            True if a schema is present, False otherwise.
         """
 
         loaded_schema = self.get()
@@ -273,11 +276,48 @@ class Schema:
         config : dict
             The configurations to update (MUST follow schema format).
 
+        Example
+        -------
+        In the example below we have a Weaviate instance with a class 'Test'.
+
+        >>> client.schema.get('Test')
+        {
+            'class': 'Test',
+            ...
+            'vectorIndexConfig': {
+                'ef': -1,
+                ...
+            },
+            ...
+        }
+        >>> client.schema.update_config(
+        ...     class_name='Test',
+        ...     config={
+        ...         'vectorIndexConfig': {
+        ...             'ef': 100,
+        ...         }
+        ...     }
+        ... )
+        >>> client.schema.get('Test')
+        {
+            'class': 'Test',
+            ...
+            'vectorIndexConfig': {
+                'ef': 100,
+                ...
+            },
+            ...
+        }
+
+        NOTE: When updating schema configuration, the 'config' MUST be sub-set of the schema,
+        starting at the top level. In the example above we update 'ef' value, and for this we
+        included the 'vectorIndexConfig' top level too.
+
         Raises
         ------
-        requests.ConnectionError
+        requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
@@ -286,25 +326,26 @@ class Schema:
         new_class_schema = _update_nested_dict(class_schema, config)
         check_class(new_class_schema)
 
-        path = "/schema/" + class_name
+        path = f"/schema/{class_name}"
         try:
             response = self._connection.put(
                 path=path,
-                weaviate_object=new_class_schema
+                data_json=new_class_schema,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Class schema configuration could not be updated.')\
-                from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                "Class schema configuration could not be updated die to connection error."
+            ) from conn_err
         if response.status_code != 200:
-            raise UnexpectedStatusCodeException("Update class schema configuration", response)
+            raise UnsuccessfulStatusCodeError("Update class schema configuration!", response)
 
-    def get(self, class_name: str = None) -> dict:
+    def get(self, class_name: Optional[str]=None) -> dict:
         """
         Get the schema from weaviate.
 
         Parameters
         ----------
-        class_name : str, optional
+        class_name : str or None, optional
             The class for which to return the schema. If NOT provided the whole schema is returned,
             otherwise only the schema of this class is returned. By default None.
 
@@ -312,7 +353,7 @@ class Schema:
         -------
         dict
             A dict containing the schema. The schema may be empty.
-            To see if a schema has already been loaded use `contains` method.
+            To see if a schema has already been loaded use 'contains' method.
 
         Examples
         --------
@@ -381,32 +422,35 @@ class Schema:
 
         Raises
         ------
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If weaviate reported a none OK status.
         """
 
         path = '/schema'
         if class_name is not None:
             if not isinstance(class_name, str):
-                raise TypeError("'class_name' argument must be of type `str`! "
-                    f"Given type: {type(class_name)}")
-            path = f'/schema/{_capitalize_first_letter(class_name)}'
+                raise TypeError(
+                    f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+                )
+            path += _capitalize_first_letter(class_name)
 
         try:
             response = self._connection.get(
-                path=path
+                path=path,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Schema could not be retrieved.') from conn_err
-        if response.status_code != 200:
-            raise UnexpectedStatusCodeException("Get schema", response)
-        return response.json()
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Schema could not be retrieved due to connection error.'
+            ) from conn_err
+        if response.status_code == 200:
+            return response.json()
+        raise UnsuccessfulStatusCodeError("Get schema!", response)
 
     def _create_complex_properties_from_class(self, schema_class: dict) -> None:
         """
-        Add crossreferences to already existing class.
+        Add cross-references to already existing class.
 
         Parameters
         ----------
@@ -415,45 +459,48 @@ class Schema:
 
         Raises
         ------
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If weaviate reported a none OK status.
         """
 
-        if "properties" not in schema_class:
+        if 'properties' not in schema_class:
             # Class has no properties nothing to do
             return
-        for property_ in schema_class["properties"]:
 
-            if _property_is_primitive(property_["dataType"]):
+        for _property in schema_class['properties']:
+            if _property_is_primitive(_property['dataType']):
                 continue
 
             # create the property object
             ## All complex dataTypes should be capitalized.
             schema_property = {
-                "dataType": [_capitalize_first_letter(dtype) for dtype in  property_["dataType"]],
-                "description": property_["description"],
-                "name": property_["name"]
+                'name': _property['name'],
+                'dataType': [_capitalize_first_letter(dtype) for dtype in  _property['dataType']],
             }
 
-            if "indexInverted" in property_:
-                schema_property["indexInverted"] = property_["indexInverted"]
+            if 'description' in _property:
+                schema_property['description'] = _property['description']
 
-            if "moduleConfig" in property_:
-                schema_property["moduleConfig"] = property_["moduleConfig"]
+            if 'indexInverted' in _property:
+                schema_property['indexInverted'] = _property['indexInverted']
 
-            path = "/schema/" + _capitalize_first_letter(schema_class["class"]) + "/properties"
+            if 'moduleConfig' in _property:
+                schema_property['moduleConfig'] = _property['moduleConfig']
+
+            path = f"/schema/{_capitalize_first_letter(schema_class['class'])}/properties"
             try:
                 response = self._connection.post(
                     path=path,
-                   weaviate_object=schema_property
+                    data_json=schema_property,
                 )
-            except RequestsConnectionError as conn_err:
-                raise RequestsConnectionError('Property may not have been created properly.')\
-                    from conn_err
+            except WeaviateConnectionError as conn_err:
+                raise WeaviateConnectionError(
+                    'Property may not have been created properly due to connection error.'
+                ) from conn_err
             if response.status_code != 200:
-                raise UnexpectedStatusCodeException("Add properties to classes", response)
+                raise UnsuccessfulStatusCodeError('Add properties to classes!', response)
 
     def _create_complex_properties_from_classes(self, schema_classes_list: list) -> None:
         """
@@ -479,51 +526,54 @@ class Schema:
 
         Raises
         ------
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If weaviate reported a none OK status.
         """
 
         # Create the class
         schema_class = {
-            "class": _capitalize_first_letter(weaviate_class['class']),
-            "properties": []
+            'class': _capitalize_first_letter(weaviate_class['class']),
+            'properties': []
         }
 
-        if "description" in weaviate_class:
+        if 'description' in weaviate_class:
             schema_class['description'] = weaviate_class['description']
 
-        if "vectorIndexType" in weaviate_class:
+        if 'vectorIndexType' in weaviate_class:
             schema_class['vectorIndexType'] = weaviate_class['vectorIndexType']
 
-        if "vectorIndexConfig" in weaviate_class:
+        if 'vectorIndexConfig' in weaviate_class:
             schema_class['vectorIndexConfig'] = weaviate_class['vectorIndexConfig']
 
-        if "vectorizer" in weaviate_class:
+        if 'vectorizer' in weaviate_class:
             schema_class['vectorizer'] = weaviate_class['vectorizer']
 
-        if "moduleConfig" in weaviate_class:
-            schema_class["moduleConfig"] = weaviate_class["moduleConfig"]
+        if 'moduleConfig' in weaviate_class:
+            schema_class['moduleConfig'] = weaviate_class['moduleConfig']
 
-        if "shardingConfig" in weaviate_class:
-            schema_class["shardingConfig"] = weaviate_class["shardingConfig"]
+        if 'shardingConfig' in weaviate_class:
+            schema_class['shardingConfig'] = weaviate_class['shardingConfig']
 
-        if "properties" in weaviate_class:
-            schema_class["properties"] = _get_primitive_properties(
-                                                    weaviate_class["properties"])
-
-        # Add the item
+        if 'properties' in weaviate_class:
+            schema_class['properties'] = (
+                _get_primitive_properties(
+                    properties_list=weaviate_class['properties'],
+                )
+            )
+        path = '/schema'
         try:
             response = self._connection.post(
-                path="/schema",
-                weaviate_object=schema_class
+                path=path,
+                data_json=schema_class,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Class may not have been created properly.')\
-                from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Class may not have been created properly due to connection error.'
+            ) from conn_err
         if response.status_code != 200:
-            raise UnexpectedStatusCodeException("Create class", response)
+            raise UnsuccessfulStatusCodeError("Create class", response)
 
     def _create_classes_with_primitives(self, schema_classes_list: list) -> None:
         """
@@ -557,7 +607,7 @@ def _property_is_primitive(data_type_list: list) -> bool:
         False otherwise.
     """
 
-    if len(set(data_type_list) - _PRIMITIVE_WEAVIATE_TYPES_SET) == 0:
+    if len(set(data_type_list) - PRIMITIVE_WEAVIATE_TYPES) == 0:
         return True
     return False
 
@@ -588,7 +638,7 @@ def _get_primitive_properties(properties_list: list) -> list:
 
 def _update_nested_dict(dict_1: dict, dict_2: dict) -> dict:
     """
-    Update `dict_1` with elements from `dict_2` in a nested manner.
+    Update 'dict_1' with elements from 'dict_2' in a nested manner.
     If a value of a key is a dict, it is going to be updated and not replaced by a the whole dict.
 
     Parameters
@@ -601,7 +651,7 @@ def _update_nested_dict(dict_1: dict, dict_2: dict) -> dict:
     Returns
     -------
     dict
-        The updated `dict_1`.
+        The updated 'dict_1'.
     """
     for key, value in dict_2.items():
         if key not in dict_1:

@@ -1,7 +1,7 @@
 """
 Property class definition.
 """
-from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError
+from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
 from weaviate.schema.validate_schema import check_property
 from weaviate.util import _get_dict_from_object, _capitalize_first_letter
 from weaviate.connect import Connection
@@ -31,8 +31,7 @@ class Property:
         Parameters
         ----------
         schema_class_name : str
-            The name of the class in the schema to which the property
-            should be added.
+            The name of the schema class to which the property should be added.
         schema_property : dict
             The property that should be added.
 
@@ -50,22 +49,27 @@ class Property:
         Raises
         ------
         TypeError
-            If 'schema_class_name' is of wrong type.
+            If 'schema_class_name' is not of type 'str'.
+        requests.exceptions.ConnectionError
+            If the network connection to weaviate fails.
+        weaviate.exceptions.SchemaValidationException
+            If the 'schema_property' is not valid.
         weaviate.exceptions.UnexpectedStatusCodeException
             If weaviate reports a none OK status.
-        requests.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.SchemaValidationException
-            If the 'schema_property' is not valid.
         """
 
         if not isinstance(schema_class_name, str):
-            raise TypeError(f"Class name must be of type str but is {type(schema_class_name)}")
+            raise TypeError(
+                f"'schema_class_name' must be of type 'str'. Given type: {type(schema_class_name)}"
+            )
 
         loaded_schema_property = _get_dict_from_object(schema_property)
 
         # check if valid property
-        check_property(loaded_schema_property)
+        check_property(
+            class_property=loaded_schema_property,
+            class_name=schema_class_name,
+        )
 
         schema_class_name = _capitalize_first_letter(schema_class_name)
 
@@ -73,9 +77,11 @@ class Property:
         try:
             response = self._connection.post(
                 path=path,
-                weaviate_object=loaded_schema_property
+                data_json=loaded_schema_property,
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Property was created properly.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError(
+                'Property was created due to connection error.'
+            ) from conn_err
         if response.status_code != 200:
-            raise UnexpectedStatusCodeException("Add property to class", response)
+            raise UnsuccessfulStatusCodeError("Add property to class!", response)
