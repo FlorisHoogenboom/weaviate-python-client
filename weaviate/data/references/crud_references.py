@@ -157,11 +157,11 @@ class Reference:
             ['http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67', ...]
             or
             ['fc7eb129-f138-457f-b727-1b29db191a67', ...]
-            If `str` it is converted internally into a list of str.
+            If 'str' it is converted internally into a list of str.
 
         Examples
         --------
-        You have data object 1 with reference property `wroteBooks` and currently has one reference
+        You have data object 1 with reference property 'wroteBooks' and currently has one reference
         to data object 7. Now you say, I want to replace the references of data object 1.wroteBooks
         to this list 3,4,9. After the replace, the data object 1.wroteBooks is now 3,4,9, but no
         longer contains 7.
@@ -184,8 +184,8 @@ class Reference:
             },
             "vectorWeights": null
         }
-        Currently there is only one `Book` reference.
-        Replace all the references of the Author for property name `wroteBooks`.
+        Currently there is only one 'Book' reference.
+        Replace all the references of the Author for property name 'wroteBooks'.
         >>> client.data_object.reference.replace(
         ...     from_uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
         ...     from_property_name = 'wroteBooks',
