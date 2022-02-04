@@ -1,64 +1,91 @@
 """
 Weaviate Exceptions.
 """
-# Import requests ConnectionError as weaviate.ConnectionError to overwrite buildins connection error
-from requests.exceptions import ConnectionError as RequestsConnectionError
+from typing import Optional
 from requests import Response
+from requests.exceptions import ConnectionError as WeaviateConnectionError
 
 
-class UnexpectedStatusCodeException(Exception):
+class WeaviateBaseError(Exception):
     """
-    Is raised in case the status code returned from Weaviate is
-    not handled in the client implementation and suggests an error.
+    Weaviate base exception that all Weaviate exceptions should inherit from.
+    This error can be used to catch any Weaviate exceptions.
     """
+
+    def __init__(self, message: str = ''):
+        """
+        Weaviate base exception initializer.
+
+        Parameters
+        ----------
+        message: str, optional
+            An error message specific to the context in which the error occurred.
+        """
+
+        self.message = message
+        super().__init__(message)
+
+
+class UnsuccessfulStatusCodeError(WeaviateBaseError):
+    """
+    Is raised in case the request status code returned from Weaviate server is not handled in the
+    client implementation.
+    """
+
     def __init__(self, message: str, response: Response):
         """
-        Is raised in case the status code returned from Weaviate is
-        not handled in the client implementation and suggests an error.
-
-        Custom code can act on the attributes:
-        - status_code
-        - json
+        Unsuccessful Status Code exception initializer.
 
         Parameters
         ----------
         message: str
-            An error message specific to the context, in which the error occurred.
+            An error message specific to the context in which the error occurred.
         response: requests.Response
-            The request response of which the status code was unexpected.
+            The request response for which the status code was unsuccessful.
         """
 
-        super().__init__()
-
-        # Set error message
-
-        try:
-            body = response.json()
-        except:
-            body = None
-
-        self.message = message
-        self.status_code = response.status_code
-        self.json = body
-
-    def __str__(self):
-        code = str(self.status_code)
-        body = str(self.json)
-        return f"{self.message}! Unexpected status code: {code}, with response body: {body}"
+        error_message = (
+            f"{message} Unsuccessful status code: {response.status_code}, "
+            f"with response body: '{response.text}'"
+        )
+        super().__init__(error_message)
 
 
-class ObjectAlreadyExistsException(Exception):
+class ObjectAlreadyExistsError(WeaviateBaseError):
     """
-    Object Already Exists Exception.
+    Object Already Exists Error.
     """
 
 
-class AuthenticationFailedException(Exception):
+class AuthenticationError(WeaviateBaseError):
     """
-    Authentication Failed Exception.
+    Authentication Failed Error.
     """
 
-class SchemaValidationException(Exception):
+    def __init__(self, message: str, response: Optional[Response] = None):
+        """
+        Authentication error exception initializer.
+
+        Parameters
+        ----------
+        message : str
+            The error message context.
+        response : Response or None, optional
+            The authentication request response, by default None.
+        """
+
+        if response is not None:
+            error_message = (
+                f"{message} with status code: {response.status_code}, "
+                f"with response body: '{response.text}'"
+            )
+        else:
+            error_message = message
+
+        super().__init__(error_message)
+
+
+class SchemaValidationError(WeaviateBaseError):
     """
-    Schema Validation Exception.
+    Schema Validation Error.
     """
