@@ -46,7 +46,7 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        self._config["type"] = type
+        self._config['type'] = type
         return self
 
     def with_k(self, k: int) -> 'ConfigBuilder':
@@ -65,10 +65,10 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        if "settings" not in self._config:
-            self._config["settings"] = {'k': k}
+        if 'settings' not in self._config:
+            self._config['settings'] = {'k': k}
         else:
-            self._config["settings"]['k'] = k
+            self._config['settings']['k'] = k
         return self
 
     def with_class_name(self, class_name: str) -> 'ConfigBuilder':
@@ -86,7 +86,7 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        self._config["class"] = _capitalize_first_letter(class_name)
+        self._config['class'] = _capitalize_first_letter(class_name)
         return self
 
     def with_classify_properties(self, classify_properties: list) -> 'ConfigBuilder':
@@ -104,7 +104,7 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        self._config["classifyProperties"] = classify_properties
+        self._config['classifyProperties'] = classify_properties
         return self
 
     def with_based_on_properties(self, based_on_properties: list) -> 'ConfigBuilder':
@@ -122,7 +122,7 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        self._config["basedOnProperties"] = based_on_properties
+        self._config['basedOnProperties'] = based_on_properties
         return self
 
     def with_source_where_filter(self, filter: dict) -> 'ConfigBuilder':
@@ -140,9 +140,9 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        if "filters" not in self._config:
-            self._config["filters"] = {}
-        self._config["filters"]["sourceWhere"] = filter
+        if 'filters' not in self._config:
+            self._config['filters'] = {}
+        self._config['filters']['sourceWhere'] = filter
         return self
 
     def with_training_set_where_filter(self, filter: dict) -> 'ConfigBuilder':
@@ -160,9 +160,9 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        if "filters" not in self._config:
-            self._config["filters"] = {}
-        self._config["filters"]["trainingSetWhere"] = filter
+        if 'filters' not in self._config:
+            self._config['filters'] = {}
+        self._config['filters']['trainingSetWhere'] = filter
         return self
 
     def with_target_where_filter(self, filter: dict) -> 'ConfigBuilder':
@@ -180,9 +180,9 @@ class ConfigBuilder:
             Updated ConfigBuilder.
         """
 
-        if "filters" not in self._config:
-            self._config["filters"] = {}
-        self._config["filters"]["targetWhere"] = filter
+        if 'filters' not in self._config:
+            self._config['filters'] = {}
+        self._config['filters']['targetWhere'] = filter
         return self
 
     def with_wait_for_completion(self) -> 'ConfigBuilder':
@@ -200,9 +200,8 @@ class ConfigBuilder:
 
     def with_settings(self, settings: dict) -> 'ConfigBuilder':
         """
-        Set settings for the classification. NOTE if you are using 'kNN'
-        the value 'k' can be set by this method or by 'with_k'.
-        This method keeps previously set 'settings'.
+        Set settings for the classification. NOTE if you are using 'kNN' the value 'k' can be set
+        by this method or by 'with_k(...)'. This method keeps previously set 'settings'.
 
         Parameters
         ----------
@@ -213,13 +212,23 @@ class ConfigBuilder:
         -------
         ConfigBuilder
             Updated ConfigBuilder.
+
+        Raises
+        ------
+        TypeError
+            If 'settings' is not of type 'dict'.
         """
 
-        if "settings" not in self._config:
-            self._config["settings"] = settings
+        if not isinstance(settings, dict):
+            raise TypeError(
+                f"'settings' must be of type 'dict'. Given type: {type(settings)}."
+            )
+
+        if 'settings' not in self._config:
+            self._config['settings'] = settings
         else:
             for key in settings:
-                self._config["settings"][key] = settings[key]
+                self._config['settings'][key] = settings[key]
         return self
 
     def _validate_config(self) -> None:
@@ -232,18 +241,18 @@ class ConfigBuilder:
             If a mandatory field is not set.
         """
 
-        required_fields = ["type", "class", "basedOnProperties", "classifyProperties"]
+        required_fields = ['type', 'class', 'basedOnProperties', 'classifyProperties']
         for field in required_fields:
             if field not in self._config:
-                raise ValueError(f"{field} is not set for this classification!")
+                raise ValueError(
+                    f"'{field}' is not set for this classification!"
+                )
 
-        if "settings" in self._config:
-            if not isinstance(self._config["settings"], dict):
-                raise TypeError('"settings" should be of type dict!')
-
-        if self._config["type"] == "knn":
-            if "k" not in self._config.get("settings", []):
-                raise ValueError("k is not set for this classification!")
+        if self._config['type'] == 'knn':
+            if 'k' not in self._config.get('settings', []):
+                raise ValueError(
+                    "'k' is not set for this classification!"
+                )
 
     def _start(self) -> dict:
         """
@@ -256,7 +265,7 @@ class ConfigBuilder:
 
         Raises
         ------
-        requests.ConnectionError
+        requests.exception.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exception.UnsuccessfulStatusCodeError
             Unexpected error.
@@ -268,10 +277,12 @@ class ConfigBuilder:
                 data_json=self._config,
             )
         except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError('Classification may not started.') from conn_err
+            raise WeaviateConnectionError(
+                'Classification may not started due to connection error.'
+            ) from conn_err
         if response.status_code == 201:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Start classification", response)
+        raise UnsuccessfulStatusCodeError("Start classification!", response)
 
     def do(self) -> dict:
         """

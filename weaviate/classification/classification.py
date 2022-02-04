@@ -1,9 +1,9 @@
 """
 Classification class definition.
 """
-import validators
 from weaviate.exceptions import UnsuccessfulStatusCodeError, WeaviateConnectionError
 from weaviate.connect import Connection
+from weaviate.util import get_valid_uuid
 from .config_builder import ConfigBuilder
 
 class Classification:
@@ -55,26 +55,25 @@ class Classification:
         ------
         ValueError
             If not a proper uuid.
-        requests.ConnectionError
+        requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.exception.UnsuccessfulStatusCodeError
+        weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        if not validators.uuid(classification_uuid):
-            raise ValueError("Given UUID does not have a proper form.")
-
+        path = f'/classifications/{get_valid_uuid(classification_uuid)}'
+        
         try:
             response = self._connection.get(
-                path='/classifications/' + classification_uuid,
+                path=path,
             )
         except WeaviateConnectionError as conn_err:
             raise WeaviateConnectionError(
-                'Classification status could not be retrieved.'
+                'Classification status could not be retrieved due to connection error.'
             ) from conn_err
         if response.status_code == 200:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Get classification status", response)
+        raise UnsuccessfulStatusCodeError("Get classification status!", response)
 
     def is_complete(self, classification_uuid: str) -> bool:
         """
@@ -91,7 +90,7 @@ class Classification:
             True if given classification has finished, False otherwise.
         """
 
-        return self._check_status(classification_uuid, "completed")
+        return self._check_status(classification_uuid, 'completed')
 
     def is_failed(self, classification_uuid: str) -> bool:
         """
@@ -144,10 +143,8 @@ class Classification:
             True if 'status' is satisfied, False otherwise.
         """
 
-        try:
-            response = self.get(classification_uuid)
-        except WeaviateConnectionError:
-            return False
+        response = self.get(classification_uuid)
+
         if response["status"] == status:
             return True
         return False

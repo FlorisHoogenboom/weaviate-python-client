@@ -147,7 +147,7 @@ class Connection:
 
         Raises
         ------
-        requests.exception.ConnectionError
+        requests.exceptions.ConnectionError
             If cannot connect to weaviate.
         weaviate.exceptions.AuthenticationError
             If cannot authenticate, http status code unsuccessful.
@@ -184,7 +184,7 @@ class Connection:
 
         Raises
         ------
-        requests.exception.ConnectionError
+        requests.exceptions.ConnectionError
             If cannot connect to the third party authentication service.
         weaviate.exceptions.AuthenticationError
             If status not OK in connection to the third party authentication service.

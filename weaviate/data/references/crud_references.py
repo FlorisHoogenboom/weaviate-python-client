@@ -101,14 +101,14 @@ class Reference:
 
         Raises
         ------
-        requests.ConnectionError
+        TypeError
+            If one of the parameters is of the wrong type.
+        ValueError
+            If one of the parameters has a wrong value.
+        requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
-        TypeError
-            If parameter has the wrong type.
-        ValueError
-            If uuid is not properly formed.
         """
 
 
@@ -221,14 +221,14 @@ class Reference:
 
         Raises
         ------
-        requests.ConnectionError
+        TypeError
+            If one of the parameters is of the wrong type.
+        ValueError
+            If one of the parameters has a wrong value.
+        requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
-        TypeError
-            If the parameters are of the wrong type.
-        ValueError
-            If the parameters are of the wrong value.
         """
 
         if not isinstance(to_uuids, list):
@@ -322,14 +322,14 @@ class Reference:
 
         Raises
         ------
-        requests.ConnectionError
+        TypeError
+            If one of the parameters is of the wrong type.
+        ValueError
+            If one of the parameters has a wrong value.
+        requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
-        TypeError
-            If the parameters are of the wrong type.
-        ValueError
-            If the parameters are of the wrong value.
         """
 
         # Validate and create Beacon

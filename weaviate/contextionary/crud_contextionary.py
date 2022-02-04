@@ -1,6 +1,7 @@
 """
 Contextionary class definition.
 """
+from numbers import Real
 from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
 from weaviate.connect import Connection
 
@@ -23,7 +24,7 @@ class Contextionary:
 
         self._connection = connection
 
-    def extend(self, concept: str, definition: str, weight: float=1.0) -> None:
+    def extend(self, concept: str, definition: str, weight: Real=1.0) -> None:
         """
         Extend the text2vec-contextionary with new concepts
 
@@ -34,7 +35,7 @@ class Contextionary:
             or needs to be updated, e.g. an abbreviation.
         definition : str
             The definition of the new concept.
-        weight : float, optional
+        weight : Real, optional
             The weight of the new definition compared to the old one,
             must be in-between the interval [0.0; 1.0], by default 1.0
 
@@ -49,24 +50,32 @@ class Contextionary:
         Raises
         ------
         TypeError
-            If an argument is not of an appropriate type.
+            If one of the arguments is of a wrong data type.
         ValueError
             If 'weight' is outside the interval [0.0; 1.0].
-        requests.ConnectionError
+        requests.exceptions.ConnectionError
             If text2vec-contextionary could not be extended.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If the network connection to weaviate fails.
         """
 
         if not isinstance(concept, str):
-            raise TypeError("Concept must be string.")
+            raise TypeError(
+                f"'concept' must be of type 'str'. Given type: {type(concept)}."
+            )
         if not isinstance(definition, str):
-            raise TypeError("Definition must be string.")
-        if not isinstance(weight, float):
-            raise TypeError("Weight must be float.")
+            raise TypeError(
+                f"'definition' must be of type 'str'. Given type: {type(definition)}."
+            )
+        if not isinstance(weight, Real):
+            raise TypeError(
+                f"'weight' must be of type 'float'/'int'. Given type: {type(weight)}."
+            )
 
         if weight > 1.0 or weight < 0.0:
-            raise ValueError("Weight out of limits 0.0 <= weight <= 1.0")
+            raise ValueError(
+                f"'weight' is out of limits! 0.0 <= weight <= 1.0, Given: {weight}."
+            )
 
         extension = {
             "concept": concept,
@@ -138,7 +147,7 @@ class Contextionary:
 
         Raises
         ------
-        requests.ConnectionError
+        requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
