@@ -254,7 +254,7 @@ class Reference:
             ) from conn_err
         if response.status_code == 200:
             return
-        raise UnsuccessfulStatusCodeError("Update property reference to object!", response)
+        raise UnsuccessfulStatusCodeError("Update property reference to object.", response)
 
     def add(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
         """
@@ -350,7 +350,7 @@ class Reference:
             ) from conn_err
         if response.status_code == 200:
             return
-        raise UnsuccessfulStatusCodeError("Add property reference to object!", response)
+        raise UnsuccessfulStatusCodeError("Add property reference to object.", response)
 
 
 def _get_beacon(to_uuid: str) -> dict:

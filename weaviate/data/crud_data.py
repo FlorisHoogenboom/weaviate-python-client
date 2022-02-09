@@ -138,7 +138,7 @@ class DataObject:
             pass
         if object_does_already_exist:
             raise ObjectAlreadyExistsError(weaviate_obj["id"])
-        raise UnsuccessfulStatusCodeError("Creating object!", response)
+        raise UnsuccessfulStatusCodeError("Creating object.", response)
 
     def update(self,
             data_object: Union[dict, str],
@@ -244,7 +244,7 @@ class DataObject:
             ) from conn_err
         if response.status_code == 204:
             return
-        raise UnsuccessfulStatusCodeError("Update of the object not successful!", response)
+        raise UnsuccessfulStatusCodeError("Update of the object not successful.", response)
 
     def replace(self,
             data_object: Union[dict, str],
@@ -345,7 +345,7 @@ class DataObject:
             ) from conn_err
         if response.status_code == 200:
             return
-        raise UnsuccessfulStatusCodeError("Replace object!", response)
+        raise UnsuccessfulStatusCodeError("Replace object.", response)
 
     def get_by_id(self,
             uuid: str,
@@ -471,7 +471,7 @@ class DataObject:
             return response.json()
         if uuid is not None and response.status_code == 404:
             return None
-        raise UnsuccessfulStatusCodeError("Get object/s!", response)
+        raise UnsuccessfulStatusCodeError("Get object/s.", response)
 
     def delete(self, uuid: str) -> None:
         """
@@ -524,7 +524,7 @@ class DataObject:
             ) from conn_err
         if response.status_code == 204:
             return
-        raise UnsuccessfulStatusCodeError("Delete object!", response)
+        raise UnsuccessfulStatusCodeError("Delete object.", response)
 
     def exists(self, uuid: str) -> bool:
         """
@@ -578,7 +578,7 @@ class DataObject:
             return True
         if response.status_code == 404:
             return False
-        raise UnsuccessfulStatusCodeError("Object exists!", response)
+        raise UnsuccessfulStatusCodeError("Object exists.", response)
 
     def validate(self,
             data_object: Union[dict, str],
@@ -648,7 +648,7 @@ class DataObject:
         loaded_data_object = _get_dict_from_object(data_object)
         if not isinstance(class_name, str):
             raise TypeError(
-                f"Expected class_name of type 'str' but was: {type(class_name)}.!"
+                f"Expected class_name of type 'str' but was: {type(class_name)}."
             )
 
         weaviate_obj = {
@@ -686,7 +686,7 @@ class DataObject:
             result["valid"] = False
             result["error"] = response.json()["error"]
             return result
-        raise UnsuccessfulStatusCodeError("Validate object!", response)
+        raise UnsuccessfulStatusCodeError("Validate object.", response)
 
 
 def _get_params(

@@ -245,13 +245,13 @@ class ConfigBuilder:
         for field in required_fields:
             if field not in self._config:
                 raise ValueError(
-                    f"'{field}' is not set for this classification!"
+                    f"'{field}' is not set for this classification."
                 )
 
         if self._config['type'] == 'knn':
             if 'k' not in self._config.get('settings', []):
                 raise ValueError(
-                    "'k' is not set for this classification!"
+                    "'k' is not set for this classification."
                 )
 
     def _start(self) -> dict:
@@ -282,7 +282,7 @@ class ConfigBuilder:
             ) from conn_err
         if response.status_code == 201:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Start classification!", response)
+        raise UnsuccessfulStatusCodeError("Start classification.", response)
 
     def do(self) -> dict:
         """

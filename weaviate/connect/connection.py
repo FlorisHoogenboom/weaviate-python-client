@@ -13,7 +13,6 @@ from weaviate.exceptions import (
     UnsuccessfulStatusCodeError,
 )
 from weaviate.auth import AuthCredentials
-from weaviate.util import _get_valid_timeout_config
 
 
 class Connection:
@@ -26,7 +25,7 @@ class Connection:
     def __init__(self,
             url: str,
             auth_client_secret: Optional[AuthCredentials]=None,
-            timeout_config: Optional[Union[Tuple[Real, Real], Real]]=20,
+            timeout_config: Union[tuple, Real, None]=20,
             session_proxies: Optional[dict]=None,
         ):
         """
@@ -38,7 +37,7 @@ class Connection:
             URL to a running weaviate instance.
         auth_client_secret : weaviate.auth.AuthCredentials or None, optional
             User login credentials to a weaviate instance, by default None
-        timeout_config : tuple(Real, Real), Real or None, optional
+        timeout_config : tuple(Real or None, Real or None), Real or None, optional
             Set the timeout configuration for all requests to the Weaviate server. It can be a
             real number or, a tuple of two real numbers: (connect timeout, read timeout).
             If only one real number is passed then both connect and read timeout will be set to
@@ -129,7 +128,7 @@ class Connection:
             self._refresh_authentication()
         elif response.status_code != 404:
             raise UnsuccessfulStatusCodeError(
-                "Failed to get OpenID Configuration!",
+                "Failed to get OpenID Configuration.",
                 response=response,
             )
 
@@ -164,7 +163,7 @@ class Connection:
             except WeaviateConnectionError as error:
                 raise WeaviateConnectionError("Cannot connect to weaviate.") from error
             if response.status_code != 200:
-                raise AuthenticationError("Cannot authenticate!", response=response)
+                raise AuthenticationError("Cannot authenticate.", response=response)
 
             # Set the client ID
             client_id = response.json()['clientId']
@@ -447,13 +446,13 @@ class Connection:
         )
 
     @property
-    def timeout_config(self) -> Optional[Tuple[Real, Real]]:
+    def timeout_config(self) -> Tuple[Optional[Real], Optional[Real]]:
         """
         Getter/Setter for 'timeout_config'.
 
         Parameters
         ----------
-        timeout_config : tuple(Real, Real) or Real or None
+        timeout_config : tuple(Real or None, Real or None), Real or None
             For Getter only: Set the timeout configuration for all requests to the Weaviate server.
             It can be None, a real number or a tuple of two real numbers:
                     (connect timeout, read timeout).
@@ -463,19 +462,96 @@ class Connection:
 
         Returns
         -------
-        Tuple[Real, Real] or None
-            For Getter only: Requests Timeout configuration.
+        Tuple[Optional[Real], Optional[Real]]
+            For Getter only: Requests Timeout configuration as a tuple.
         """
 
         return self._timeout_config
 
     @timeout_config.setter
-    def timeout_config(self, timeout_config: Optional[Union[Tuple[Real, Real], Real]]):
+    def timeout_config(self, timeout_config: Union[tuple, Real, None]):
         """
         Setter for 'timeout_config'. (docstring should be only in the Getter)
         """
 
         self._timeout_config = _get_valid_timeout_config(timeout_config)
+
+
+def _get_valid_timeout_config(
+        timeout_config: Optional[Union[Tuple[Real, Real], Real]]
+    ) -> Tuple[Optional[Real], Optional[Real]]:
+    """
+    Validate and return TimeOut configuration.
+
+    Parameters
+    ----------
+    timeout_config : tuple(Real or None, Real or None), Real or None
+        Set the timeout configuration for all requests to the server. It can be a real number
+        or, a tuple of two real numbers: (connect timeout, read timeout).
+        If only one real number is passed then both connect and read timeout will be set to
+        that value. If None then the it will wait forever, until the server responds.
+
+    Returns
+    -------
+    Tuple[Optional[Real], Optional[Real]]
+        Validated 'timeout_config' as a tuple.
+
+    Raises
+    ------
+    TypeError
+        If arguments are of a wrong data type.
+    ValueError
+        If 'timeout_config' is not a tuple of 2.
+    ValueError
+        If 'timeout_config' is/contains negative number/s.
+    """
+
+    if timeout_config is None:
+        return (None, None)
+
+    if isinstance(timeout_config, Real) and not isinstance(timeout_config, bool):
+        if timeout_config <= 0.0:
+            raise ValueError(
+                f"'timeout_config' cannot be non-positive number/s. Given: {timeout_config}."
+            )
+        return (timeout_config, timeout_config)
+
+    if not isinstance(timeout_config, tuple):
+        raise TypeError(
+            "'timeout_config' must be of type: tuple, Real (int/float) or None. "
+            f"Given type: {type(timeout_config)}."
+        )
+
+    if len(timeout_config) != 2:
+        raise ValueError(
+            f"'timeout_config' must be of length 2. Given length: {len(timeout_config)}."
+        )
+
+
+    if timeout_config[0] is not None:
+        if not isinstance(timeout_config[0], Real) or isinstance(timeout_config[0], bool):
+            raise TypeError(
+                "'timeout_config[0]' must be a real number or None. Given type: "
+                f"{type(timeout_config[0])}."
+            )
+        if timeout_config[0] <= 0.0 :
+            raise ValueError(
+                f"'timeout_config[0]' cannot be non-positive number. Given: {timeout_config[0]}."
+            )
+
+    if timeout_config[1] is not None:
+        if not isinstance(timeout_config[1], Real) or isinstance(timeout_config[1], bool):
+            raise TypeError(
+                "'timeout_config[1]' must be a real number or None. Given type: "
+                f"{type(timeout_config[1])}."
+            )
+        if timeout_config[1] <= 0.0 :
+            raise ValueError(
+                f"'timeout_config[1]' cannot be non-positive number. Given: {timeout_config[1]}."
+            )
+
+    return timeout_config
+
 
 def _get_epoch_time() -> int:
     """

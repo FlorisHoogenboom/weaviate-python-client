@@ -199,7 +199,7 @@ class Schema:
                 'Deletion of class failed due to connection error.'
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Delete class from schema!", response)
+            raise UnsuccessfulStatusCodeError("Delete class from schema.", response)
 
     def delete_all(self) -> None:
         """
@@ -337,7 +337,7 @@ class Schema:
                 "Class schema configuration could not be updated die to connection error."
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Update class schema configuration!", response)
+            raise UnsuccessfulStatusCodeError("Update class schema configuration.", response)
 
     def get(self, class_name: Optional[str]=None) -> dict:
         """
@@ -446,7 +446,7 @@ class Schema:
             ) from conn_err
         if response.status_code == 200:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Get schema!", response)
+        raise UnsuccessfulStatusCodeError("Get schema.", response)
 
     def _create_complex_properties_from_class(self, schema_class: dict) -> None:
         """
@@ -500,7 +500,7 @@ class Schema:
                     'Property may not have been created properly due to connection error.'
                 ) from conn_err
             if response.status_code != 200:
-                raise UnsuccessfulStatusCodeError('Add properties to classes!', response)
+                raise UnsuccessfulStatusCodeError('Add properties to classes.', response)
 
     def _create_complex_properties_from_classes(self, schema_classes_list: list) -> None:
         """

@@ -62,7 +62,7 @@ class Classification:
         """
 
         path = f'/classifications/{get_valid_uuid(classification_uuid)}'
-        
+
         try:
             response = self._connection.get(
                 path=path,
@@ -73,7 +73,7 @@ class Classification:
             ) from conn_err
         if response.status_code == 200:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Get classification status!", response)
+        raise UnsuccessfulStatusCodeError("Get classification status.", response)
 
     def is_complete(self, classification_uuid: str) -> bool:
         """

@@ -43,7 +43,7 @@ class Client:
     def __init__(self,
             url: str='http://localhost:8080',
             auth_client_secret: AuthCredentials=None,
-            timeout_config: Optional[Union[Tuple[Real, Real], Real]]=20,
+            timeout_config: Union[tuple, Real, None]=20,
             session_proxies: Optional[dict]=None,
         ):
         """
@@ -181,7 +181,7 @@ class Client:
             ) from conn_err
         if response.status_code == 200:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Meta endpoint!", response)
+        raise UnsuccessfulStatusCodeError("Meta endpoint.", response)
 
     def get_open_id_configuration(self) -> Optional[dict]:
         """
@@ -213,13 +213,13 @@ class Client:
         raise UnsuccessfulStatusCodeError("Meta endpoint", response)
 
     @property
-    def timeout_config(self) -> Optional[Tuple[Real, Real]]:
+    def timeout_config(self) -> Tuple[Optional[Real], Optional[Real]]:
         """
         Getter/Setter for 'timeout_config'.
 
         Parameters
         ----------
-        timeout_config : tuple(Real, Real) or Real or None
+        timeout_config : tuple(Real or None, Real or None), Real or None
             For Getter only: Set the timeout configuration for all requests to the Weaviate server.
             It can be None, a real number or a tuple of two real numbers:
                     (connect timeout, read timeout).
@@ -229,14 +229,14 @@ class Client:
 
         Returns
         -------
-        Tuple[Real, Real] or None
-            For Getter only: Requests Timeout configuration.
+        Tuple[Optional[Real], Optional[Real]]
+            For Getter only: Requests Timeout configuration as a tuple.
         """
 
         return self._connection.timeout_config
 
     @timeout_config.setter
-    def timeout_config(self, timeout_config: Optional[Union[Tuple[Real, Real], Real]]):
+    def timeout_config(self, timeout_config: Union[tuple, Real, None]):
         """
         Setter for `timeout_config`. (docstring should be only in the Getter)
         """

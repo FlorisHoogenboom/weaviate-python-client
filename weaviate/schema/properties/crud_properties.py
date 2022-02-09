@@ -84,4 +84,4 @@ class Property:
                 'Property was created due to connection error.'
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Add property to class!", response)
+            raise UnsuccessfulStatusCodeError("Add property to class.", response)
