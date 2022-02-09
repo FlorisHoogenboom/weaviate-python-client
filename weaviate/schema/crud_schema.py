@@ -3,8 +3,12 @@ Schema class definition.
 """
 from typing import Union, Optional
 from weaviate.connect import Connection
-from weaviate.util import _get_dict_from_object, _is_sub_schema, _capitalize_first_letter
-from weaviate.exceptions import UnsuccessfulStatusCodeError, WeaviateConnectionError
+from weaviate.util import _get_dict_from_object, _capitalize_first_letter
+from weaviate.exceptions import (
+    UnsuccessfulStatusCodeError,
+    WeaviateConnectionError,
+    SchemaValidationError,
+)
 from weaviate.schema.validate_schema import validate_schema, check_class
 from weaviate.schema.properties import Property
 
@@ -662,3 +666,94 @@ def _update_nested_dict(dict_1: dict, dict_2: dict) -> dict:
         else:
             dict_1.update({key : value})
     return dict_1
+
+def _is_sub_schema(sub_schema: dict, schema: dict) -> bool:
+    """
+    Check for a subset in a schema.
+
+    Parameters
+    ----------
+    sub_schema : dict
+        The smaller schema that should be contained in the 'schema'.
+    schema : dict
+        The schema for which to check if 'sub_schema' is a part of. Must have the 'classes' key.
+
+    Returns
+    -------
+    bool
+        True is 'sub_schema' is a subset of the 'schema'.
+        False otherwise.
+    """
+
+    schema_classes = schema.get("classes", [])
+    if 'classes' in sub_schema:
+        sub_schema_classes = sub_schema["classes"]
+    else:
+        sub_schema_classes = [sub_schema]
+    return _compare_class_sets(sub_schema_classes, schema_classes)
+
+
+def _compare_class_sets(sub_set: list, set_: list) -> bool:
+    """
+    Check for a subset in a set of classes.
+
+    Parameters
+    ----------
+    sub_set : list
+        The smaller set that should be contained in the 'set'.
+    schema : dict
+        The set for which to check if 'sub_set' is a part of.
+
+    Returns
+    -------
+    bool
+        True is 'sub_set' is a subset of the 'set'.
+        False otherwise.
+    """
+
+    for sub_set_class in sub_set:
+        found = False
+        for set_class in set_:
+            if 'class' not in sub_set_class:
+                raise SchemaValidationError(
+                    "The sub-schema class/es MUST have a 'class' keyword each."
+                )
+
+            sub_set_class_name = _capitalize_first_letter(sub_set_class["class"])
+            set_class_name = _capitalize_first_letter(set_class["class"])
+            if sub_set_class_name == set_class_name:
+                if _compare_properties(sub_set_class["properties"], set_class["properties"]):
+                    found = True
+                    break
+        if not found:
+            return False
+    return True
+
+
+def _compare_properties(sub_set: list, set_: list) -> bool:
+    """
+    Check for a subset in a set of properties.
+
+    Parameters
+    ----------
+    sub_set : list
+        The smaller set that should be contained in the 'set'.
+    schema : dict
+        The set for which to check if 'sub_set' is a part of.
+
+    Returns
+    -------
+    bool
+        True is 'sub_set' is a subset of the 'set'.
+        False otherwise.
+    """
+
+    for sub_set_property in sub_set:
+        found = False
+        for set_property in set_:
+            if sub_set_property["name"] == set_property["name"]:
+                found = True
+                break
+        if not found:
+            return False
+    return True
