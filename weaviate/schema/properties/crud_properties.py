@@ -3,7 +3,7 @@ Property class definition.
 """
 from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
 from weaviate.schema.validate_schema import check_property
-from weaviate.util import _get_dict_from_object, _capitalize_first_letter
+from weaviate.util import capitalize_first_letter
 from weaviate.connect import Connection
 
 
@@ -63,21 +63,24 @@ class Property:
                 f"'schema_class_name' must be of type 'str'. Given type: {type(schema_class_name)}"
             )
 
-        loaded_schema_property = _get_dict_from_object(schema_property)
+        if not isinstance(schema_property, str):
+            raise TypeError(
+                f"'schema_property' must be of type 'dict'. Given type: {type(schema_property)}"
+            )
 
         # check if valid property
         check_property(
-            class_property=loaded_schema_property,
+            class_property=schema_property,
             class_name=schema_class_name,
         )
 
-        schema_class_name = _capitalize_first_letter(schema_class_name)
+        schema_class_name = capitalize_first_letter(schema_class_name)
 
         path = f"/schema/{schema_class_name}/properties"
         try:
             response = self._connection.post(
                 path=path,
-                data_json=loaded_schema_property,
+                data_json=schema_property,
             )
         except WeaviateConnectionError as conn_err:
             raise WeaviateConnectionError(

@@ -1,17 +1,13 @@
 """
-Helper functions!
+Helper functions.
 """
 import os
-import json
 import base64
 import uuid as uuid_lib
-from typing import Union, Sequence, Tuple, Any, Optional
+from typing import Union, Sequence, Any
 from numbers import Real
 from io import BufferedReader
 import validators
-import requests
-
-from weaviate.exceptions import SchemaValidationException
 
 
 def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
@@ -47,8 +43,9 @@ def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
     elif isinstance(image_or_image_path, BufferedReader):
         content = image_or_image_path.read()
     else:
-        raise TypeError('"image_or_image_path" should be a image path or a binary read file'
-            ' (io.BufferedReader)')
+        raise TypeError(
+            "'image_or_image_path' should be a image path or a binary read file io.BufferedReader."
+        )
     return base64.b64encode(content).decode("utf-8")
 
 
@@ -70,13 +67,13 @@ def image_decoder_b64(encoded_image: str) -> bytes:
     return base64.b64decode(encoded_image.encode('utf-8'))
 
 
-def generate_local_beacon(to_uuid: str) -> dict:
+def generate_local_beacon(uuid: str) -> dict:
     """
     Generates a beacon with the given uuid.
 
     Parameters
     ----------
-    to_uuid : str
+    uuid : str
         The UUID for which to create a local beacon.
 
     Returns
@@ -92,60 +89,13 @@ def generate_local_beacon(to_uuid: str) -> dict:
         If the 'to_uuid' is not valid.
     """
 
-    if not isinstance(to_uuid, str):
-        raise TypeError("Expected to_object_uuid of type str")
-    if not validators.uuid(to_uuid):
-        raise ValueError("Uuid does not have the propper form")
-    return {"beacon": "weaviate://localhost/" + to_uuid}
-
-
-def _get_dict_from_object(object_: Union[str, dict]) -> dict:
-    """
-    Takes an object that should describe a dict
-    e.g. a schema or a object and tries to retrieve the dict.
-
-    Parameters
-    ----------
-    object_ : str or dict
-        The object from which to retrieve the dict.
-        Can be a python dict, or the path to a json file or a url of a json file.
-
-    Returns
-    -------
-    dict
-        The object as a dict.
-
-    Raises
-    ------
-    TypeError
-        If 'object_' is neither a string nor a dict.
-    ValueError
-        If no dict can be retrieved from object.
-    """
-
-    # check if objects files is url
-    if object_ is None:
-        raise TypeError("argument is None")
-
-    if isinstance(object_, dict):
-        # Object is already a dict
-        return object_
-    if isinstance(object_, str):
-        if validators.url(object_):
-            # Object is URL
-            response = requests.get(object_)
-            if response.status_code == 200:
-                return response.json()
-            raise ValueError("Could not download file " + object_)
-
-        if not os.path.isfile(object_):
-            # Object is neither file nor URL
-            raise ValueError("No file found at location " + object_)
-        # Object is file
-        with open(object_, 'r') as file:
-            return json.load(file)
-    raise TypeError("Argument is not of the supported types. Supported types are "
-                    "url or file path as string or schema as dict.")
+    if not isinstance(uuid, str):
+        raise TypeError(
+            f"'to_object_uuid' must be of type 'str'. Given type: {type(uuid)}."
+        )
+    if not validators.uuid(uuid):
+        raise ValueError("UUID does not have the propper form.")
+    return {"beacon": "weaviate://localhost/" + uuid}
 
 
 def is_weaviate_object_url(url: str) -> bool:
@@ -253,7 +203,7 @@ def get_valid_uuid(uuid: str) -> str:
     return _uuid
 
 
-def get_vector(vector: Sequence) -> list:
+def get_vector(vector: Sequence[Real]) -> list:
     """
     Get weaviate compatible format of the embedding vector.
 
@@ -261,7 +211,7 @@ def get_vector(vector: Sequence) -> list:
     ----------
     vector: Sequence
         The embedding of an object. Used only for class objects that do not have a vectorization
-        module. Supported types are `list`, `numpy.ndarray`, `torch.Tensor` and `tf.Tensor`.
+        module. Supported types are 'list', 'numpy.ndarray', 'torch.Tensor' and 'tf.Tensor'.
 
     Returns
     -------
@@ -286,8 +236,8 @@ def get_vector(vector: Sequence) -> list:
             return vector.numpy().squeeze().tolist()
         except AttributeError:
             raise TypeError("The type of the 'vector' argument is not supported!\n"
-                "Supported types are `list`, 'numpy.ndarray`, `torch.Tensor` "
-                "and `tf.Tensor`") from None
+                "Supported types are 'list', 'numpy.ndarray', 'torch.Tensor' "
+                "and 'tf.Tensor'") from None
 
 
 def get_domain_from_weaviate_url(url: str) -> str:
@@ -307,150 +257,6 @@ def get_domain_from_weaviate_url(url: str) -> str:
     """
 
     return url[11:].split("/")[0]
-
-
-def _is_sub_schema(sub_schema: dict, schema: dict) -> bool:
-    """
-    Check for a subset in a schema.
-
-    Parameters
-    ----------
-    sub_schema : dict
-        The smaller schema that should be contained in the 'schema'.
-    schema : dict
-        The schema for which to check if 'sub_schema' is a part of. Must have the 'classes' key.
-
-    Returns
-    -------
-    bool
-        True is 'sub_schema' is a subset of the 'schema'.
-        False otherwise.
-    """
-
-    schema_classes = schema.get("classes", [])
-    if 'classes' in sub_schema:
-        sub_schema_classes = sub_schema["classes"]
-    else:
-        sub_schema_classes = [sub_schema]
-    return _compare_class_sets(sub_schema_classes, schema_classes)
-
-
-def _compare_class_sets(sub_set: list, set_: list) -> bool:
-    """
-    Check for a subset in a set of classes.
-
-    Parameters
-    ----------
-    sub_set : list
-        The smaller set that should be contained in the 'set'.
-    schema : dict
-        The set for which to check if 'sub_set' is a part of.
-
-    Returns
-    -------
-    bool
-        True is 'sub_set' is a subset of the 'set'.
-        False otherwise.
-    """
-
-    for sub_set_class in sub_set:
-        found = False
-        for set_class in set_:
-            if 'class' not in sub_set_class:
-                raise SchemaValidationException(
-                    "The sub schema class/es MUST have a 'class' keyword each!"
-                )
-            if (
-                _capitalize_first_letter(sub_set_class["class"]) == \
-                _capitalize_first_letter(set_class["class"])
-            ):
-                if _compare_properties(sub_set_class["properties"], set_class["properties"]):
-                    found = True
-                    break
-        if not found:
-            return False
-    return True
-
-
-def _compare_properties(sub_set: list, set_: list) -> bool:
-    """
-    Check for a subset in a set of properties.
-
-    Parameters
-    ----------
-    sub_set : list
-        The smaller set that should be contained in the 'set'.
-    schema : dict
-        The set for which to check if 'sub_set' is a part of.
-
-    Returns
-    -------
-    bool
-        True is 'sub_set' is a subset of the 'set'.
-        False otherwise.
-    """
-
-    for sub_set_property in sub_set:
-        found = False
-        for set_property in set_:
-            if sub_set_property["name"] == set_property["name"]:
-                found = True
-                break
-        if not found:
-            return False
-    return True
-
-
-def _get_valid_timeout_config(timeout_config: Optional[Union[Tuple[Real, Real], Real]]):
-    """
-    Validate and return TimeOut configuration.
-
-    Parameters
-    ----------
-    timeout_config : tuple(Real, Real) or Real or None
-            Set the timeout configuration for all requests to the server. It can be a real number
-            or, a tuple of two real numbers: (connect timeout, read timeout).
-            If only one real number is passed then both connect and read timeout will be set to
-            that value. If None then the it will wait forever, until the server responds.
-
-    Raises
-    ------
-    TypeError
-        If arguments are of a wrong data type.
-    ValueError
-        If 'timeout_config' is not a tuple of 2.
-    ValueError
-        If 'timeout_config' is/contains negative number/s.
-    """
-
-    if timeout_config is None:
-        return None
-
-    if isinstance(timeout_config, Real) and not isinstance(timeout_config, bool):
-        if timeout_config <= 0.0:
-            raise ValueError(
-                "'timeout_config' cannot be non-positive number/s!"
-            )
-        return (timeout_config, timeout_config)
-
-    if not isinstance(timeout_config, tuple):
-        raise TypeError(
-            "'timeout_config' should be a (or tuple of) positive real number/s!"
-        )
-    if len(timeout_config) != 2:
-        raise ValueError(
-            "'timeout_config' must be of length 2!"
-        )
-    if not (isinstance(timeout_config[0], Real) and isinstance(timeout_config[1], Real)) or\
-        (isinstance(timeout_config[0], bool) and isinstance(timeout_config[1], bool)):
-        raise TypeError(
-            "'timeout_config' must be tuple of real numbers"
-        )
-    if timeout_config[0] <= 0.0 or timeout_config[1] <= 0.0:
-        raise ValueError(
-            "'timeout_config' cannot be non-positive number/s!"
-        )
-    return timeout_config
 
 
 def generate_uuid5(identifier: Any, namespace: Any = "") -> str:
@@ -474,9 +280,9 @@ def generate_uuid5(identifier: Any, namespace: Any = "") -> str:
     return str(uuid_lib.uuid5(uuid_lib.NAMESPACE_DNS, str(namespace) + str(identifier)))
 
 
-def _capitalize_first_letter(string: str) -> str:
+def capitalize_first_letter(string: str) -> str:
     """
-    Capitalize only the first letter of the `string`.
+    Capitalize only the first letter of the 'string'.
 
     Parameters
     ----------

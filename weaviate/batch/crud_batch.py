@@ -5,11 +5,14 @@ import sys
 import time
 from numbers import Real
 from typing import Tuple, Callable, Optional, Sequence
+
 from requests import ReadTimeout, Response
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from weaviate.connect import Connection
-from weaviate.util import _capitalize_first_letter
-from .requests import BatchRequest, ObjectsBatchRequest, ReferenceBatchRequest
+from weaviate.util import capitalize_first_letter
+from .requests import BatchRequest, ObjectBatchRequest, ReferenceBatchRequest
+from .batch_config import BatchType, BatchConfig
+
 
 class Batch:
     """
@@ -157,17 +160,11 @@ class Batch:
 
         # set all protected attributes
         self._connection = connection
-        self._objects_batch = ObjectsBatchRequest()
+        self._objects_batch = ObjectBatchRequest()
         self._reference_batch = ReferenceBatchRequest()
 
         ## user configurable, need to be public should implement a setter/getter
-        self._recommended_num_objects = None
-        self._recommended_num_references = None
-        self._callback = None
-        self._batch_size = None
-        self._creation_time = 10.0
-        self._timeout_retries = 0
-        self._batching_type = None
+        self._batch_config = BatchConfig()
 
     def configure(self,
             batch_size: Optional[int]=None,
@@ -330,13 +327,13 @@ class Batch:
         """
 
         self._objects_batch.add(
-            class_name=_capitalize_first_letter(class_name),
+            class_name=capitalize_first_letter(class_name),
             data_object=data_object,
             uuid=uuid,
             vector=vector,
         )
 
-        if self._batching_type:
+        if self._batch_config.batching_type != BatchType.MANUAL:
             self._auto_create()
 
     def add_reference(self,
@@ -368,13 +365,13 @@ class Batch:
         """
 
         self._reference_batch.add(
-            from_object_class_name=_capitalize_first_letter(from_object_class_name),
+            from_object_class_name=capitalize_first_letter(from_object_class_name),
             from_object_uuid=from_object_uuid,
             from_property_name=from_property_name,
             to_object_uuid=to_object_uuid,
         )
 
-        if self._batching_type:
+        if self._batch_config.batching_type != BatchType.MANUAL:
             self._auto_create()
 
     def _create_data(self,
@@ -394,7 +391,7 @@ class Batch:
         batch_request : weaviate.batch.BatchRequest
             Contains all the data objects that should be added in one batch.
             Note: Should be a sub-class of BatchRequest since BatchRequest
-            is just an abstract class, e.g. ObjectsBatchRequest, ReferenceBatchRequest
+            is just an abstract class, e.g. ObjectBatchRequest, ReferenceBatchRequest
 
         Returns
         -------
@@ -424,8 +421,8 @@ class Batch:
                     time.sleep(1)
                 else:
                     break
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Batch was not added to weaviate.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('Batch was not added to weaviate.') from conn_err
         except ReadTimeout:
             message = (
                 f"The '{data_type}' creation was cancelled because it took "
@@ -531,7 +528,7 @@ class Batch:
             )
             obj_per_second = len(self._objects_batch) / response.elapsed.total_seconds()
             self._recommended_num_objects = round(obj_per_second * self._creation_time)
-            self._objects_batch = ObjectsBatchRequest()
+            self._objects_batch = ObjectBatchRequest()
             return response.json()
         return []
 

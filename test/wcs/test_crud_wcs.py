@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from weaviate.auth import AuthClientPassword
-from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError, AuthenticationFailedException
+from weaviate.exceptions import UnexpectedStatusCodeException, WeaviateConnectionError, AuthenticationFailedException
 from weaviate.wcs import WCS
 from test.util import check_error_message, check_startswith_error_message
 
@@ -161,8 +161,8 @@ class TestWCS(unittest.TestCase):
         check_startswith_error_message(self, error, key_type_error_msg)
 
         # connection error
-        mock_post.side_effect = RequestsConnectionError('Test!')
-        with self.assertRaises(RequestsConnectionError) as error:
+        mock_post.side_effect = WeaviateConnectionError('Test!')
+        with self.assertRaises(WeaviateConnectionError) as error:
             wcs.create(cluster_name='Test_name', cluster_type='test_type')
         check_error_message(self, error, connection_error_message)
         mock_post.assert_called_with(
@@ -284,8 +284,8 @@ class TestWCS(unittest.TestCase):
         unexpected_error_message = 'Checking WCS instance'
 
         # connection error
-        mock_get.side_effect = RequestsConnectionError('Test!')
-        with self.assertRaises(RequestsConnectionError) as error:
+        mock_get.side_effect = WeaviateConnectionError('Test!')
+        with self.assertRaises(WeaviateConnectionError) as error:
             wcs.get_clusters()
         check_error_message(self, error, connection_error_message)
         mock_get.assert_called_with(
@@ -338,8 +338,8 @@ class TestWCS(unittest.TestCase):
         unexpected_error_message = 'Checking WCS instance'
 
         ## connection error
-        mock_get.side_effect = RequestsConnectionError('Test!')
-        with self.assertRaises(RequestsConnectionError) as error:
+        mock_get.side_effect = WeaviateConnectionError('Test!')
+        with self.assertRaises(WeaviateConnectionError) as error:
             wcs.get_cluster_config('test_name')
         check_error_message(self, error, connection_error_message)
         mock_get.assert_called_with(
@@ -401,8 +401,8 @@ class TestWCS(unittest.TestCase):
         unexpected_error_message = 'Deleting WCS instance'
 
         ## connection error
-        mock_delete.side_effect = RequestsConnectionError('Test!')
-        with self.assertRaises(RequestsConnectionError) as error:
+        mock_delete.side_effect = WeaviateConnectionError('Test!')
+        with self.assertRaises(WeaviateConnectionError) as error:
             wcs.delete_cluster('test_name')
         check_error_message(self, error, connection_error_message)
         mock_delete.assert_called_with(

@@ -3,7 +3,7 @@ Schema class definition.
 """
 from typing import Union, Optional
 from weaviate.connect import Connection
-from weaviate.util import _get_dict_from_object, _capitalize_first_letter
+from weaviate.util import capitalize_first_letter
 from weaviate.exceptions import (
     UnsuccessfulStatusCodeError,
     WeaviateConnectionError,
@@ -57,14 +57,14 @@ class Schema:
         self._connection = connection
         self.property = Property(self._connection)
 
-    def create(self, schema: Union[dict, str]) -> None:
+    def create(self, schema: dict) -> None:
         """
         Create the schema at the weaviate instance.
 
         Parameters
         ----------
-        schema : dict or str
-            Schema as a 'dict', or the path to a JSON file or a url of a JSON file.
+        schema : dict
+            The schema to be created.
 
         Examples
         --------
@@ -86,11 +86,6 @@ class Schema:
         ... }
         >>> client.schema.create(author_class_schema)
 
-        If you have your schema saved in the './schema/my_schema.json' you can create it
-        directly from the file.
-
-        >>> client.schema.create('./schema/my_schema.json')
-
         Raises
         ------
         TypeError
@@ -105,20 +100,28 @@ class Schema:
             If the 'schema' could not be validated against the standard format.
         """
 
-        loaded_schema = _get_dict_from_object(schema)
-        # validate the schema before loading
-        validate_schema(loaded_schema)
-        self._create_classes_with_primitives(loaded_schema["classes"])
-        self._create_complex_properties_from_classes(loaded_schema["classes"])
+        if not isinstance(schema, dict):
+            raise TypeError(
+                f"'schema' must be of type 'dict'. Given type: {type(schema)}."
+            )
 
-    def create_class(self, schema_class: Union[dict, str]) -> None:
+        validate_schema(schema=schema)
+
+        self._create_classes_with_primitives(
+            schema_classes_list=schema["classes"],
+        )
+        self._create_complex_properties_from_classes(
+            schema_classes_list=schema["classes"],
+        )
+
+    def create_class(self, schema_class: dict) -> None:
         """
         Create a single class as part of the schema in weaviate.
 
         Parameters
         ----------
         schema_class : dict or str
-            Class as a python dict, or the path to a json file or a url of a json file.
+            The schema class to be created.
 
         Examples
         --------
@@ -140,11 +143,6 @@ class Schema:
         ... }
         >>> client.schema.create_class(author_class_schema)
 
-        If you have your class schema saved in the './schema/my_schema.json' you can create it
-        directly from the file.
-
-        >>> client.schema.create_class('./schema/my_schema.json')
-
         Raises
         ------
         TypeError
@@ -159,11 +157,19 @@ class Schema:
             If the 'schema_class' could not be validated against the standard format.
         """
 
-        loaded_schema_class = _get_dict_from_object(schema_class)
-        # validate the class before loading
-        check_class(loaded_schema_class)
-        self._create_class_with_premitives(loaded_schema_class)
-        self._create_complex_properties_from_class(loaded_schema_class)
+        if not isinstance(schema_class, dict):
+            raise TypeError(
+                f"'schema_class' must be of type 'dict'. Given type: {type(schema_class)}."
+            )
+
+        check_class(schema_class)
+
+        self._create_class_with_premitives(
+            schema_class=schema_class,
+        )
+        self._create_complex_properties_from_class(
+            schema_class=schema_class,
+        )
 
     def delete_class(self, class_name: str) -> None:
         """
@@ -193,7 +199,7 @@ class Schema:
                 f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
             )
 
-        path = f"/schema/{_capitalize_first_letter(class_name)}"
+        path = f"/schema/{capitalize_first_letter(class_name)}"
         try:
             response = self._connection.delete(
                 path=path,
@@ -219,17 +225,17 @@ class Schema:
         for _class in classes:
             self.delete_class(_class["class"])
 
-    def contains(self, schema: Optional[Union[dict, str]]=None) -> bool:
+    def contains(self, schema: Optional[dict]=None) -> bool:
         """
         Check if weaviate already contains a schema.
 
         Parameters
         ----------
-        schema : dict or str, optional
-            Schema as a python dict, or the path to a json file or a url of a json file.
-            If a schema is given it is checked if this specific schema is already loaded.
-            It will test only this schema. If the given schema is a subset of the loaded
-            schema it will still return true, by default None.
+        schema : dict or None, optional
+            The (sub-)schema to check if is part of the Weaviate existing schema. If a 'schema' is
+            not None, it checks if this specific schema is already loaded. If the given schema is a
+            subset of the loaded schema it will still return True. If 'schema' is None it checks
+            for any existing schema, by default None.
 
         Examples
         --------
@@ -325,7 +331,7 @@ class Schema:
             If weaviate reports a none OK status.
         """
 
-        class_name = _capitalize_first_letter(class_name)
+        class_name = capitalize_first_letter(class_name)
         class_schema = self.get(class_name)
         new_class_schema = _update_nested_dict(class_schema, config)
         check_class(new_class_schema)
@@ -438,7 +444,7 @@ class Schema:
                 raise TypeError(
                     f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
                 )
-            path += _capitalize_first_letter(class_name)
+            path += capitalize_first_letter(class_name)
 
         try:
             response = self._connection.get(
@@ -481,7 +487,7 @@ class Schema:
             ## All complex dataTypes should be capitalized.
             schema_property = {
                 'name': _property['name'],
-                'dataType': [_capitalize_first_letter(dtype) for dtype in  _property['dataType']],
+                'dataType': [capitalize_first_letter(dtype) for dtype in  _property['dataType']],
             }
 
             if 'description' in _property:
@@ -493,7 +499,7 @@ class Schema:
             if 'moduleConfig' in _property:
                 schema_property['moduleConfig'] = _property['moduleConfig']
 
-            path = f"/schema/{_capitalize_first_letter(schema_class['class'])}/properties"
+            path = f"/schema/{capitalize_first_letter(schema_class['class'])}/properties"
             try:
                 response = self._connection.post(
                     path=path,
@@ -519,13 +525,13 @@ class Schema:
         for schema_class in schema_classes_list:
             self._create_complex_properties_from_class(schema_class)
 
-    def _create_class_with_premitives(self, weaviate_class: dict) -> None:
+    def _create_class_with_premitives(self, schema_class: dict) -> None:
         """
         Create class with only primitives.
 
         Parameters
         ----------
-        weaviate_class : dict
+        schema_class : dict
             A single weaviate formated class
 
         Raises
@@ -538,32 +544,32 @@ class Schema:
 
         # Create the class
         schema_class = {
-            'class': _capitalize_first_letter(weaviate_class['class']),
+            'class': capitalize_first_letter(schema_class['class']),
             'properties': []
         }
 
-        if 'description' in weaviate_class:
-            schema_class['description'] = weaviate_class['description']
+        if 'description' in schema_class:
+            schema_class['description'] = schema_class['description']
 
-        if 'vectorIndexType' in weaviate_class:
-            schema_class['vectorIndexType'] = weaviate_class['vectorIndexType']
+        if 'vectorIndexType' in schema_class:
+            schema_class['vectorIndexType'] = schema_class['vectorIndexType']
 
-        if 'vectorIndexConfig' in weaviate_class:
-            schema_class['vectorIndexConfig'] = weaviate_class['vectorIndexConfig']
+        if 'vectorIndexConfig' in schema_class:
+            schema_class['vectorIndexConfig'] = schema_class['vectorIndexConfig']
 
-        if 'vectorizer' in weaviate_class:
-            schema_class['vectorizer'] = weaviate_class['vectorizer']
+        if 'vectorizer' in schema_class:
+            schema_class['vectorizer'] = schema_class['vectorizer']
 
-        if 'moduleConfig' in weaviate_class:
-            schema_class['moduleConfig'] = weaviate_class['moduleConfig']
+        if 'moduleConfig' in schema_class:
+            schema_class['moduleConfig'] = schema_class['moduleConfig']
 
-        if 'shardingConfig' in weaviate_class:
-            schema_class['shardingConfig'] = weaviate_class['shardingConfig']
+        if 'shardingConfig' in schema_class:
+            schema_class['shardingConfig'] = schema_class['shardingConfig']
 
-        if 'properties' in weaviate_class:
+        if 'properties' in schema_class:
             schema_class['properties'] = (
                 _get_primitive_properties(
-                    properties_list=weaviate_class['properties'],
+                    properties_list=schema_class['properties'],
                 )
             )
         path = '/schema'
@@ -719,8 +725,8 @@ def _compare_class_sets(sub_set: list, set_: list) -> bool:
                     "The sub-schema class/es MUST have a 'class' keyword each."
                 )
 
-            sub_set_class_name = _capitalize_first_letter(sub_set_class["class"])
-            set_class_name = _capitalize_first_letter(set_class["class"])
+            sub_set_class_name = capitalize_first_letter(sub_set_class["class"])
+            set_class_name = capitalize_first_letter(set_class["class"])
             if sub_set_class_name == set_class_name:
                 if _compare_properties(sub_set_class["properties"], set_class["properties"]):
                     found = True

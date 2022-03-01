@@ -4,31 +4,24 @@ Connection class definition.
 
 from typing import Optional
 from requests import Response, Session
-from .connection import Connection
+from ..base.connection import Connection
 
 
-class Requests:
+class SyncRequests:
     """
-    Connection class used to communicate to a Weaviate instance. Has all needed RESTful API
-    implementations. If Authentication is used, it automatically gets a new token in case it
-    expired.
+    SyncRequests class used to make requests to a Weaviate instance by using a Connection. It has
+    all needed RESTful API implementations.
     """
 
     def __init__(self,
             connection: Connection,
         ):
         """
-        Initialize a Connection class instance.
+        Initialize a SyncRequests class instance.
 
         Parameters
         ----------
         connection: weaviate.connection.Connection
-
-        Raises
-        ------
-        ValueError
-            If no authentication credentials provided but the Weaviate server has an OpenID
-            configured.
         """
 
         self._connection = connection
@@ -36,7 +29,7 @@ class Requests:
 
     def __del__(self):
         """
-        Destructor for Connection class instance.
+        Destructor for SyncRequests class instance.
         """
 
         self._session.close()

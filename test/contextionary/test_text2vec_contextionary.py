@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 from weaviate.contextionary import Contextionary
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
 
 
@@ -58,9 +58,9 @@ class TestText2VecContextionary(unittest.TestCase):
 
         ## test requests error
         contextionary = Contextionary(
-            mock_connection_method('post', side_effect=RequestsConnectionError("Test!"))
+            mock_connection_method('post', side_effect=WeaviateConnectionError("Test!"))
         )
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             contextionary.extend(**some_concept)
         check_error_message(self, error, requests_error_message)
         
@@ -114,8 +114,8 @@ class TestText2VecContextionary(unittest.TestCase):
 
         ## test requests error
         contextionary = Contextionary(
-            mock_connection_method('get', side_effect=RequestsConnectionError("Test!"))
+            mock_connection_method('get', side_effect=WeaviateConnectionError("Test!"))
         )
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             contextionary.get_concept_vector("Palantir")
         check_error_message(self, error, requests_error_message)

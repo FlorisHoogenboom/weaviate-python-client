@@ -74,7 +74,7 @@ class Contextionary:
 
         if weight > 1.0 or weight < 0.0:
             raise ValueError(
-                f"'weight' is out of limits! 0.0 <= weight <= 1.0, Given: {weight}."
+                f"'weight' is out of limits. 0.0 <= weight <= 1.0, Given: {weight}."
             )
 
         extension = {
@@ -94,7 +94,7 @@ class Contextionary:
             ) from conn_err
         if response.status_code == 200:
             return
-        raise UnsuccessfulStatusCodeError("Extend text2vec-contextionary!", response)
+        raise UnsuccessfulStatusCodeError("Extend text2vec-contextionary.", response)
 
     def get_concept_vector(self, concept: str) -> dict:
         """
@@ -160,9 +160,9 @@ class Contextionary:
             )
         except WeaviateConnectionError as conn_err:
             raise WeaviateConnectionError(
-                'text2vec-contextionary vector was not retrieved due to connection error!'
+                'text2vec-contextionary vector was not retrieved due to connection error.'
             ) from conn_err
         else:
             if response.status_code == 200:
                 return response.json()
-            raise UnsuccessfulStatusCodeError("text2vec-contextionary vector!", response)
+            raise UnsuccessfulStatusCodeError("text2vec-contextionary vector.", response)

@@ -10,10 +10,9 @@ from weaviate.exceptions import (
     UnsuccessfulStatusCodeError,
 )
 from weaviate.util import (
-    _get_dict_from_object,
     get_vector,
     get_valid_uuid,
-    _capitalize_first_letter,
+    capitalize_first_letter,
 )
 from weaviate.data.references import Reference
 
@@ -42,7 +41,7 @@ class DataObject:
         self.reference = Reference(self._connection)
 
     def create(self,
-            data_object: Union[dict, str],
+            data_object: dict,
             class_name: str,
             uuid: str=None,
             vector: Sequence[Real]=None,
@@ -52,9 +51,8 @@ class DataObject:
 
         Parameters
         ----------
-        data_object : dict or str
-            The new object to add to Weaviate. If type is 'str' it should be either an URL or a
-            file, otherwise it should be a 'dict'.
+        data_object : dict
+            The new object to add to Weaviate. It represents the class instance properties only.
         class_name : str
             The class name associated with the object given.
         uuid : str, optional
@@ -103,13 +101,17 @@ class DataObject:
 
         if not isinstance(class_name, str):
             raise TypeError(
-                f"'class_name' should be of type 'str'. Given type: {type(class_name)}"
+                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
             )
-        loaded_data_object = _get_dict_from_object(data_object)
+        
+        if not isinstance(data_object, dict):
+            raise TypeError(
+                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            )
 
         weaviate_obj = {
-            "class": _capitalize_first_letter(class_name),
-            "properties": loaded_data_object
+            "class": capitalize_first_letter(class_name),
+            "properties": data_object,
         }
         if uuid is not None:
             weaviate_obj["id"] = get_valid_uuid(uuid)
@@ -141,10 +143,10 @@ class DataObject:
         raise UnsuccessfulStatusCodeError("Creating object.", response)
 
     def update(self,
-            data_object: Union[dict, str],
+            data_object: dict,
             class_name: str,
             uuid: str,
-            vector: Sequence[Real]=None
+            vector: Sequence[Real]=None,
         ) -> None:
         """
         Update the given object's property/ies. Only the specified property/ies are updated, the
@@ -152,10 +154,9 @@ class DataObject:
 
         Parameters
         ----------
-        data_object : dict or str
+        data_object : dict
             The object's property/ies that should be updated. Fields not specified by in the
-            'data_object' remain unchanged. Fields that are None will not be changed. If type is
-            'str' it should be either an URL or a file.
+            'data_object' remain unchanged. Fields that are None will not be changed.
         class_name : str
             The class name of the object that should be updated.
         uuid : str
@@ -218,14 +219,18 @@ class DataObject:
 
         if not isinstance(class_name, str):
             raise TypeError(
-                f"'class_name' should be of type 'str'. Given type: {type(class_name)}"
+                f"'class_name' must be of type 'str'. Given type: {type(class_name)}"
             )
-        object_dict = _get_dict_from_object(data_object)
+
+        if not isinstance(data_object, dict):
+            raise TypeError(
+                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            )
 
         weaviate_obj = {
             "id": get_valid_uuid(uuid),
-            "class": _capitalize_first_letter(class_name),
-            "properties": object_dict
+            "class": capitalize_first_letter(class_name),
+            "properties": data_object,
         }
 
         if vector is not None:
@@ -247,19 +252,18 @@ class DataObject:
         raise UnsuccessfulStatusCodeError("Update of the object not successful.", response)
 
     def replace(self,
-            data_object: Union[dict, str],
+            data_object: dict,
             class_name: str,
             uuid: str,
-            vector: Sequence[Real]=None
+            vector: Sequence[Real]=None,
         ) -> None:
         """
         Replace an already existing object with a new one. This method replaces the whole object.
 
         Parameters
         ----------
-        data_object : dict or str
-            The new object to be replaced with. It may be an URL, or path, to a json file or a
-            'dict' describing the new object.
+        data_object : dict
+            The new object to be replaced with.
         class_name : str
             The class name of the object that should be replaced.
         uuid : str
@@ -320,14 +324,18 @@ class DataObject:
 
         if not isinstance(class_name, str):
             raise TypeError(
-                f"'class_name' should be of type 'str'. Given type: {type(class_name)}"
+                f"'class_name' must be of type 'str'. Given type: {type(class_name)}"
             )
-        parsed_object = _get_dict_from_object(data_object)
+
+        if not isinstance(data_object, dict):
+            raise TypeError(
+                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            )
 
         weaviate_obj = {
             "id": get_valid_uuid(uuid),
-            "class": _capitalize_first_letter(class_name),
-            "properties": parsed_object
+            "class": capitalize_first_letter(class_name),
+            "properties": data_object,
         }
 
         if vector is not None:
@@ -404,7 +412,7 @@ class DataObject:
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
             limit: Optional[int]=None,
-            offset: Optional[int]=None
+            offset: Optional[int]=None,
         ) -> Optional[Union[List[dict], dict]]:
         """
         Gets objects from weaviate, the default maximum number of objects depends of Weaviate
@@ -581,7 +589,7 @@ class DataObject:
         raise UnsuccessfulStatusCodeError("Object exists.", response)
 
     def validate(self,
-            data_object: Union[dict, str],
+            data_object: dict,
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence[Real]]=None
@@ -591,8 +599,8 @@ class DataObject:
 
         Parameters
         ----------
-        data_object : dict or str
-            Object to be validated. If type is 'str' it should be either an URL or a file.
+        data_object : dict
+            Object to be validated.
         class_name : str
             Name of the class of the object that should be validated.
         uuid : str or None, optional
@@ -645,15 +653,19 @@ class DataObject:
             If validating the object against Weaviate failed with a different reason.
         """
 
-        loaded_data_object = _get_dict_from_object(data_object)
         if not isinstance(class_name, str):
             raise TypeError(
-                f"Expected class_name of type 'str' but was: {type(class_name)}."
+                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+            )
+
+        if not isinstance(data_object, dict):
+            raise TypeError(
+                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
             )
 
         weaviate_obj = {
-            "class": _capitalize_first_letter(class_name),
-            "properties": loaded_data_object
+            "class": capitalize_first_letter(class_name),
+            "properties": data_object,
         }
 
         if uuid is not None:

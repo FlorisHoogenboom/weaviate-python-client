@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any
 from abc import ABC, abstractmethod
 from weaviate.connect import Connection
-from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError
+from weaviate.exceptions import UnexpectedStatusCodeException, WeaviateConnectionError
 from weaviate.util import get_vector
 
 class GraphQL(ABC):
@@ -63,8 +63,8 @@ class GraphQL(ABC):
                 path="/graphql",
                 weaviate_object={"query": query}
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Query was not successful.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('Query was not successful.') from conn_err
         if response.status_code == 200:
             return response.json()  # success
         raise UnexpectedStatusCodeException("Query was not successful", response)

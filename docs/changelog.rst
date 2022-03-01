@@ -267,7 +267,7 @@ Version 3.0.0
     objects under the hood, which means that there is no need to create ``BatchRequest``'s anymore. This new class implementation
     allows 3 different batch creations methods: `manual`, `auto-create` and `auto-create` with dynamic batching.
     See the :class:`~weaviate.batch.Batch` documentation for more information.
-- | ``BatchRequest`` classes (``ObjectsBatchRequest`` and ``ReferenceBatchRequest``) are hidden from the user and should not be
+- | ``BatchRequest`` classes (``ObjectBatchRequest`` and ``ReferenceBatchRequest``) are hidden from the user and should not be
     used anymore. This is due to the new :class:`~weaviate.batch.Batch` class implementation.
 - | New :class:`~weaviate.schema.Schema` field is ADDED, `"shardingConfig"`. It can bu used with Weaviate version >= 1.6.0.
 - | New method :meth:`~weaviate.schema.Schema.update_config` used to update mutable schema configuration (like `efConstruction`, ...).

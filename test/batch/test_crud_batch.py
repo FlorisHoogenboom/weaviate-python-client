@@ -3,9 +3,9 @@ from unittest.mock import Mock, patch
 from numbers import Real
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
 from requests import ReadTimeout
-from weaviate.batch.requests import ObjectsBatchRequest, ReferenceBatchRequest
+from weaviate.batch.requests import ObjectBatchRequest, ReferenceBatchRequest
 from weaviate.batch import Batch
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 
 class TestBatch(unittest.TestCase):
 
@@ -813,11 +813,11 @@ class TestBatch(unittest.TestCase):
         unexpected_error_message = lambda data: f"Create {data} in batch"
 
         #######################################################################
-        ## test RequestsConnectionError
-        mock_connection = mock_connection_method('post', side_effect=RequestsConnectionError('Test!'))
+        ## test WeaviateConnectionError
+        mock_connection = mock_connection_method('post', side_effect=WeaviateConnectionError('Test!'))
         batch = Batch(mock_connection)
-        with self.assertRaises(RequestsConnectionError) as error:
-            batch._create_data('objects', ObjectsBatchRequest())
+        with self.assertRaises(WeaviateConnectionError) as error:
+            batch._create_data('objects', ObjectBatchRequest())
         check_error_message(self, error, requests_error_message)
         mock_connection.post.assert_called_with(
             path="/batch/objects",
@@ -843,7 +843,7 @@ class TestBatch(unittest.TestCase):
         batch = Batch(mock_connection)
         batch.timeout_retries = 3
         with self.assertRaises(ReadTimeout) as error:
-            batch._create_data('objects', ObjectsBatchRequest())
+            batch._create_data('objects', ObjectBatchRequest())
         check_startswith_error_message(self, error, read_timeout_error_message('objects'))
         mock_connection.post.assert_called_with(
             path="/batch/objects",

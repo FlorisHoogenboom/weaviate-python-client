@@ -4,7 +4,7 @@ Test the 'weaviate.batch.requests' functions/classes.
 import unittest
 from unittest.mock import patch
 from test.util import check_error_message
-from weaviate.batch.requests import ReferenceBatchRequest, ObjectsBatchRequest
+from weaviate.batch.requests import ReferenceBatchRequest, ObjectBatchRequest
 
 class TestBatchReferences(unittest.TestCase):
     """
@@ -130,17 +130,17 @@ class TestBatchReferences(unittest.TestCase):
 
 class TestBatchObjects(unittest.TestCase):
     """
-    Test the `ObjectsBatchRequest` class.
+    Test the `ObjectBatchRequest` class.
     """
 
     @patch('weaviate.batch.requests.get_vector', side_effect=lambda x: x)
     @patch('weaviate.batch.requests.get_valid_uuid', side_effect=lambda x: x)
     def test_add_and_get_request_body(self, mock_get_valid_uuid, mock_get_vector):
         """
-        Test the all the ObjectsBatchRequest's methods.
+        Test the all the ObjectBatchRequest's methods.
         """
 
-        batch = ObjectsBatchRequest()
+        batch = ObjectBatchRequest()
         #######################################################################
         # invalid calls
         #######################################################################

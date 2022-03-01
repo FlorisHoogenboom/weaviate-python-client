@@ -3,7 +3,7 @@ GraphQL query module.
 """
 from typing import List, Union
 from weaviate.connect import Connection
-from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError
+from weaviate.exceptions import UnexpectedStatusCodeException, WeaviateConnectionError
 from .get import GetBuilder
 from .aggregate import AggregateBuilder
 
@@ -144,8 +144,8 @@ class Query:
                 path="/graphql",
                 weaviate_object=json_query
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('Query not executed.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('Query not executed.') from conn_err
         if response.status_code == 200:
             return response.json()  # Successfully queried
         raise UnexpectedStatusCodeException("GQL query failed", response)

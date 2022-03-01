@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from weaviate.classification.classification import Classification, ConfigBuilder
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
 
 
@@ -33,8 +33,8 @@ class TestClassification(unittest.TestCase):
             Classification(None).get('123')
         check_error_message(self, error, uuid_value_error)
 
-        mock_conn = mock_connection_method('get', side_effect=RequestsConnectionError('Test!'))
-        with self.assertRaises(RequestsConnectionError) as error:
+        mock_conn = mock_connection_method('get', side_effect=WeaviateConnectionError('Test!'))
+        with self.assertRaises(WeaviateConnectionError) as error:
             Classification(mock_conn).get("d087b7c6-a115-5c89-8cb2-f25bdeb9bf92")
         check_error_message(self, error, requests_error_message)
 
@@ -96,7 +96,7 @@ class TestClassification(unittest.TestCase):
         result = Classification(None)._check_status('uuid', 'failed')
         self.assertTrue(result)
 
-        mock_get.side_effect = RequestsConnectionError('Test!')
+        mock_get.side_effect = WeaviateConnectionError('Test!')
         result = Classification(None)._check_status('uuid', 'running')
         self.assertFalse(result)
         
@@ -421,9 +421,9 @@ class TestConfigBuilder(unittest.TestCase):
         unexpected_error_message = "Start classification"
 
         # invalid calls
-        mock_conn = mock_connection_method('post', side_effect=RequestsConnectionError('Test!'))
+        mock_conn = mock_connection_method('post', side_effect=WeaviateConnectionError('Test!'))
         config = ConfigBuilder(mock_conn, None)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             config._start()
         check_error_message(self, error, requests_error_message)
         mock_conn.post.assert_called_with(

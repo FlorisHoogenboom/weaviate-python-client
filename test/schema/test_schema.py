@@ -4,7 +4,7 @@ from copy import deepcopy
 from unittest.mock import patch, Mock
 from weaviate.schema import Schema
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from weaviate.util import _capitalize_first_letter
 
 company_test_schema = {
@@ -184,9 +184,9 @@ class TestSchema(unittest.TestCase):
         unexpected_error_msg = 'Update class schema configuration'
         
         mock_schema.return_value = {'class': 'Test', 'vectorIndexConfig': {'test1': 'Test1', 'test2': 2}}
-        mock_conn = mock_connection_method('put', side_effect=RequestsConnectionError("Test!"))
+        mock_conn = mock_connection_method('put', side_effect=WeaviateConnectionError("Test!"))
         schema = Schema(mock_conn)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             schema.update_config("Test", {'vectorIndexConfig': {'test2': 'Test2'}})
         check_error_message(self, error, requests_error_message)
         mock_conn.put.assert_called_with(
@@ -235,9 +235,9 @@ class TestSchema(unittest.TestCase):
         unexpected_error_msg = "Get schema"
         type_error_msg = lambda dt: f"'class_name' argument must be of type `str`! Given type: {dt}"
 
-        mock_conn = mock_connection_method('get', side_effect=RequestsConnectionError("Test!"))
+        mock_conn = mock_connection_method('get', side_effect=WeaviateConnectionError("Test!"))
         schema = Schema(mock_conn)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             schema.get()
         check_error_message(self, error, requests_error_message)
 
@@ -344,9 +344,9 @@ class TestSchema(unittest.TestCase):
         check_error_message(self, error, type_error_message(int))
 
         schema = Schema(
-            mock_connection_method('delete', side_effect=RequestsConnectionError('Test!'))
+            mock_connection_method('delete', side_effect=WeaviateConnectionError('Test!'))
         )
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             schema.delete_class("uuid")
         check_error_message(self, error, requests_error_message)
 
@@ -503,9 +503,9 @@ class TestSchema(unittest.TestCase):
         # invalid calls
         requests_error_message = 'Property may not have been created properly.'
 
-        mock_rest = mock_connection_method('post', side_effect=RequestsConnectionError('TEST1'))
+        mock_rest = mock_connection_method('post', side_effect=WeaviateConnectionError('TEST1'))
         schema = Schema(mock_rest)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             schema._create_complex_properties_from_class(properties)
         check_error_message(self, error, requests_error_message)
 
@@ -601,9 +601,9 @@ class TestSchema(unittest.TestCase):
         # invalid calls
         requests_error_message = 'Class may not have been created properly.'
 
-        mock_rest = mock_connection_method('post', side_effect=RequestsConnectionError('TEST1'))
+        mock_rest = mock_connection_method('post', side_effect=WeaviateConnectionError('TEST1'))
         schema = Schema(mock_rest)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             schema._create_class_with_premitives(test_class)
         check_error_message(self, error, requests_error_message)
 

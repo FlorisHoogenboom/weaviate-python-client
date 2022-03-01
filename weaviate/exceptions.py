@@ -3,7 +3,7 @@ Weaviate Exceptions.
 """
 from typing import Optional
 from requests import Response
-from requests.exceptions import ConnectionError as WeaviateConnectionError
+from aiohttp.client_exceptions import ClientConnectionError as WeaviateConnectionError
 
 
 class WeaviateBaseError(Exception):
@@ -32,7 +32,7 @@ class UnsuccessfulStatusCodeError(WeaviateBaseError):
     client implementation.
     """
 
-    def __init__(self, message: str, response: Response):
+    def __init__(self, message: str, status_code: int, response_message: str):
         """
         Unsuccessful Status Code exception initializer.
 
@@ -45,8 +45,8 @@ class UnsuccessfulStatusCodeError(WeaviateBaseError):
         """
 
         error_message = (
-            f"{message} Unsuccessful status code: {response.status_code}, "
-            f"with response body: '{response.text}'"
+            f"{message} Unsuccessful status code: {status_code}, "
+            f"with response body: '{response_message}'"
         )
         super().__init__(error_message)
 

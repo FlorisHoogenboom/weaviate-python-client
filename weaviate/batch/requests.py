@@ -1,5 +1,8 @@
 """
-BatchRequest class definitions.
+Module for BatchRequest definition. Here should be implemented the Object/Reference batch requests.
+Both Object/Reference batch requests must inherit from the abstract class `BatchRequests`. Any
+functionality that is shared between batch requests must be defined in the BatchRequest class,
+either as an abstract method or be implemented directly.
 """
 import copy
 from abc import ABC, abstractmethod
@@ -75,7 +78,7 @@ class BatchRequest(ABC):
 class ReferenceBatchRequest(BatchRequest):
     """
     Collect Weaviate-object references to add them in one request to Weaviate.
-    Caution this request will miss some validations to be faster.
+    NOTE: This request will miss some validations in order to be faster.
     """
 
     def add(self,
@@ -113,7 +116,7 @@ class ReferenceBatchRequest(BatchRequest):
             or not isinstance(from_property_name, str)
             or not isinstance(to_object_uuid, str)
         ):
-            raise TypeError('All arguments must be of type string')
+            raise TypeError('All arguments must be of type `str`')
 
         from_object_uuid = get_valid_uuid(from_object_uuid)
         to_object_uuid = get_valid_uuid(to_object_uuid)
@@ -145,7 +148,7 @@ class ReferenceBatchRequest(BatchRequest):
         return self._items
 
 
-class ObjectsBatchRequest(BatchRequest):
+class ObjectBatchRequest(BatchRequest):
     """
     Collect objects for one batch request to weaviate.
     Caution this batch will not be validated through weaviate.

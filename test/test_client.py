@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from weaviate import Client
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from test.util import mock_connection_method, check_error_message
 
 
@@ -70,7 +70,7 @@ class TestWeaviateClient(unittest.TestCase):
         )
 
         # Test exception in connect
-        connection_mock = mock_connection_method('get', side_effect=RequestsConnectionError("Test"))
+        connection_mock = mock_connection_method('get', side_effect=WeaviateConnectionError("Test"))
         client._connection = connection_mock
         self.assertFalse(client.is_ready())
         connection_mock.get.assert_called_with(

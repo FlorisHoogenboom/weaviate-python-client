@@ -7,7 +7,7 @@ from numbers import Real
 from tqdm.auto import tqdm
 from weaviate.connect import Connection
 from weaviate.exceptions import (
-    RequestsConnectionError,
+    WeaviateConnectionError,
     UnexpectedStatusCodeException,
     AuthenticationFailedException,
 )
@@ -245,8 +245,8 @@ class WCS(Connection):
                 path='/clusters',
                 weaviate_object=config
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('WCS cluster was not created.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('WCS cluster was not created.') from conn_err
         if response.status_code == 400 and "already exists" in response.text:
             # this line is never executed if cluster_name is None
             return 'https://' + self.get_cluster_config(cluster_name)['meta']['PublicURL']
@@ -331,8 +331,8 @@ class WCS(Connection):
                     'email': self._auth_client_secret.get_credentials()['username']
                 }
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('WCS clusters were not fetched.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('WCS clusters were not fetched.') from conn_err
         if response.status_code == 200:
             return response.json()['clusterIDs']
         raise UnexpectedStatusCodeException('Checking WCS instance', response)
@@ -366,8 +366,8 @@ class WCS(Connection):
             response = self.get(
                 path='/clusters/' + cluster_name.lower(),
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('WCS cluster info was not fetched.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('WCS cluster info was not fetched.') from conn_err
         if response.status_code == 200:
             return response.json()
         if response.status_code == 404:
@@ -397,8 +397,8 @@ class WCS(Connection):
             response = self.delete(
                 path='/clusters/' + cluster_name.lower(),
             )
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError('WCS cluster was not deleted.') from conn_err
+        except WeaviateConnectionError as conn_err:
+            raise WeaviateConnectionError('WCS cluster was not deleted.') from conn_err
         if response.status_code == 200 or response.status_code == 404:
             return
         raise UnexpectedStatusCodeException('Deleting WCS instance', response)

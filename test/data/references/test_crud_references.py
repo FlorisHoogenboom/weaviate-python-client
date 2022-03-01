@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 from weaviate.data.references import Reference
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
 
 
@@ -53,9 +53,9 @@ class TestReference(unittest.TestCase):
             reference.delete(self.uuid_1, "myProperty", self.uuid_2)
         check_startswith_error_message(self, error, unexpected_error_msg)
 
-        mock_obj = mock_connection_method('delete', side_effect=RequestsConnectionError("Test!"))
+        mock_obj = mock_connection_method('delete', side_effect=WeaviateConnectionError("Test!"))
         reference = Reference(mock_obj)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             reference.delete(self.uuid_1, "myProperty", self.uuid_2)
         check_error_message(self, error, connection_error_msg)
 
@@ -132,9 +132,9 @@ class TestReference(unittest.TestCase):
             reference.add(self.uuid_1, "myProperty", self.uuid_2)
         check_startswith_error_message(self, error, unexpected_error_msg)
 
-        mock_obj = mock_connection_method('post', side_effect=RequestsConnectionError("Test!"))
+        mock_obj = mock_connection_method('post', side_effect=WeaviateConnectionError("Test!"))
         reference = Reference(mock_obj)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             reference.add(self.uuid_1, "myProperty", self.uuid_2)
         check_error_message(self, error, connection_error_msg)
 
@@ -232,9 +232,9 @@ class TestReference(unittest.TestCase):
         check_startswith_error_message(self, error, unexpected_error_msg)
 
   
-        mock_obj = mock_connection_method('put', side_effect=RequestsConnectionError("Test!"))
+        mock_obj = mock_connection_method('put', side_effect=WeaviateConnectionError("Test!"))
         reference = Reference(mock_obj)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             reference.update(self.uuid_1, "myProperty", self.uuid_2)
         check_error_message(self, error, connection_error_msg)
 

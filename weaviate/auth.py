@@ -80,7 +80,7 @@ class AuthClientPassword(AuthCredentials):
         super().__init__()
         self._credentials_body["grant_type"] = "password"
         self._credentials_body["username"] = username
-        self.password_encoded = base64.b64encode(password.encode('ascii')).decode('ascii')
+        self.password_encoded = base64.b64encode(password.encode('ascii')).decode('ascii') # TODO: Use 'latin1' instead of 'ascii'?
 
     def get_credentials(self) -> dict:
         """

@@ -1,6 +1,6 @@
 import unittest
 from weaviate.gql.aggregate import AggregateBuilder
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
 
 
@@ -68,9 +68,9 @@ class TestAggregateBuilder(unittest.TestCase):
         requests_error_message ='Query was not successful.'
 
         # requests.exceptions.ConnectionError
-        mock_obj = mock_connection_method('post', side_effect=RequestsConnectionError("Test"))
+        mock_obj = mock_connection_method('post', side_effect=WeaviateConnectionError("Test"))
         self.aggregate._connection = mock_obj
-        with self.assertRaises(RequestsConnectionError) as error:            
+        with self.assertRaises(WeaviateConnectionError) as error:            
             self.aggregate.do()
         check_error_message(self, error, requests_error_message)
 

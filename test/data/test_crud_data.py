@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from weaviate.data import DataObject
-from weaviate.exceptions import RequestsConnectionError, UnexpectedStatusCodeException, ObjectAlreadyExistsException
+from weaviate.exceptions import WeaviateConnectionError, UnexpectedStatusCodeException, ObjectAlreadyExistsException
 from test.util import mock_connection_method, check_error_message, check_startswith_error_message
 
 
@@ -39,9 +39,9 @@ class TestDataObject(unittest.TestCase):
         mock_get_valid_uuid.assert_not_called()
 
         reset()
-        mock_obj = mock_connection_method('post', side_effect=RequestsConnectionError("Test!"))
+        mock_obj = mock_connection_method('post', side_effect=WeaviateConnectionError("Test!"))
         data_object = DataObject(mock_obj)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             data_object.create({"name": "Alan Greenspan"}, "CoolestPersonEver")
         check_error_message(self, error, requests_error_message)
         mock_get_dict_from_object.assert_called()
@@ -177,9 +177,9 @@ class TestDataObject(unittest.TestCase):
         mock_get_dict_from_object.assert_not_called()
         mock_get_vector.assert_not_called()
 
-        mock_obj = mock_connection_method('patch', side_effect=RequestsConnectionError("Test!"))
+        mock_obj = mock_connection_method('patch', side_effect=WeaviateConnectionError("Test!"))
         data_object = DataObject(mock_obj)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             data_object.update(
                 {"name": "Alan Greenspan"},
                 "CoolestPersonEver",
@@ -261,9 +261,9 @@ class TestDataObject(unittest.TestCase):
         unexpected_error_message = "Replace object"
 
         # test exceptions
-        mock_obj = mock_connection_method('put', side_effect=RequestsConnectionError("Test!"))
+        mock_obj = mock_connection_method('put', side_effect=WeaviateConnectionError("Test!"))
         data_object = DataObject(mock_obj)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             data_object.replace(
                 {"name": "Alan Greenspan"},
                 "CoolestPersonEver",
@@ -354,9 +354,9 @@ class TestDataObject(unittest.TestCase):
             data_object.delete("Hallo World")
         check_error_message(self, error, uuid_value_error_message)
 
-        connection_mock = mock_connection_method('delete', side_effect=RequestsConnectionError('Test!'))
+        connection_mock = mock_connection_method('delete', side_effect=WeaviateConnectionError('Test!'))
         data_object = DataObject(connection_mock)
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             data_object.delete("b36268d4-a6b5-5274-985f-45f13ce0c642")
         check_error_message(self, error, requests_error_message)
 
@@ -420,9 +420,9 @@ class TestDataObject(unittest.TestCase):
         # test exceptions
 
         data_object = DataObject(
-            mock_connection_method('get', side_effect=RequestsConnectionError("Test!"))
+            mock_connection_method('get', side_effect=WeaviateConnectionError("Test!"))
         )
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             data_object.get()
         check_error_message(self, error, requests_error_message)
         
@@ -527,9 +527,9 @@ class TestDataObject(unittest.TestCase):
         mock_get_vector.assert_not_called()
 
         data_object = DataObject(
-            mock_connection_method('post', side_effect=RequestsConnectionError("Test!"))
+            mock_connection_method('post', side_effect=WeaviateConnectionError("Test!"))
         )
-        with self.assertRaises(RequestsConnectionError) as error:
+        with self.assertRaises(WeaviateConnectionError) as error:
             data_object.validate({"name": "Alan Greenspan"}, "CoolestPersonEver", "73802305-c0da-427e-b21c-d6779a22f35f")
         check_error_message(self, error, requests_error_message)
         mock_get_dict_from_object.assert_called()

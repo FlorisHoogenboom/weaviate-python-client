@@ -10,12 +10,12 @@ from typing import Optional, Union, Any
 from numbers import Real
 import requests
 import aiohttp
-from .exceptions import (
+from weaviate.exceptions import (
     AuthenticationError,
     WeaviateConnectionError,
     UnsuccessfulStatusCodeError,
 )
-from .auth import AuthCredentials
+from weaviate.auth import AuthCredentials
 
 
 class Proxies:

@@ -14,7 +14,7 @@ from weaviate.gql.filter import (
     NearImage
 )
 from weaviate.connect import Connection
-from weaviate.util import image_encoder_b64, _capitalize_first_letter
+from weaviate.util import image_encoder_b64, capitalize_first_letter
 
 
 class GetBuilder(GraphQL):
@@ -60,7 +60,7 @@ class GetBuilder(GraphQL):
                     "All the `properties` must be of type `str`!"
                 )
 
-        self._class_name: str = _capitalize_first_letter(class_name)
+        self._class_name: str = capitalize_first_letter(class_name)
         self._properties: List[str] = properties
         self._additional: dict = {'__one_level': set()}
         # '__one_level' refers to the additional properties that are just a single word, not a dict
