@@ -1,5 +1,5 @@
 """
-Module connect and authenticate (if needed) to a Weaviate instance.
+Module to connect and authenticate (if needed) to a Weaviate instance.
 Contains ClientTimeout and Proxies definitions that are used for both synchronous
 requests ('requests' library) and asynchronous one ('aiohttp' library).
 """
@@ -25,7 +25,7 @@ class Proxies:
 
     def __init__(self,
             proxies: Union[dict, str, None],
-            trust_env: bool,
+            trust_env: bool=False,
             include_aiohttp: bool=False,
         ):
         """
@@ -35,8 +35,8 @@ class Proxies:
         ----------
         proxies : Union[dict, str, None]
             The proxies to be used.
-        trust_env : bool
-            Whether to read proxies form ENV VARs.
+        trust_env : bool, optional
+            Whether to read proxies form ENV VARs. By default False.
         include_aiohttp : bool, optional
             Whether to create proxy compatible with 'aiohttp' library, by default False.
             (This should be true only for the AsyncClient).
@@ -100,7 +100,7 @@ class ClientTimeout:
         ValueError
             If 'timeout_config' is a tuple/list and has a length different than 2.
         TypeError
-            If 'timeout_config' is not None or type: tuple, list, Real or aiohttp.ClientTimeout.
+            If 'timeout_config' is not None or of type: tuple, list, Real or aiohttp.ClientTimeout.
         """
 
 
@@ -169,6 +169,7 @@ class Connection:
             timeout_config: ClientTimeout=ClientTimeout(20),
             proxies: Union[dict, str, None]=None,
             trust_env: bool=False,
+            include_aiohttp: bool=False,
         ):
         """
         Initialize a Connection class instance.
@@ -193,6 +194,9 @@ class Connection:
             or https_proxy). By default False.
             NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
             'trust_env' is ignored.
+        include_aiohttp : bool, optional
+            Whether to create proxy compatible with 'aiohttp' library, by default False.
+            (This should be true only for the AsyncClient).
 
         Raises
         ------
@@ -214,7 +218,11 @@ class Connection:
         self._auth_bearer = None
         self._auth_client_secret = auth_client_secret
         self._is_authentication_required = False
-        self._proxies = Proxies(proxies=proxies, trust_env=trust_env)
+        self._proxies = Proxies(
+            proxies=proxies,
+            trust_env=trust_env,
+            include_aiohttp=include_aiohttp,
+        )
 
         self.log_in()
 

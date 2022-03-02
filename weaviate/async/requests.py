@@ -3,13 +3,13 @@ Connection class definition.
 """
 
 from typing import Optional
-from requests import Response, Session
+from aiohttp.client import ClientSession, _RequestContextManager
 from weaviate.base.connection import Connection
 
 
-class SyncRequests:
+class AsyncRequests:
     """
-    SyncRequests class used to make synchronous requests to a Weaviate instance by using a
+    AsyncRequests class used to make asynchronous requests to a Weaviate instance by using a
     Connection. It has all needed RESTful API implementations.
     """
 
@@ -17,7 +17,7 @@ class SyncRequests:
             connection: Connection,
         ):
         """
-        Initialize a SyncRequests class instance.
+        Initialize a AsyncRequests class instance.
 
         Parameters
         ----------
@@ -25,16 +25,16 @@ class SyncRequests:
         """
 
         self._connection = connection
-        self._session = Session()
+        self._session = ClientSession()
 
-    def __del__(self):
+    async def close(self):
         """
-        Destructor for SyncRequests class instance.
+        Close connection for AsyncRequests class instance.
         """
 
-        self._session.close()
+        await self._session.close()
 
-    def delete(self, path: str, data_json: Optional[dict]=None) -> Response:
+    async def delete(self, path: str, data_json: Optional[dict]=None) -> _RequestContextManager:
         """
         Make a DELETE request to the server.
 
@@ -48,12 +48,12 @@ class SyncRequests:
 
         Returns
         -------
-        requests.Response
-            The response to the request.
+        aiohttp.client._RequestContextManager
+            The opened request context manager.
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the DELETE request could not be made.
         """
 
@@ -61,11 +61,11 @@ class SyncRequests:
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
-            timeout=self._connection.timeout_config.get_timeout_requests(),
-            proxies=self._connection.proxies.get_proxies_requests(),
+            timeout=self._connection.timeout_config.get_timeout_aiohttp(),
+            proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    def patch(self, path: str, data_json: dict) -> Response:
+    async def patch(self, path: str, data_json: dict) -> _RequestContextManager:
         """
         Make a PATCH request to the server.
 
@@ -79,12 +79,12 @@ class SyncRequests:
 
         Returns
         -------
-        requests.Response
-            The response to the request.
+        aiohttp.client._RequestContextManager
+            The opened request context manager.
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the PATCH request could not be made.
         """
 
@@ -92,11 +92,11 @@ class SyncRequests:
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
-            timeout=self._connection.timeout_config.get_timeout_requests(),
-            proxies=self._connection.proxies.get_proxies_requests(),
+            timeout=self._connection.timeout_config.get_timeout_aiohttp(),
+            proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    def post(self, path: str, data_json: Optional[dict]=None) -> Response:
+    async def post(self, path: str, data_json: Optional[dict]=None) -> _RequestContextManager:
         """
         Make a POST request to the server.
 
@@ -110,12 +110,12 @@ class SyncRequests:
 
         Returns
         -------
-        requests.Response
-            The response to the request.
+        aiohttp.client._RequestContextManager
+            The opened request context manager.
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the POST request could not be made.
         """
 
@@ -123,11 +123,11 @@ class SyncRequests:
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
-            timeout=self._connection.timeout_config.get_timeout_requests(),
-            proxies=self._connection.proxies.get_proxies_requests(),
+            timeout=self._connection.timeout_config.get_timeout_aiohttp(),
+            proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    def put(self, path: str, data_json: dict) -> Response:
+    async def put(self, path: str, data_json: dict) -> _RequestContextManager:
         """
         Make a PUT request to the server.
 
@@ -142,11 +142,11 @@ class SyncRequests:
         Returns
         -------
         aiohttp.client._RequestContextManager
-            The response to the request.
+            The opened request context manager.
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the PUT request could not be made.
         """
 
@@ -154,11 +154,11 @@ class SyncRequests:
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
-            timeout=self._connection.timeout_config.get_timeout_requests(),
-            proxies=self._connection.proxies.get_proxies_requests(),
+            timeout=self._connection.timeout_config.get_timeout_aiohttp(),
+            proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    def get(self, path: str, params: Optional[dict]=None) -> Response:
+    async def get(self, path: str, params: Optional[dict]=None) -> _RequestContextManager:
         """
         Make a GET request to the server.
 
@@ -172,12 +172,12 @@ class SyncRequests:
 
         Returns
         -------
-        requests.Response
-            The response to the request.
+        aiohttp.client._RequestContextManager
+            The opened request context manager.
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the GET request could not be made.
         """
 
@@ -187,12 +187,12 @@ class SyncRequests:
         return self._session.get(
             url=self._connection.get_url(path),
             headers=self._connection.get_request_header(),
-            timeout=self._connection.timeout_config.get_timeout_requests(),
-            proxies=self._connection.proxies.get_proxies_requests(),
+            timeout=self._connection.timeout_config.get_timeout_aiohttp(),
+            proxy=self._connection.proxies.get_proxy_aiohttp(),
             params=params,
         )
 
-    def head(self, path: str) -> Response:
+    async def head(self, path: str) -> _RequestContextManager:
         """
         Make a HEAD request to the server.
 
@@ -204,18 +204,18 @@ class SyncRequests:
 
         Returns
         -------
-        requests.Response
-            The response to the request.
+        aiohttp.client._RequestContextManager
+            The opened request context manager.
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the HEAD request could not be made.
         """
 
         return self._session.head(
             url=self._connection.get_url(path),
             headers=self._connection.get_request_header(),
-            timeout=self._connection.timeout_config.get_timeout_requests(),
-            proxies=self._connection.proxies.get_proxies_requests(),
+            timeout=self._connection.timeout_config.get_timeout_aiohttp(),
+            proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
