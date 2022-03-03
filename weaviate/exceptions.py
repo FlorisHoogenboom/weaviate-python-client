@@ -3,7 +3,8 @@ Weaviate Exceptions.
 """
 from typing import Optional
 from requests import Response
-from aiohttp.client_exceptions import ClientConnectionError as WeaviateConnectionError
+from requests.exceptions import ConnectionError as RequestsConnectionError
+from aiohttp.client_exceptions import ClientConnectionError as AiohttpConnectionError
 
 
 class WeaviateBaseError(Exception):

@@ -1,37 +1,26 @@
 """
-ConfigBuilder class definition.
+BaseConfigBuilder class definition.
 """
-import time
+from abc import abstractmethod, ABC
 from typing import Dict, Any
-from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
-from weaviate.connect import Connection
 from weaviate.util import capitalize_first_letter
 
 
-class ConfigBuilder:
+class BaseConfigBuilder(ABC):
     """
-    ConfigBuild class that is used to configure a classification process.
+    BaseConfigBuild abstract class that is used to configure a classification process.
+    Sync/Async Client should implement each its own ConfigBuilder.
     """
 
-    def __init__(self, connection: Connection, classification: 'Classification'):
+    def __init__(self):
         """
         Initialize a ConfigBuilder class instance.
-
-        Parameters
-        ----------
-        connection : weaviate.connect.Connection
-            Connection object to an active and running weaviate instance.
-        classification : weaviate.classification.Classification
-            Classification object to be configured using this ConfigBuilder
-            instance.
         """
 
-        self._connection = connection
-        self._classification = classification
         self._config: Dict[str, Any] = {}
         self._wait_for_completion = False
 
-    def with_type(self, type: str) -> 'ConfigBuilder':
+    def with_type(self, type: str) -> 'BaseConfigBuilder':
         """
         Set classification type.
 
@@ -42,14 +31,14 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         self._config['type'] = type
         return self
 
-    def with_k(self, k: int) -> 'ConfigBuilder':
+    def with_k(self, k: int) -> 'BaseConfigBuilder':
         """
         Set k number for the kNN.
 
@@ -61,8 +50,8 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         if 'settings' not in self._config:
@@ -71,7 +60,7 @@ class ConfigBuilder:
             self._config['settings']['k'] = k
         return self
 
-    def with_class_name(self, class_name: str) -> 'ConfigBuilder':
+    def with_class_name(self, class_name: str) -> 'BaseConfigBuilder':
         """
         What Object type to classify.
 
@@ -82,14 +71,14 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         self._config['class'] = capitalize_first_letter(class_name)
         return self
 
-    def with_classify_properties(self, classify_properties: list) -> 'ConfigBuilder':
+    def with_classify_properties(self, classify_properties: list) -> 'BaseConfigBuilder':
         """
         Set the classify properties.
 
@@ -100,14 +89,14 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         self._config['classifyProperties'] = classify_properties
         return self
 
-    def with_based_on_properties(self, based_on_properties: list) -> 'ConfigBuilder':
+    def with_based_on_properties(self, based_on_properties: list) -> 'BaseConfigBuilder':
         """
         Set properties to build the classification on.
 
@@ -118,14 +107,14 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         self._config['basedOnProperties'] = based_on_properties
         return self
 
-    def with_source_where_filter(self, filter: dict) -> 'ConfigBuilder':
+    def with_source_where_filter(self, filter: dict) -> 'BaseConfigBuilder':
         """
         Set Source 'where' Filter.
 
@@ -136,8 +125,8 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         if 'filters' not in self._config:
@@ -145,7 +134,7 @@ class ConfigBuilder:
         self._config['filters']['sourceWhere'] = filter
         return self
 
-    def with_training_set_where_filter(self, filter: dict) -> 'ConfigBuilder':
+    def with_training_set_where_filter(self, filter: dict) -> 'BaseConfigBuilder':
         """
         Set Training set 'where' Filter.
 
@@ -156,8 +145,8 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         if 'filters' not in self._config:
@@ -165,7 +154,7 @@ class ConfigBuilder:
         self._config['filters']['trainingSetWhere'] = filter
         return self
 
-    def with_target_where_filter(self, filter: dict) -> 'ConfigBuilder':
+    def with_target_where_filter(self, filter: dict) -> 'BaseConfigBuilder':
         """
         Set Target 'where' Filter.
 
@@ -176,8 +165,8 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         if 'filters' not in self._config:
@@ -185,20 +174,20 @@ class ConfigBuilder:
         self._config['filters']['targetWhere'] = filter
         return self
 
-    def with_wait_for_completion(self) -> 'ConfigBuilder':
+    def with_wait_for_completion(self) -> 'BaseConfigBuilder':
         """
         Wait for completion.
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
         """
 
         self._wait_for_completion = True
         return self
 
-    def with_settings(self, settings: dict) -> 'ConfigBuilder':
+    def with_settings(self, settings: dict) -> 'BaseConfigBuilder':
         """
         Set settings for the classification. NOTE if you are using 'kNN' the value 'k' can be set
         by this method or by 'with_k(...)'. This method keeps previously set 'settings'.
@@ -210,8 +199,8 @@ class ConfigBuilder:
 
         Returns
         -------
-        ConfigBuilder
-            Updated ConfigBuilder.
+        BaseConfigBuilder
+            Updated BaseConfigBuilder.
 
         Raises
         ------
@@ -254,54 +243,9 @@ class ConfigBuilder:
                     "'k' is not set for this classification."
                 )
 
-    def _start(self) -> dict:
+    @abstractmethod
+    def do(self):
         """
-        Start the classification based on the configuration set.
-
-        Returns
-        -------
-        dict
-            Classification result.
-
-        Raises
-        ------
-        requests.exception.ConnectionError
-            If the network connection to weaviate fails.
-        weaviate.exception.UnsuccessfulStatusCodeError
-            Unexpected error.
+        Start the classification. Sync/Async child should implement each its own 'do' method.
         """
-
-        try:
-            response = self._connection.post(
-                path='/classifications',
-                data_json=self._config,
-            )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
-                'Classification may not started due to connection error.'
-            ) from conn_err
-        if response.status_code == 201:
-            return response.json()
-        raise UnsuccessfulStatusCodeError("Start classification.", response)
-
-    def do(self) -> dict:
-        """
-        Start the classification.
-
-        Returns
-        -------
-        dict
-            Classification result.
-        """
-
-        self._validate_config()
-
-        response = self._start()
-        if not self._wait_for_completion:
-            return response
-
-        # wait for completion
-        classification_uuid = response["id"]
-        while self._classification.is_running(classification_uuid):
-            time.sleep(2.0)
-        return self._classification.get(classification_uuid)
+        ...

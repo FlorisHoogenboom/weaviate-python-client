@@ -12,7 +12,7 @@ import requests
 import aiohttp
 from weaviate.exceptions import (
     AuthenticationError,
-    WeaviateConnectionError,
+    RequestsConnectionError,
     UnsuccessfulStatusCodeError,
 )
 from weaviate.auth import AuthCredentials
@@ -256,7 +256,7 @@ class Connection:
             raise UnsuccessfulStatusCodeError(
                 "Failed to get OpenID Configuration.",
                 status_code=response.status_code,
-                response_message=response.text
+                response_message=response.text,
             )
 
     def refresh_authentication(self) -> None:
@@ -280,8 +280,8 @@ class Connection:
                     timeout=self._timeout_config.get_timeout_requests(),
                     proxies=self._proxies.get_proxies_requests(),
                 )
-            except WeaviateConnectionError as error:
-                raise WeaviateConnectionError("Cannot connect to weaviate.") from error
+            except RequestsConnectionError as error:
+                raise RequestsConnectionError("Cannot connect to weaviate.") from error
             if response.status_code != 200:
                 raise AuthenticationError("Cannot authenticate.", response=response)
 
@@ -323,8 +323,8 @@ class Connection:
                 timeout=self._timeout_config.get_timeout_requests(),
                 proxies=self._proxies.get_proxies_requests(),
             )
-        except WeaviateConnectionError as error:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as error:
+            raise RequestsConnectionError(
                 "Can't connect to the third party authentication service. "
                 "Check that it is running."
             ) from error
