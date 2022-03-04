@@ -77,7 +77,7 @@ class AsyncClassification:
         raise UnsuccessfulStatusCodeError(
             "Get classification status.",
             status_code=response.status,
-            response_message=response.text,
+            response_message=await response.text(),
         )
 
     async def is_complete(self, classification_uuid: str) -> bool:

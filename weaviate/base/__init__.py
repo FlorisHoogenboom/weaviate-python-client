@@ -6,7 +6,9 @@ __all__ = [
     'Connection',
     'BaseClassification',
     'BaseConfigBuilder',
+    'BaseContextionary',
 ]
 
 from .connection import Connection
 from .classification import BaseClassification, BaseConfigBuilder
+from .contextionary import BaseContextionary

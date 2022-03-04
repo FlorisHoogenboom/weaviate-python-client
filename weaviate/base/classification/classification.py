@@ -1,5 +1,5 @@
 """
-Classification class definition.
+BaseClassification abstract class definition.
 """
 from abc import ABC, abstractmethod
 from .config_builder import BaseConfigBuilder

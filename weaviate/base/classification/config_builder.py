@@ -1,5 +1,5 @@
 """
-BaseConfigBuilder class definition.
+BaseConfigBuilder abstract class definition.
 """
 from abc import abstractmethod, ABC
 from typing import Dict, Any

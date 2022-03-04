@@ -59,7 +59,7 @@ class AsyncConfigBuilder(BaseConfigBuilder):
         raise UnsuccessfulStatusCodeError(
             "Start classification.",
             status_code=response.status,
-            response_message=response.text,
+            response_message=await response.text(),
         )
 
     async def do(self) -> dict:

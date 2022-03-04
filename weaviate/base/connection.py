@@ -158,9 +158,8 @@ class ClientTimeout:
 
 class Connection:
     """
-    Connection class used to communicate to a Weaviate instance. Has all needed RESTful API
-    implementations. If Authentication is used, it automatically gets a new token in case it
-    expired.
+    Connection class used to connect and authenticate to a Weaviate instance. If Authentication
+    is used, it automatically gets a new token in case it expired.
     """
 
     def __init__(self,
@@ -400,7 +399,7 @@ class Connection:
         return self._url + self._api_version_path + path
 
     @property
-    def url(self) -> str:
+    def base_url(self) -> str:
         """
         Get the set Weaviate URL.
 

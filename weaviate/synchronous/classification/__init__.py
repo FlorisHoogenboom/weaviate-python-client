@@ -1,5 +1,5 @@
 """
-Module for classifying objects within Weaviate.
+Module for classifying objects within Weaviate using synchronous requests.
 """
 
 
