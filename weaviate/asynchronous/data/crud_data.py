@@ -1,51 +1,47 @@
 """
-DataObject class definition.
+AsyncDataObject class definition.
 """
 from numbers import Real
 from typing import Union, Optional, List, Sequence
-from weaviate.connect import Connection
+from weaviate.base import BaseDataObject
 from weaviate.exceptions import (
     ObjectAlreadyExistsError,
-    WeaviateConnectionError,
+    AiohttpConnectionError,
     UnsuccessfulStatusCodeError,
 )
-from weaviate.util import (
-    get_vector,
-    get_valid_uuid,
-    capitalize_first_letter,
-)
-from weaviate.data.references import Reference
+from .references import AsyncReference
+from ..requests import AsyncRequests
 
 
-class DataObject:
+class AsyncDataObject(BaseDataObject):
     """
-    DataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
+    AsyncDataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
 
     Attributes
     ----------
-    reference : weaviate.data.references.Reference
-        A Reference object to create objects cross-references.
+    reference : weaviate.asynchronous.AsyncReference
+        A AsyncReference object to create objects cross-references.
     """
 
-    def __init__(self, connection: Connection):
+    def __init__(self, requests: AsyncRequests):
         """
-        Initialize a DataObject class instance.
+        Initialize a AsyncDataObject class instance.
 
         Parameters
         ----------
-        connection : weaviate.connect.Connection
-            Connection object to an active and running weaviate instance.
+        requests : weaviate.asynchronous.AsyncRequests
+            AsyncRequests object to an active and running weaviate instance.
         """
 
-        self._connection = connection
-        self.reference = Reference(self._connection)
+        self._requests = requests
+        self.reference = AsyncReference(self._requests)
 
-    def create(self,
+    async def create(self,
             data_object: dict,
             class_name: str,
             uuid: str=None,
             vector: Sequence[Real]=None,
-        ) -> str:
+        ):
         """
         Create a new object in Weaviate.
 
@@ -99,55 +95,44 @@ class DataObject:
             more information is given in the error message.
         """
 
-        if not isinstance(class_name, str):
-            raise TypeError(
-                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
-            )
-        
-        if not isinstance(data_object, dict):
-            raise TypeError(
-                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
-            )
-
-        weaviate_obj = {
-            "class": capitalize_first_letter(class_name),
-            "properties": data_object,
-        }
-        if uuid is not None:
-            weaviate_obj["id"] = get_valid_uuid(uuid)
-
-        if vector is not None:
-            weaviate_obj["vector"] = get_vector(vector)
-
-        path = "/objects"
+        path, weaviate_obj = super().create(
+            data_object=data_object,
+            class_name=class_name,
+            uuid=uuid,
+            vector=vector,
+        )
         try:
-            response = self._connection.post(
+            response = await self._requests.post(
                 path=path,
                 data_json=weaviate_obj,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Object was not added due to connection error.'
             ) from conn_err
-        if response.status_code == 200:
-            return str(response.json()["id"])
+        if response.status == 200:
+            return str(await response.json()["id"])
 
         object_does_already_exist = False
         try:
-            if 'already exists' in response.json()['error'][0]['message']:
+            if 'already exists' in await response.json()['error'][0]['message']:
                 object_does_already_exist = True
         except KeyError:
             pass
         if object_does_already_exist:
             raise ObjectAlreadyExistsError(weaviate_obj["id"])
-        raise UnsuccessfulStatusCodeError("Creating object.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Creating object.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
-    def update(self,
+    async def update(self,
             data_object: dict,
             class_name: str,
             uuid: str,
             vector: Sequence[Real]=None,
-        ) -> None:
+        ):
         """
         Update the given object's property/ies. Only the specified property/ies are updated, the
         unspecified ones remain unchanged.
@@ -217,46 +202,36 @@ class DataObject:
             more information is given in the error message.
         """
 
-        if not isinstance(class_name, str):
-            raise TypeError(
-                f"'class_name' must be of type 'str'. Given type: {type(class_name)}"
-            )
-
-        if not isinstance(data_object, dict):
-            raise TypeError(
-                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
-            )
-
-        weaviate_obj = {
-            "id": get_valid_uuid(uuid),
-            "class": capitalize_first_letter(class_name),
-            "properties": data_object,
-        }
-
-        if vector is not None:
-            weaviate_obj['vector'] = get_vector(vector)
-
-        path = f"/objects/{uuid}"
+        path, weaviate_obj = super().update(
+            data_object=data_object,
+            class_name=class_name,
+            uuid=uuid,
+            vector=vector,
+        )
 
         try:
-            response = self._connection.patch(
+            response = await self._requests.patch(
                 path=path,
                 data_json=weaviate_obj,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Object was not updated due to connection error.'
             ) from conn_err
-        if response.status_code == 204:
+        if response.status == 204:
             return
-        raise UnsuccessfulStatusCodeError("Update of the object not successful.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Update of the object not successful.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
-    def replace(self,
+    async def replace(self,
             data_object: dict,
             class_name: str,
             uuid: str,
             vector: Sequence[Real]=None,
-        ) -> None:
+        ):
         """
         Replace an already existing object with a new one. This method replaces the whole object.
 
@@ -322,44 +297,34 @@ class DataObject:
             more information is given in the error message.
         """
 
-        if not isinstance(class_name, str):
-            raise TypeError(
-                f"'class_name' must be of type 'str'. Given type: {type(class_name)}"
-            )
-
-        if not isinstance(data_object, dict):
-            raise TypeError(
-                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
-            )
-
-        weaviate_obj = {
-            "id": get_valid_uuid(uuid),
-            "class": capitalize_first_letter(class_name),
-            "properties": data_object,
-        }
-
-        if vector is not None:
-            weaviate_obj['vector'] = get_vector(vector)
-
-        path = f"/objects/{uuid}"
+        path, weaviate_obj = super().replace(
+            data_object=data_object,
+            class_name=class_name,
+            uuid=uuid,
+            vector=vector,
+        )
         try:
-            response = self._connection.put(
+            response = await self._requests.put(
                 path=path,
                 data_json=weaviate_obj,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Object was not replaced due to connection error.'
             ) from conn_err
-        if response.status_code == 200:
+        if response.status == 200:
             return
-        raise UnsuccessfulStatusCodeError("Replace object.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Replace object.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
-    def get_by_id(self,
+    async def get_by_id(self,
             uuid: str,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
-        ) -> Optional[dict]:
+        ):
         """
         Get an object as dict.
 
@@ -401,19 +366,19 @@ class DataObject:
             If weaviate reports a none OK status.
         """
 
-        return self.get(
+        return await self.get(
             uuid=uuid,
             additional_properties=additional_properties,
             with_vector=with_vector,
         )
 
-    def get(self,
+    async def get(self,
             uuid: Optional[str]=None,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
             limit: Optional[int]=None,
             offset: Optional[int]=None,
-        ) -> Optional[Union[List[dict], dict]]:
+        ):
         """
         Gets objects from weaviate, the default maximum number of objects depends of Weaviate
         server's 'QUERY_DEFAULTS_LIMIT'. If 'uuid' is None a maximum of 'QUERY_DEFAULTS_LIMIT'
@@ -452,36 +417,35 @@ class DataObject:
             If weaviate reports a none OK status.
         """
 
-        params = _get_params(
+        path, params = super().get(
+            uuid=uuid,
             additional_properties=additional_properties,
             with_vector=with_vector,
             limit=limit,
             offset=offset,
         )
-
-        if uuid is not None:
-            path = "/objects/" + get_valid_uuid(uuid)
-        else:
-            path = "/objects"
-
         try:
-            response = self._connection.get(
+            response = await self._requests.get(
                 path=path,
                 params=params,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Could not get object/s due to connection error.'
             ) from conn_err
-        if response.status_code == 200:
+        if response.status == 200:
             if uuid is None:
-                return response.json()['objects']
-            return response.json()
-        if uuid is not None and response.status_code == 404:
+                return await response.json()['objects']
+            return await response.json()
+        if uuid is not None and response.status == 404:
             return None
-        raise UnsuccessfulStatusCodeError("Get object/s.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Get object/s.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
-    def delete(self, uuid: str) -> None:
+    async def delete(self, uuid: str):
         """
         Delete an existing object from weaviate.
 
@@ -521,20 +485,26 @@ class DataObject:
             If weaviate reports a none OK status.
         """
 
-        path = f"/objects/{get_valid_uuid(uuid)}"
+        path = super().delete(
+            uuid=uuid,
+        )
         try:
-            response = self._connection.delete(
+            response = await self._requests.delete(
                 path=path,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Object could not be deleted due to connection error.'
             ) from conn_err
-        if response.status_code == 204:
+        if response.status == 204:
             return
-        raise UnsuccessfulStatusCodeError("Delete object.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Delete object.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
-    def exists(self, uuid: str) -> bool:
+    async def exists(self, uuid: str):
         """
         Check if the object exist in weaviate.
 
@@ -572,28 +542,34 @@ class DataObject:
             If weaviate reports a none OK status.
         """
 
-        path = f'/objects/{get_valid_uuid(uuid)}'
+        path = super().exists(
+            uuid=uuid,
+        )
         try:
-            response = self._connection.head(
+            response = await self._requests.head(
                 path=path,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Could not check if object exists due to connection error.'
             ) from conn_err
 
-        if response.status_code == 204:
+        if response.status == 204:
             return True
-        if response.status_code == 404:
+        if response.status == 404:
             return False
-        raise UnsuccessfulStatusCodeError("Object exists.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Object exists.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
-    def validate(self,
+    async def validate(self,
             data_object: dict,
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence[Real]]=None
-        ) -> dict:
+        ):
         """
         Validate an object against weaviate.
 
@@ -653,37 +629,19 @@ class DataObject:
             If validating the object against Weaviate failed with a different reason.
         """
 
-        if not isinstance(class_name, str):
-            raise TypeError(
-                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
-            )
-
-        if not isinstance(data_object, dict):
-            raise TypeError(
-                f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
-            )
-
-        weaviate_obj = {
-            "class": capitalize_first_letter(class_name),
-            "properties": data_object,
-        }
-
-        if uuid is not None:
-            if not isinstance(uuid, str):
-                raise TypeError("UUID must be of type 'str'.")
-            weaviate_obj['id'] = uuid
-
-        if vector is not None:
-            weaviate_obj['vector'] = get_vector(vector)
-
-        path = "/objects/validate"
+        path, weaviate_obj = super().validate(
+            data_object=data_object,
+            class_name=class_name,
+            uuid=uuid,
+            vector=vector,
+        )
         try:
-            response = self._connection.post(
+            response = await self._requests.post(
                 path=path,
                 data_json=weaviate_obj,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Object was not validated due to connection error.'
             ) from conn_err
 
@@ -691,61 +649,15 @@ class DataObject:
             "error": None
         }
 
-        if response.status_code == 200:
+        if response.status == 200:
             result["valid"] = True
             return result
-        if response.status_code == 422:
+        if response.status == 422:
             result["valid"] = False
-            result["error"] = response.json()["error"]
+            result["error"] = await response.json()["error"]
             return result
-        raise UnsuccessfulStatusCodeError("Validate object.", response)
-
-
-def _get_params(
-        additional_properties: Optional[Union[List[str], str]],
-        with_vector: bool,
-        limit: Optional[int],
-        offset: Optional[int],
-    ) -> dict:
-    """
-    Get underscore properties in the format accepted by weaviate.
-
-    Parameters
-    ----------
-    additional_properties : list of str, str or None
-        Additional property/ies to include in object description.
-    with_vector: bool
-        If True the 'vector' property will be returned too.
-    limit : int or None
-        The maximum number of objects to be returned.
-    offset : int or None
-        The starting index for object retrival.
-
-    Returns
-    -------
-    dict
-        A dictionary including weaviate-accepted additional properties
-        and/or 'vector' property.
-    """
-
-    params = {}
-
-    if additional_properties:
-        if isinstance(additional_properties, list):
-            params['include'] = additional_properties
-        else:
-            params['include'] = [additional_properties]
-
-    if with_vector:
-        if 'include' in params:
-            params['include'].append('vector')
-        else:
-            params['include'] = 'vector'
-
-    if limit:
-        params['limit'] = limit
-
-    if limit:
-        params['offset'] = offset
-
-    return params
+        raise UnsuccessfulStatusCodeError(
+            "Validate object.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )

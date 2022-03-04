@@ -1,29 +1,28 @@
 """
-Reference class definition.
+SyncReference class definition.
 """
 from typing import Union
-from weaviate.connect import Connection
-from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
-from weaviate.util import get_valid_uuid
+from weaviate.base import BaseReference
+from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
+from ...requests import SyncRequests
 
 
-class Reference:
+class SyncReference(BaseReference):
     """
-    Reference class used to manipulate references within objects.
+    SyncReference class used to manipulate references within objects.
     """
 
-    def __init__(self, connection: Connection):
+    def __init__(self, requests: SyncRequests):
         """
-        Initialize a Reference class instance.
+        Initialize a SyncReference class instance.
 
         Parameters
         ----------
-        connection : weaviate.connect.Connection
-
-            Connection object to an active and running weaviate instance.
+        requests : weaviate.synchronous.SyncRequests
+            SyncRequests object to an active and running weaviate instance.
         """
 
-        self._connection = connection
+        self._requests = requests
 
     def delete(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
         """
@@ -105,34 +104,33 @@ class Reference:
             If one of the parameters is of the wrong type.
         ValueError
             If one of the parameters has a wrong value.
-        requests.exceptions.ConnectionError
+        requests.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-
-        # Validate arguments
-        from_uuid = get_valid_uuid(from_uuid)
-        to_uuid = get_valid_uuid(to_uuid)
-        _validate_property_name(from_property_name)
-
-        # Create the beacon
-        beacon = _get_beacon(to_uuid)
-
-        path = f"/objects/{from_uuid}/references/{from_property_name}"
+        path, beacon = super().delete(
+            from_uuid=from_uuid,
+            from_property_name=from_property_name,
+            to_uuid=to_uuid,
+        )
         try:
-            response = self._connection.delete(
+            response = self._requests.delete(
                 path=path,
                 data_json=beacon,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Reference was not deleted due to connection error.'
             ) from conn_err
         if response.status_code == 204:
             return
-        raise UnsuccessfulStatusCodeError("Delete property reference to object", response)
+        raise UnsuccessfulStatusCodeError(
+            "Delete property reference to object",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     def replace(self, from_uuid: str, from_property_name: str, to_uuids: Union[list, str]) -> None:
         """
@@ -225,36 +223,33 @@ class Reference:
             If one of the parameters is of the wrong type.
         ValueError
             If one of the parameters has a wrong value.
-        requests.exceptions.ConnectionError
+        requests.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        if not isinstance(to_uuids, list):
-            to_uuids = [to_uuids]
-
-        # Validate and create Beacon
-        from_uuid = get_valid_uuid(from_uuid)
-        _validate_property_name(from_property_name)
-        beacons = []
-        for to_uuid in to_uuids:
-            to_uuid = get_valid_uuid(to_uuid)
-            beacons.append(_get_beacon(to_uuid))
-
-        path = f"/objects/{from_uuid}/references/{from_property_name}"
+        path, beacons = super().replace(
+            from_uuid=from_uuid,
+            from_property_name=from_property_name,
+            to_uuids=to_uuids,
+        )
         try:
-            response = self._connection.put(
+            response = self._requests.put(
                 path=path,
                 data_json=beacons,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Reference was not replaced due to connection error.'
             ) from conn_err
         if response.status_code == 200:
             return
-        raise UnsuccessfulStatusCodeError("Update property reference to object.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Update property reference to object.",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     def add(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
         """
@@ -326,69 +321,30 @@ class Reference:
             If one of the parameters is of the wrong type.
         ValueError
             If one of the parameters has a wrong value.
-        requests.exceptions.ConnectionError
+        requests.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        # Validate and create Beacon
-        from_uuid = get_valid_uuid(from_uuid)
-        to_uuid = get_valid_uuid(to_uuid)
-        _validate_property_name(from_property_name)
-        beacons = _get_beacon(to_uuid)
-
-        path = f"/objects/{from_uuid}/references/{from_property_name}"
+        path, beacons = super().add(
+            from_uuid=from_uuid,
+            from_property_name=from_property_name,
+            to_uuid=to_uuid,
+        )
         try:
-            response = self._connection.post(
+            response = self._requests.post(
                 path=path,
                 data_json=beacons,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Reference was not added due to connection error.'
             ) from conn_err
         if response.status_code == 200:
             return
-        raise UnsuccessfulStatusCodeError("Add property reference to object.", response)
-
-
-def _get_beacon(to_uuid: str) -> dict:
-    """
-    Get a weaviate-style beacon.
-
-    Parameters
-    ----------
-    to_uuid : str
-        The UUID to create beacon for.
-
-    Returns
-    -------
-    dict
-        Weaviate-style beacon as a dict.
-    """
-
-    return {
-        "beacon": f"weaviate://localhost/{to_uuid}"
-    }
-
-
-def _validate_property_name(property_name: str) -> None:
-    """
-    Validate the property name type.
-
-    Parameters
-    ----------
-    property_name : str
-        Property name to be validated.
-
-    Raises
-    ------
-    TypeError
-        If 'property_name' is not of type str.
-    """
-
-    if not isinstance(property_name, str):
-        raise TypeError(
-            f"'from_property_name' must be of type 'str'. Given type: {type(property_name)}"
+        raise UnsuccessfulStatusCodeError(
+            "Add property reference to object.",
+            status_code=response.status_code,
+            response_message=response.text,
         )

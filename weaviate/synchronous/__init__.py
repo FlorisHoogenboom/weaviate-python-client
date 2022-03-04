@@ -7,8 +7,11 @@ __all__ = [
     'SyncClassification',
     'SyncConfigBuilder',
     'SyncSchema',
+    'SyncDataObject',
+    'SyncReference',
 ]
 
 from .requests import SyncRequests
 from .classification import SyncClassification, SyncConfigBuilder
 from .schema import SyncSchema
+from .data import SyncDataObject, SyncReference
