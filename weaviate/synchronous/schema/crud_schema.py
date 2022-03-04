@@ -1,61 +1,44 @@
 """
-Schema class definition.
+SyncSchema class definition.
 """
-from typing import Union, Optional
-from weaviate.connect import Connection
+from typing import Optional
+from weaviate.base.schema import (
+    BaseSchema,
+    get_path_for_get_method,
+    get_class_schema_with_primitives_and_path,
+    is_sub_schema,
+    update_nested_dict,
+    is_primitive_property,
+    check_class,
+)
 from weaviate.util import capitalize_first_letter
-from weaviate.exceptions import (
-    UnsuccessfulStatusCodeError,
-    WeaviateConnectionError,
-    SchemaValidationError,
-)
-from weaviate.schema.validate_schema import validate_schema, check_class
-from weaviate.schema.properties import Property
+from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
+from .properties import SyncProperty
+from ..requests import SyncRequests
 
 
-PRIMITIVE_WEAVIATE_TYPES = set(
-    [
-        "string",
-        "string[]",
-        "int",
-        "int[]",
-        "boolean",
-        "boolean[]",
-        "number",
-        "number[]",
-        "date",
-        "date[]",
-        "text",
-        "text[]",
-        "geoCoordinates",
-        "blob",
-        "phoneNumber"
-    ]
-)
-
-
-class Schema:
+class SyncSchema(BaseSchema):
     """
-    Schema class used to interact and manipulate schemas or classes.
+    SyncSchema class used to interact and manipulate schemas or classes.
 
     Attributes
     ----------
-    property : weaviate.schema.properties.Property
+    property : weaviate.synchronous.schema.Property
         A Property object to create new schema property/ies.
     """
 
-    def __init__(self, connection: Connection):
+    def __init__(self, requests: SyncRequests):
         """
-        Initialize a Schema class instance.
+        Initialize a SyncSchema class instance.
 
         Parameters
         ----------
-        connection : weaviate.connect.Connection
-            Connection object to an active and running weaviate instance.
+        requests : weaviate.synchronous.SyncRequests
+            SyncRequests object to an active and running weaviate instance.
         """
 
-        self._connection = connection
-        self.property = Property(self._connection)
+        self._requests = requests
+        self.property = SyncProperty(self._requests)
 
     def create(self, schema: dict) -> None:
         """
@@ -100,12 +83,9 @@ class Schema:
             If the 'schema' could not be validated against the standard format.
         """
 
-        if not isinstance(schema, dict):
-            raise TypeError(
-                f"'schema' must be of type 'dict'. Given type: {type(schema)}."
-            )
-
-        validate_schema(schema=schema)
+        super().create(
+            schema=schema,
+        )
 
         self._create_classes_with_primitives(
             schema_classes_list=schema["classes"],
@@ -125,7 +105,7 @@ class Schema:
 
         Examples
         --------
-        >>> author_class_schema = {
+        >>> author_schema_class = {
         ...     "class": "Author",
         ...     "description": "An Author class to store the author information",
         ...     "properties": [
@@ -141,7 +121,7 @@ class Schema:
         ...         }
         ...     ]
         ... }
-        >>> client.schema.create_class(author_class_schema)
+        >>> client.schema.create_class(author_schema_class)
 
         Raises
         ------
@@ -157,12 +137,9 @@ class Schema:
             If the 'schema_class' could not be validated against the standard format.
         """
 
-        if not isinstance(schema_class, dict):
-            raise TypeError(
-                f"'schema_class' must be of type 'dict'. Given type: {type(schema_class)}."
-            )
-
-        check_class(schema_class)
+        super().create_class(
+            schema_class=schema_class,
+        )
 
         self._create_class_with_premitives(
             schema_class=schema_class,
@@ -194,22 +171,25 @@ class Schema:
             If weaviate reported a none OK status.
         """
 
-        if not isinstance(class_name, str):
-            raise TypeError(
-                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
-            )
+        super().delete_class(
+            class_name=class_name,
+        )
 
         path = f"/schema/{capitalize_first_letter(class_name)}"
         try:
-            response = self._connection.delete(
+            response = self._requests.delete(
                 path=path,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Deletion of class failed due to connection error.'
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Delete class from schema.", response)
+            raise UnsuccessfulStatusCodeError(
+                "Delete class from schema.",
+                status_code=response.status_code,
+                response_message=response.text,
+            )
 
     def delete_all(self) -> None:
         """
@@ -265,11 +245,15 @@ class Schema:
             True if a schema is present, False otherwise.
         """
 
+        super().contains(
+            schema=schema,
+        )
+
         loaded_schema = self.get()
 
         if schema is not None:
-            sub_schema = _get_dict_from_object(schema)
-            return _is_sub_schema(sub_schema, loaded_schema)
+            sub_schema = schema
+            return is_sub_schema(sub_schema, loaded_schema)
 
         if len(loaded_schema["classes"]) == 0:
             return False
@@ -333,21 +317,25 @@ class Schema:
 
         class_name = capitalize_first_letter(class_name)
         class_schema = self.get(class_name)
-        new_class_schema = _update_nested_dict(class_schema, config)
+        new_class_schema = update_nested_dict(class_schema, config)
         check_class(new_class_schema)
 
         path = f"/schema/{class_name}"
         try:
-            response = self._connection.put(
+            response = self._requests.put(
                 path=path,
                 data_json=new_class_schema,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 "Class schema configuration could not be updated die to connection error."
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Update class schema configuration.", response)
+            raise UnsuccessfulStatusCodeError(
+                "Update class schema configuration.",
+                status_code=response.status_code,
+                response_message=response.text,
+            )
 
     def get(self, class_name: Optional[str]=None) -> dict:
         """
@@ -438,25 +426,23 @@ class Schema:
             If weaviate reported a none OK status.
         """
 
-        path = '/schema'
-        if class_name is not None:
-            if not isinstance(class_name, str):
-                raise TypeError(
-                    f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
-                )
-            path += capitalize_first_letter(class_name)
+        path = get_path_for_get_method(class_name=class_name)
 
         try:
-            response = self._connection.get(
+            response = self._requests.get(
                 path=path,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Schema could not be retrieved due to connection error.'
             ) from conn_err
         if response.status_code == 200:
             return response.json()
-        raise UnsuccessfulStatusCodeError("Get schema.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Get schema.",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     def _create_complex_properties_from_class(self, schema_class: dict) -> None:
         """
@@ -480,7 +466,7 @@ class Schema:
             return
 
         for _property in schema_class['properties']:
-            if _property_is_primitive(_property['dataType']):
+            if is_primitive_property(_property['dataType']):
                 continue
 
             # create the property object
@@ -499,18 +485,10 @@ class Schema:
             if 'moduleConfig' in _property:
                 schema_property['moduleConfig'] = _property['moduleConfig']
 
-            path = f"/schema/{capitalize_first_letter(schema_class['class'])}/properties"
-            try:
-                response = self._connection.post(
-                    path=path,
-                    data_json=schema_property,
-                )
-            except WeaviateConnectionError as conn_err:
-                raise WeaviateConnectionError(
-                    'Property may not have been created properly due to connection error.'
-                ) from conn_err
-            if response.status_code != 200:
-                raise UnsuccessfulStatusCodeError('Add properties to classes.', response)
+            self.property.create(
+                schema_class_name=schema_class['class'],
+                schema_property=schema_property,
+            )
 
     def _create_complex_properties_from_classes(self, schema_classes_list: list) -> None:
         """
@@ -536,54 +514,31 @@ class Schema:
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        requests.ConnectionError
             If the network connection to weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reported a none OK status.
         """
 
         # Create the class
-        schema_class = {
-            'class': capitalize_first_letter(schema_class['class']),
-            'properties': []
-        }
-
-        if 'description' in schema_class:
-            schema_class['description'] = schema_class['description']
-
-        if 'vectorIndexType' in schema_class:
-            schema_class['vectorIndexType'] = schema_class['vectorIndexType']
-
-        if 'vectorIndexConfig' in schema_class:
-            schema_class['vectorIndexConfig'] = schema_class['vectorIndexConfig']
-
-        if 'vectorizer' in schema_class:
-            schema_class['vectorizer'] = schema_class['vectorizer']
-
-        if 'moduleConfig' in schema_class:
-            schema_class['moduleConfig'] = schema_class['moduleConfig']
-
-        if 'shardingConfig' in schema_class:
-            schema_class['shardingConfig'] = schema_class['shardingConfig']
-
-        if 'properties' in schema_class:
-            schema_class['properties'] = (
-                _get_primitive_properties(
-                    properties_list=schema_class['properties'],
-                )
-            )
-        path = '/schema'
+        schema_class, path = get_class_schema_with_primitives_and_path(
+            schema_class=schema_class,
+        )
         try:
-            response = self._connection.post(
+            response = self._requests.post(
                 path=path,
                 data_json=schema_class,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Class may not have been created properly due to connection error.'
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Create class", response)
+            raise UnsuccessfulStatusCodeError(
+                "Create class",
+                status_code=response.status_code,
+                response_message=response.text,
+            )
 
     def _create_classes_with_primitives(self, schema_classes_list: list) -> None:
         """
@@ -599,167 +554,3 @@ class Schema:
 
         for weaviate_class in schema_classes_list:
             self._create_class_with_premitives(weaviate_class)
-
-
-def _property_is_primitive(data_type_list: list) -> bool:
-    """
-    Check if the property is primitive.
-
-    Parameters
-    ----------
-    data_type_list : list
-        Data types to be checked if are primitive.
-
-    Returns
-    -------
-    bool
-        True if it only consists of primitive data types,
-        False otherwise.
-    """
-
-    if len(set(data_type_list) - PRIMITIVE_WEAVIATE_TYPES) == 0:
-        return True
-    return False
-
-
-def _get_primitive_properties(properties_list: list) -> list:
-    """
-    Filter the list of properties for only primitive properties.
-
-    Parameters
-    ----------
-    properties_list : list
-        A list of properties to exctract the primitive properties.
-
-    Returns
-    -------
-    list
-        A list of properties containing only primitives.
-    """
-
-    primitive_properties = []
-    for property_ in properties_list:
-        if not _property_is_primitive(property_["dataType"]):
-            # property is complex and therefore will be ignored
-            continue
-        primitive_properties.append(property_)
-    return primitive_properties
-
-
-def _update_nested_dict(dict_1: dict, dict_2: dict) -> dict:
-    """
-    Update 'dict_1' with elements from 'dict_2' in a nested manner.
-    If a value of a key is a dict, it is going to be updated and not replaced by a the whole dict.
-
-    Parameters
-    ----------
-    dict_1 : dict
-        The dictionary to be updated.
-    dict_2 : dict
-        The dictionary that contains values to be updated.
-
-    Returns
-    -------
-    dict
-        The updated 'dict_1'.
-    """
-    for key, value in dict_2.items():
-        if key not in dict_1:
-            dict_1[key] = value
-            continue
-        if isinstance(value, dict):
-            _update_nested_dict(dict_1[key], value)
-        else:
-            dict_1.update({key : value})
-    return dict_1
-
-def _is_sub_schema(sub_schema: dict, schema: dict) -> bool:
-    """
-    Check for a subset in a schema.
-
-    Parameters
-    ----------
-    sub_schema : dict
-        The smaller schema that should be contained in the 'schema'.
-    schema : dict
-        The schema for which to check if 'sub_schema' is a part of. Must have the 'classes' key.
-
-    Returns
-    -------
-    bool
-        True is 'sub_schema' is a subset of the 'schema'.
-        False otherwise.
-    """
-
-    schema_classes = schema.get("classes", [])
-    if 'classes' in sub_schema:
-        sub_schema_classes = sub_schema["classes"]
-    else:
-        sub_schema_classes = [sub_schema]
-    return _compare_class_sets(sub_schema_classes, schema_classes)
-
-
-def _compare_class_sets(sub_set: list, set_: list) -> bool:
-    """
-    Check for a subset in a set of classes.
-
-    Parameters
-    ----------
-    sub_set : list
-        The smaller set that should be contained in the 'set'.
-    schema : dict
-        The set for which to check if 'sub_set' is a part of.
-
-    Returns
-    -------
-    bool
-        True is 'sub_set' is a subset of the 'set'.
-        False otherwise.
-    """
-
-    for sub_set_class in sub_set:
-        found = False
-        for set_class in set_:
-            if 'class' not in sub_set_class:
-                raise SchemaValidationError(
-                    "The sub-schema class/es MUST have a 'class' keyword each."
-                )
-
-            sub_set_class_name = capitalize_first_letter(sub_set_class["class"])
-            set_class_name = capitalize_first_letter(set_class["class"])
-            if sub_set_class_name == set_class_name:
-                if _compare_properties(sub_set_class["properties"], set_class["properties"]):
-                    found = True
-                    break
-        if not found:
-            return False
-    return True
-
-
-def _compare_properties(sub_set: list, set_: list) -> bool:
-    """
-    Check for a subset in a set of properties.
-
-    Parameters
-    ----------
-    sub_set : list
-        The smaller set that should be contained in the 'set'.
-    schema : dict
-        The set for which to check if 'sub_set' is a part of.
-
-    Returns
-    -------
-    bool
-        True is 'sub_set' is a subset of the 'set'.
-        False otherwise.
-    """
-
-    for sub_set_property in sub_set:
-        found = False
-        for set_property in set_:
-            if sub_set_property["name"] == set_property["name"]:
-                found = True
-                break
-        if not found:
-            return False
-    return True

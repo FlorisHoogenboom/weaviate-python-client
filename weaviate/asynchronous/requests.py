@@ -3,7 +3,7 @@ Connection class definition.
 """
 
 from typing import Optional
-from aiohttp.client import ClientSession, _RequestContextManager
+from aiohttp.client import ClientSession, ClientResponse
 from weaviate.base.connection import Connection
 
 
@@ -34,7 +34,7 @@ class AsyncRequests:
 
         await self._session.close()
 
-    async def delete(self, path: str, data_json: Optional[dict]=None) -> _RequestContextManager:
+    async def delete(self, path: str, data_json: Optional[dict]=None) -> ClientResponse:
         """
         Make a DELETE request to the server.
 
@@ -48,7 +48,7 @@ class AsyncRequests:
 
         Returns
         -------
-        aiohttp.client._RequestContextManager
+        aiohttp.ClientResponse
             The opened request context manager.
 
         Raises
@@ -57,7 +57,7 @@ class AsyncRequests:
             If the DELETE request could not be made.
         """
 
-        return self._session.delete(
+        return await self._session.delete(
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
@@ -65,7 +65,7 @@ class AsyncRequests:
             proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    async def patch(self, path: str, data_json: dict) -> _RequestContextManager:
+    async def patch(self, path: str, data_json: dict) -> ClientResponse:
         """
         Make a PATCH request to the server.
 
@@ -79,7 +79,7 @@ class AsyncRequests:
 
         Returns
         -------
-        aiohttp.client._RequestContextManager
+        aiohttp.ClientResponse
             The opened request context manager.
 
         Raises
@@ -88,7 +88,7 @@ class AsyncRequests:
             If the PATCH request could not be made.
         """
 
-        return self._session.patch(
+        return await self._session.patch(
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
@@ -96,7 +96,7 @@ class AsyncRequests:
             proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    async def post(self, path: str, data_json: Optional[dict]=None) -> _RequestContextManager:
+    async def post(self, path: str, data_json: Optional[dict]=None) -> ClientResponse:
         """
         Make a POST request to the server.
 
@@ -110,7 +110,7 @@ class AsyncRequests:
 
         Returns
         -------
-        aiohttp.client._RequestContextManager
+        aiohttp.ClientResponse
             The opened request context manager.
 
         Raises
@@ -119,7 +119,7 @@ class AsyncRequests:
             If the POST request could not be made.
         """
 
-        return self._session.post(
+        return await self._session.post(
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
@@ -127,7 +127,7 @@ class AsyncRequests:
             proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    async def put(self, path: str, data_json: dict) -> _RequestContextManager:
+    async def put(self, path: str, data_json: dict) -> ClientResponse:
         """
         Make a PUT request to the server.
 
@@ -141,7 +141,7 @@ class AsyncRequests:
 
         Returns
         -------
-        aiohttp.client._RequestContextManager
+        aiohttp.ClientResponse
             The opened request context manager.
 
         Raises
@@ -150,7 +150,7 @@ class AsyncRequests:
             If the PUT request could not be made.
         """
 
-        return self._session.put(
+        return await self._session.put(
             url=self._connection.get_url(path),
             json=data_json,
             headers=self._connection.get_request_header(),
@@ -158,7 +158,7 @@ class AsyncRequests:
             proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
 
-    async def get(self, path: str, params: Optional[dict]=None) -> _RequestContextManager:
+    async def get(self, path: str, params: Optional[dict]=None) -> ClientResponse:
         """
         Make a GET request to the server.
 
@@ -172,7 +172,7 @@ class AsyncRequests:
 
         Returns
         -------
-        aiohttp.client._RequestContextManager
+        aiohttp.ClientResponse
             The opened request context manager.
 
         Raises
@@ -184,7 +184,7 @@ class AsyncRequests:
         if params is None:
             params = {}
 
-        return self._session.get(
+        return await self._session.get(
             url=self._connection.get_url(path),
             headers=self._connection.get_request_header(),
             timeout=self._connection.timeout_config.get_timeout_aiohttp(),
@@ -192,7 +192,7 @@ class AsyncRequests:
             params=params,
         )
 
-    async def head(self, path: str) -> _RequestContextManager:
+    async def head(self, path: str) -> ClientResponse:
         """
         Make a HEAD request to the server.
 
@@ -204,7 +204,7 @@ class AsyncRequests:
 
         Returns
         -------
-        aiohttp.client._RequestContextManager
+        aiohttp.ClientResponse
             The opened request context manager.
 
         Raises
@@ -213,7 +213,7 @@ class AsyncRequests:
             If the HEAD request could not be made.
         """
 
-        return self._session.head(
+        return await self._session.head(
             url=self._connection.get_url(path),
             headers=self._connection.get_request_header(),
             timeout=self._connection.timeout_config.get_timeout_aiohttp(),

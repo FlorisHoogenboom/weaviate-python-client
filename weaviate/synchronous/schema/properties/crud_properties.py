@@ -1,28 +1,28 @@
 """
-Property class definition.
+SyncProperty class definition.
 """
-from weaviate.exceptions import WeaviateConnectionError, UnsuccessfulStatusCodeError
-from weaviate.schema.validate_schema import check_property
+from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
 from weaviate.util import capitalize_first_letter
-from weaviate.connect import Connection
+from weaviate.base import BaseProperty
+from ...requests import SyncRequests
 
 
-class Property:
+class SyncProperty(BaseProperty):
     """
-    Property class used to create object properties.
+    SyncProperty class used to create object properties.
     """
 
-    def __init__(self, connection: Connection):
+    def __init__(self, requests: SyncRequests):
         """
-        Initialize a Property class instance.
+        Initialize a SyncProperty class instance.
 
         Parameters
         ----------
-        connection : weaviate.connect.Connection
-            Connection object to an active and running weaviate instance.
+        requests : weaviate.synchronous.SyncRequests
+            SyncRequests object to an active and running weaviate instance.
         """
 
-        self._connection = connection
+        self._requests = requests
 
     def create(self, schema_class_name: str, schema_property: dict) -> None:
         """
@@ -58,33 +58,26 @@ class Property:
             If weaviate reports a none OK status.
         """
 
-        if not isinstance(schema_class_name, str):
-            raise TypeError(
-                f"'schema_class_name' must be of type 'str'. Given type: {type(schema_class_name)}"
-            )
-
-        if not isinstance(schema_property, str):
-            raise TypeError(
-                f"'schema_property' must be of type 'dict'. Given type: {type(schema_property)}"
-            )
-
-        # check if valid property
-        check_property(
-            class_property=schema_property,
-            class_name=schema_class_name,
+        super().create(
+            schema_class_name=schema_class_name,
+            schema_property=schema_property,
         )
 
         schema_class_name = capitalize_first_letter(schema_class_name)
 
         path = f"/schema/{schema_class_name}/properties"
         try:
-            response = self._connection.post(
+            response = self._requests.post(
                 path=path,
                 data_json=schema_property,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Property was created due to connection error.'
             ) from conn_err
         if response.status_code != 200:
-            raise UnsuccessfulStatusCodeError("Add property to class.", response)
+            raise UnsuccessfulStatusCodeError(
+                "Add property to class.",
+                status_code=response.status_code,
+                response_message=response.text,
+            )

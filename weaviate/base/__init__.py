@@ -7,8 +7,11 @@ __all__ = [
     'BaseClassification',
     'BaseConfigBuilder',
     'BaseContextionary',
+    'BaseProperty',
+    'BaseSchema'
 ]
 
 from .connection import Connection
 from .classification import BaseClassification, BaseConfigBuilder
 from .contextionary import BaseContextionary
+from .schema import BaseProperty, BaseSchema
