@@ -1,47 +1,56 @@
 """
-AsyncDataObject class definition.
+DataObject class definition.
 """
+import uuid as uuid_lib
 from numbers import Real
 from typing import Union, Optional, List, Sequence
-from weaviate.base import BaseDataObject
+from weaviate.base.data import (
+    BaseDataObject,
+    pre_replace,
+    pre_create,
+    pre_delete_exists,
+    pre_get,
+    pre_update,
+    pre_validate,
+)
 from weaviate.exceptions import (
     ObjectAlreadyExistsError,
     AiohttpConnectionError,
     UnsuccessfulStatusCodeError,
 )
-from .references import AsyncReference
-from ..requests import AsyncRequests
+from .references.crud_references import Reference
+from ..requests import Requests
 
 
-class AsyncDataObject(BaseDataObject):
+class DataObject(BaseDataObject):
     """
-    AsyncDataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
+    DataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
 
     Attributes
     ----------
-    reference : weaviate.asynchronous.AsyncReference
-        A AsyncReference object to create objects cross-references.
+    reference : weaviate.asynchronous.Reference
+        A Reference object to create objects cross-references.
     """
 
-    def __init__(self, requests: AsyncRequests):
+    async def __init__(self, requests: Requests):
         """
-        Initialize a AsyncDataObject class instance.
+        Initialize a DataObject class instance.
 
         Parameters
         ----------
-        requests : weaviate.asynchronous.AsyncRequests
-            AsyncRequests object to an active and running weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running weaviate instance.
         """
 
         self._requests = requests
-        self.reference = AsyncReference(self._requests)
+        self.reference = Reference(self._requests)
 
     async def create(self,
             data_object: dict,
             class_name: str,
-            uuid: str=None,
-            vector: Sequence[Real]=None,
-        ):
+            uuid: Union[str, uuid_lib.UUID, None]=None,
+            vector: Optional[Sequence[Real]]=None,
+        ) -> str:
         """
         Create a new object in Weaviate.
 
@@ -51,24 +60,24 @@ class AsyncDataObject(BaseDataObject):
             The new object to add to Weaviate. It represents the class instance properties only.
         class_name : str
             The class name associated with the object given.
-        uuid : str, optional
-            The object's UUID. The object to will have this uuid if it is provided, otherwise
-            weaviate will generate a UUID for this object, by default None.
-        vector: Sequence, optional
+        uuid : str, uuid.UUID or None, optional
+            The object's UUID. The object to will have this UUID if it is provided, otherwise
+            weaviate will generate an UUID for this object, by default None.
+        vector: Sequence[Real] or None, optional
             The embedding of the object that should be created. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
-            'torch.Tensor' and 'tf.Tensor', by default None.
+            'torch.Tensor' and 'tf.Tensor',by default None.
 
         Examples
         --------
         Schema contains a class Author with only 'name' and 'age' primitive property.
 
-        >>> client.data_object.create(
+        >>> await client.data_object.create(
         ...     data_object = {'name': 'Neil Gaiman', 'age': 60},
         ...     class_name = 'Author',
         ... )
         '46091506-e3a0-41a4-9597-10e3064d8e2d'
-        >>> client.data_object.create(
+        >>> await client.data_object.create(
         ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
@@ -78,7 +87,7 @@ class AsyncDataObject(BaseDataObject):
         Returns
         -------
         str
-            Returns the UUID of the created object.
+            The UUID of the created object.
 
         Raises
         ------
@@ -88,14 +97,14 @@ class AsyncDataObject(BaseDataObject):
             If one of the arguments has an invalid value.
         weaviate.exception.ObjectAlreadyExistsException
             If an object with the given uuid already exists within weaviate.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If creating the object in Weaviate failed for a different reason other than connection,
             more information is given in the error message.
         """
 
-        path, weaviate_obj = super().create(
+        path, weaviate_obj = pre_create(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -130,9 +139,9 @@ class AsyncDataObject(BaseDataObject):
     async def update(self,
             data_object: dict,
             class_name: str,
-            uuid: str,
-            vector: Sequence[Real]=None,
-        ):
+            uuid: Union[str, uuid_lib.UUID],
+            vector: Optional[Sequence[Real]]=None,
+        ) -> None:
         """
         Update the given object's property/ies. Only the specified property/ies are updated, the
         unspecified ones remain unchanged.
@@ -144,20 +153,20 @@ class AsyncDataObject(BaseDataObject):
             'data_object' remain unchanged. Fields that are None will not be changed.
         class_name : str
             The class name of the object that should be updated.
-        uuid : str
+        uuid : str or uuid.UUID
             The object's UUID which should be updated.
-        vector: Sequence, optional
+        vector: Sequence[Real] or None, optional
             The embedding of the object that should be updated. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
             'torch.Tensor' and 'tf.Tensor', by default None.
 
         Examples
         --------
-        >>> author_id = client.data_object.create(
+        >>> author_id = await client.data_object.create(
         ...     data_object = {'name': 'Philip Pullman', 'age': 64},
         ...     class_name = 'Author'
         ... )
-        >>> client.data_object.get(author_id)
+        >>> await client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -170,12 +179,12 @@ class AsyncDataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> client.data_object.update(
+        >>> await client.data_object.update(
         ...     data_object = {'age': 74},
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
-        >>> client.data_object.get(author_id)
+        >>> await client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -195,14 +204,14 @@ class AsyncDataObject(BaseDataObject):
             If one of the arguments is of wrong data type.
         ValueError
             If one of the arguments has an invalid value.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If updating the object in Weaviate failed for a different reason than connection,
             more information is given in the error message.
         """
 
-        path, weaviate_obj = super().update(
+        path, weaviate_obj = pre_update(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -229,9 +238,9 @@ class AsyncDataObject(BaseDataObject):
     async def replace(self,
             data_object: dict,
             class_name: str,
-            uuid: str,
-            vector: Sequence[Real]=None,
-        ):
+            uuid: Union[str, uuid_lib.UUID],
+            vector: Optional[Sequence[Real]]=None,
+        ) -> None:
         """
         Replace an already existing object with a new one. This method replaces the whole object.
 
@@ -241,20 +250,20 @@ class AsyncDataObject(BaseDataObject):
             The new object to be replaced with.
         class_name : str
             The class name of the object that should be replaced.
-        uuid : str
+        uuid : str or uuid.UUID
             The object's UUID which should be replaced.
-        vector: Sequence, optional
+        vector: Sequence[Real] or None, optional
             The embedding of the object that should be replaced. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
             'torch.Tensor' and 'tf.Tensor', by default None.
 
         Examples
         --------
-        >>> author_id = client.data_object.create(
+        >>> author_id = await client.data_object.create(
         ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
-        >>> client.data_object.get(author_id)
+        >>> await client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -267,12 +276,12 @@ class AsyncDataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> client.data_object.replace(
+        >>> await client.data_object.replace(
         ...     data_object = {'name': 'H.P. Lovecraft'},
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
-        >>> client.data_object.get(author_id)
+        >>> await client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -290,14 +299,14 @@ class AsyncDataObject(BaseDataObject):
             If one of the arguments is of wrong data type.
         ValueError
             If one of the arguments has an invalid value.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If replacing the object in Weaviate failed for a different reason than connection,
             more information is given in the error message.
         """
 
-        path, weaviate_obj = super().replace(
+        path, weaviate_obj = pre_replace(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -321,10 +330,10 @@ class AsyncDataObject(BaseDataObject):
         )
 
     async def get_by_id(self,
-            uuid: str,
+            uuid: Union[str, uuid_lib.UUID],
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
-        ):
+        ) -> Optional[dict]:
         """
         Get an object as dict.
 
@@ -339,7 +348,7 @@ class AsyncDataObject(BaseDataObject):
 
         Examples
         --------
-        >>> client.data_object.get_by_id("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await client.data_object.get_by_id("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
         {
             "additional": {},
             "class": "Author",
@@ -360,7 +369,7 @@ class AsyncDataObject(BaseDataObject):
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
@@ -373,12 +382,12 @@ class AsyncDataObject(BaseDataObject):
         )
 
     async def get(self,
-            uuid: Optional[str]=None,
+            uuid: Union[str, uuid_lib.UUID, None]=None,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
             limit: Optional[int]=None,
             offset: Optional[int]=None,
-        ):
+        ) -> Optional[Union[List[dict], dict]]:
         """
         Gets objects from weaviate, the default maximum number of objects depends of Weaviate
         server's 'QUERY_DEFAULTS_LIMIT'. If 'uuid' is None a maximum of 'QUERY_DEFAULTS_LIMIT'
@@ -391,7 +400,7 @@ class AsyncDataObject(BaseDataObject):
 
         Parameters
         ----------
-        uuid : str, optional
+        uuid : str, uuid.UUID or None, optional
             The identifier of the object that should be retrieved.
         additional_properties : list of str, str or None, optional
             Additional properties that should be included in the request, by default None
@@ -411,13 +420,13 @@ class AsyncDataObject(BaseDataObject):
 
         Raises
         ------
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        path, params = super().get(
+        path, params = pre_get(
             uuid=uuid,
             additional_properties=additional_properties,
             with_vector=with_vector,
@@ -445,18 +454,18 @@ class AsyncDataObject(BaseDataObject):
             response_message=await response.text(),
         )
 
-    async def delete(self, uuid: str):
+    async def delete(self, uuid: Union[str, uuid_lib.UUID]) -> None:
         """
         Delete an existing object from weaviate.
 
         Parameters
         ----------
-        uuid : str
+        uuid : str or uuid.UUID
             The ID of the object that should be deleted.
 
         Examples
         --------
-        >>> client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
         {
             "additional": {},
             "class": "Author",
@@ -469,8 +478,8 @@ class AsyncDataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> client.data_object.delete("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
-        >>> client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await client.data_object.delete("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
         None
 
         Raises
@@ -479,13 +488,13 @@ class AsyncDataObject(BaseDataObject):
             If 'uuid' is not of type 'str'.
         ValueError
             If 'uuid' is not properly formed.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        path = super().delete(
+        path = pre_delete_exists(
             uuid=uuid,
         )
         try:
@@ -504,25 +513,25 @@ class AsyncDataObject(BaseDataObject):
             response_message=await response.text(),
         )
 
-    async def exists(self, uuid: str):
+    async def exists(self, uuid: Union[str, uuid_lib.UUID]) -> bool:
         """
         Check if the object exist in weaviate.
 
         Parameters
         ----------
-        uuid : str
+        uuid : str or uuid.UUID
             The UUID of the object that may or may not exist within weaviate.
 
         Examples
         --------
-        >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
+        >>> await client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
         False
-        >>> client.data_object.create(
+        >>> await client.data_object.create(
         ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
-        >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
+        >>> await client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
         True
 
         Returns
@@ -536,13 +545,13 @@ class AsyncDataObject(BaseDataObject):
             If 'uuid' is not of type 'str'.
         ValueError
             If 'uuid' is not properly formed.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        path = super().exists(
+        path = pre_delete_exists(
             uuid=uuid,
         )
         try:
@@ -567,9 +576,9 @@ class AsyncDataObject(BaseDataObject):
     async def validate(self,
             data_object: dict,
             class_name: str,
-            uuid: Optional[str]=None,
+            uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None
-        ):
+        ) -> dict:
         """
         Validate an object against weaviate.
 
@@ -579,25 +588,23 @@ class AsyncDataObject(BaseDataObject):
             Object to be validated.
         class_name : str
             Name of the class of the object that should be validated.
-        uuid : str or None, optional
-            The UUID of the object that should be validated against weaviate.
-            by default None.
+        uuid : str, uuid.UUID or None, optional
+            The UUID of the object that should be validated against Weaviate, by default None.
         vector: Sequence[Real] or None, optional
             The embedding of the object that should be validated. Used only class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
-            'torch.Tensor' and 'tf.Tensor',
-            by default None.
+            'torch.Tensor' and 'tf.Tensor', by default None.
 
         Examples
         --------
         Assume we have a Author class only 'name' property, NO 'age'.
 
-        >>> client.data_object.validate(
+        >>> await client.data_object.validate(
         ...     data_object = {'name': 'H. Lovecraft'},
         ...     class_name = 'Author'
         ... )
         {'error': None, 'valid': True}
-        >>> client.data_object.validate(
+        >>> await client.data_object.validate(
         ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
@@ -623,13 +630,13 @@ class AsyncDataObject(BaseDataObject):
             If argument is of wrong type.
         ValueError
             If argument contains an invalid value.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If validating the object against Weaviate failed with a different reason.
         """
 
-        path, weaviate_obj = super().validate(
+        path, weaviate_obj = pre_validate(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,

@@ -1,46 +1,55 @@
 """
-SyncDataObject class definition.
+DataObject class definition.
 """
+import uuid as uuid_lib
 from numbers import Real
 from typing import Union, Optional, List, Sequence
-from weaviate.base import BaseDataObject
+from weaviate.base.data import (
+    BaseDataObject,
+    pre_replace,
+    pre_create,
+    pre_delete_exists,
+    pre_get,
+    pre_update,
+    pre_validate,
+)
 from weaviate.exceptions import (
     ObjectAlreadyExistsError,
     RequestsConnectionError,
     UnsuccessfulStatusCodeError,
 )
-from .references import SyncReference
-from ..requests import SyncRequests
+from .references.crud_references import Reference
+from ..requests import Requests
 
 
-class SyncDataObject(BaseDataObject):
+class DataObject(BaseDataObject):
     """
-    SyncDataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
+    DataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
 
     Attributes
     ----------
-    reference : weaviate.synchronous.SyncReference
-        A SyncReference object to create objects cross-references.
+    reference : weaviate.synchronous.Reference
+        A Reference object to create objects cross-references.
     """
 
-    def __init__(self, requests: SyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a SyncDataObject class instance.
+        Initialize a DataObject class instance.
 
         Parameters
         ----------
-        requests : weaviate.synchronous.SyncRequests
-            SyncRequests object to an active and running weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running weaviate instance.
         """
 
         self._requests = requests
-        self.reference = SyncReference(self._requests)
+        self.reference = Reference(self._requests)
 
     def create(self,
             data_object: dict,
             class_name: str,
-            uuid: str=None,
-            vector: Sequence[Real]=None,
+            uuid: Union[str, uuid_lib.UUID, None]=None,
+            vector: Optional[Sequence[Real]]=None,
         ) -> str:
         """
         Create a new object in Weaviate.
@@ -51,13 +60,13 @@ class SyncDataObject(BaseDataObject):
             The new object to add to Weaviate. It represents the class instance properties only.
         class_name : str
             The class name associated with the object given.
-        uuid : str, optional
-            The object's UUID. The object to will have this uuid if it is provided, otherwise
-            weaviate will generate a UUID for this object, by default None.
-        vector: Sequence, optional
+        uuid : str, uuid.UUID or None, optional
+            The object's UUID. The object to will have this UUID if it is provided, otherwise
+            weaviate will generate an UUID for this object, by default None.
+        vector: Sequence[Real] or None, optional
             The embedding of the object that should be created. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
-            'torch.Tensor' and 'tf.Tensor', by default None.
+            'torch.Tensor' and 'tf.Tensor',by default None.
 
         Examples
         --------
@@ -78,7 +87,7 @@ class SyncDataObject(BaseDataObject):
         Returns
         -------
         str
-            Returns the UUID of the created object.
+            The UUID of the created object.
 
         Raises
         ------
@@ -95,7 +104,7 @@ class SyncDataObject(BaseDataObject):
             more information is given in the error message.
         """
 
-        path, weaviate_obj = super().create(
+        path, weaviate_obj = pre_create(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -130,8 +139,8 @@ class SyncDataObject(BaseDataObject):
     def update(self,
             data_object: dict,
             class_name: str,
-            uuid: str,
-            vector: Sequence[Real]=None,
+            uuid: Union[str, uuid_lib.UUID],
+            vector: Optional[Sequence[Real]]=None,
         ) -> None:
         """
         Update the given object's property/ies. Only the specified property/ies are updated, the
@@ -144,9 +153,9 @@ class SyncDataObject(BaseDataObject):
             'data_object' remain unchanged. Fields that are None will not be changed.
         class_name : str
             The class name of the object that should be updated.
-        uuid : str
+        uuid : str or uuid.UUID
             The object's UUID which should be updated.
-        vector: Sequence, optional
+        vector: Sequence[Real] or None, optional
             The embedding of the object that should be updated. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
             'torch.Tensor' and 'tf.Tensor', by default None.
@@ -202,7 +211,7 @@ class SyncDataObject(BaseDataObject):
             more information is given in the error message.
         """
 
-        path, weaviate_obj = super().update(
+        path, weaviate_obj = pre_update(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -229,8 +238,8 @@ class SyncDataObject(BaseDataObject):
     def replace(self,
             data_object: dict,
             class_name: str,
-            uuid: str,
-            vector: Sequence[Real]=None,
+            uuid: Union[str, uuid_lib.UUID],
+            vector: Optional[Sequence[Real]]=None,
         ) -> None:
         """
         Replace an already existing object with a new one. This method replaces the whole object.
@@ -241,9 +250,9 @@ class SyncDataObject(BaseDataObject):
             The new object to be replaced with.
         class_name : str
             The class name of the object that should be replaced.
-        uuid : str
+        uuid : str or uuid.UUID
             The object's UUID which should be replaced.
-        vector: Sequence, optional
+        vector: Sequence[Real] or None, optional
             The embedding of the object that should be replaced. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
             'torch.Tensor' and 'tf.Tensor', by default None.
@@ -297,7 +306,7 @@ class SyncDataObject(BaseDataObject):
             more information is given in the error message.
         """
 
-        path, weaviate_obj = super().replace(
+        path, weaviate_obj = pre_replace(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -321,7 +330,7 @@ class SyncDataObject(BaseDataObject):
         )
 
     def get_by_id(self,
-            uuid: str,
+            uuid: Union[str, uuid_lib.UUID],
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
         ) -> Optional[dict]:
@@ -373,7 +382,7 @@ class SyncDataObject(BaseDataObject):
         )
 
     def get(self,
-            uuid: Optional[str]=None,
+            uuid: Union[str, uuid_lib.UUID, None]=None,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
             limit: Optional[int]=None,
@@ -391,7 +400,7 @@ class SyncDataObject(BaseDataObject):
 
         Parameters
         ----------
-        uuid : str, optional
+        uuid : str, uuid.UUID or None, optional
             The identifier of the object that should be retrieved.
         additional_properties : list of str, str or None, optional
             Additional properties that should be included in the request, by default None
@@ -417,7 +426,7 @@ class SyncDataObject(BaseDataObject):
             If weaviate reports a none OK status.
         """
 
-        path, params = super().get(
+        path, params = pre_get(
             uuid=uuid,
             additional_properties=additional_properties,
             with_vector=with_vector,
@@ -445,13 +454,13 @@ class SyncDataObject(BaseDataObject):
             response_message=response.text,
         )
 
-    def delete(self, uuid: str) -> None:
+    def delete(self, uuid: Union[str, uuid_lib.UUID]) -> None:
         """
         Delete an existing object from weaviate.
 
         Parameters
         ----------
-        uuid : str
+        uuid : str or uuid.UUID
             The ID of the object that should be deleted.
 
         Examples
@@ -485,7 +494,7 @@ class SyncDataObject(BaseDataObject):
             If weaviate reports a none OK status.
         """
 
-        path = super().delete(
+        path = pre_delete_exists(
             uuid=uuid,
         )
         try:
@@ -504,13 +513,13 @@ class SyncDataObject(BaseDataObject):
             response_message=response.text,
         )
 
-    def exists(self, uuid: str) -> bool:
+    def exists(self, uuid: Union[str, uuid_lib.UUID]) -> bool:
         """
         Check if the object exist in weaviate.
 
         Parameters
         ----------
-        uuid : str
+        uuid : str or uuid.UUID
             The UUID of the object that may or may not exist within weaviate.
 
         Examples
@@ -542,7 +551,7 @@ class SyncDataObject(BaseDataObject):
             If weaviate reports a none OK status.
         """
 
-        path = super().exists(
+        path = pre_delete_exists(
             uuid=uuid,
         )
         try:
@@ -567,7 +576,7 @@ class SyncDataObject(BaseDataObject):
     def validate(self,
             data_object: dict,
             class_name: str,
-            uuid: Optional[str]=None,
+            uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None
         ) -> dict:
         """
@@ -579,14 +588,12 @@ class SyncDataObject(BaseDataObject):
             Object to be validated.
         class_name : str
             Name of the class of the object that should be validated.
-        uuid : str or None, optional
-            The UUID of the object that should be validated against weaviate.
-            by default None.
+        uuid : str, uuid.UUID or None, optional
+            The UUID of the object that should be validated against Weaviate, by default None.
         vector: Sequence[Real] or None, optional
             The embedding of the object that should be validated. Used only class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
-            'torch.Tensor' and 'tf.Tensor',
-            by default None.
+            'torch.Tensor' and 'tf.Tensor', by default None.
 
         Examples
         --------
@@ -629,7 +636,7 @@ class SyncDataObject(BaseDataObject):
             If validating the object against Weaviate failed with a different reason.
         """
 
-        path, weaviate_obj = super().validate(
+        path, weaviate_obj = pre_validate(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,

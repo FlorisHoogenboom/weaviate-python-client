@@ -14,4 +14,5 @@ __all__ = [
 from .requests import Requests
 from .classification import Classification, ConfigBuilder
 from .schema import Schema
-from .data import DataObject, Reference
+from .data.crud_data import DataObject
+from .data.references.crud_references import Reference

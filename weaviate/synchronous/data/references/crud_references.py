@@ -1,41 +1,51 @@
 """
-SyncReference class definition.
+Reference class definition.
 """
+import uuid
 from typing import Union
-from weaviate.base import BaseReference
+from weaviate.base.data.references import (
+    BaseReference,
+    pre_replace,
+    pre_add,
+    pre_delete,
+)
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
-from ...requests import SyncRequests
+from ...requests import Requests
 
 
-class SyncReference(BaseReference):
+class Reference(BaseReference):
     """
-    SyncReference class used to manipulate references within objects.
+    Reference class used to manipulate references within objects.
     """
 
-    def __init__(self, requests: SyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a SyncReference class instance.
+        Initialize a Reference class instance.
 
         Parameters
         ----------
-        requests : weaviate.synchronous.SyncRequests
-            SyncRequests object to an active and running weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running weaviate instance.
         """
 
         self._requests = requests
 
-    def delete(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
+    def delete(self,
+            from_uuid: Union[str, uuid.UUID],
+            from_property_name: str,
+            to_uuid: Union[str, uuid.UUID],
+        ) -> None:
         """
         Remove a reference to another object. Equal to removing one direction of an edge from the
         graph.
 
         Parameters
         ----------
-        from_uuid : str
-            The ID of the object that references another object.
+        from_uuid : str or uuid.UUID
+            The UUID of the object for which to delete the reference.
         from_property_name : str
-            The property from which the reference should be deleted.
-        to_uuid : str
+            The property that contains the reference that should be deleted.
+        to_uuid : str or uuid.UUID
             The UUID of the referenced object.
 
         Examples
@@ -84,7 +94,7 @@ class SyncReference(BaseReference):
         ...     from_property_name = 'wroteBooks',
         ...     to_uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d' # Book UUID
         ... )
-        >>> >>> client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
+        >>> client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
         {
             "additional": {},
             "class": "Author",
@@ -110,7 +120,7 @@ class SyncReference(BaseReference):
             If weaviate reports a none OK status.
         """
 
-        path, beacon = super().delete(
+        path, beacon = pre_delete(
             from_uuid=from_uuid,
             from_property_name=from_property_name,
             to_uuid=to_uuid,
@@ -132,30 +142,24 @@ class SyncReference(BaseReference):
             response_message=response.text,
         )
 
-    def replace(self, from_uuid: str, from_property_name: str, to_uuids: Union[list, str]) -> None:
+    def replace(self,
+            from_uuid: Union[str, uuid.UUID],
+            from_property_name: str,
+            to_uuids: Union[list, str, uuid.UUID],
+        ) -> None:
         """
         Allows to replace ALL references in that property with a new set of references.
         NOTE: All old references will be deleted.
 
         Parameters
         ----------
-        from_uuid : str
-            The object that should have the reference as part of its properties.
-            Should be in the form of an UUID or in form of an URL.
-            E.g.
-            'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-            or
-            'fc7eb129-f138-457f-b727-1b29db191a67'
+        from_uuid : str or uuid.UUID
+            The UUID of the object for which to replace the reference/s.
         from_property_name : str
-            The name of the property within the object.
-        to_uuids : list or str
-            The UUIDs of the objects that should be referenced.
-            Should be a list of str in the form of an UUID or str in form of an URL.
-            E.g.
-            ['http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67', ...]
-            or
-            ['fc7eb129-f138-457f-b727-1b29db191a67', ...]
-            If 'str' it is converted internally into a list of str.
+            The property that contains the reference that should be replaced.
+        to_uuids : list, str or uuid.UUID
+            The UUIDs of the objects that should be referenced. If 'str' it is converted internally
+            into a list of str.
 
         Examples
         --------
@@ -229,7 +233,7 @@ class SyncReference(BaseReference):
             If weaviate reports a none OK status.
         """
 
-        path, beacons = super().replace(
+        path, beacons = pre_replace(
             from_uuid=from_uuid,
             from_property_name=from_property_name,
             to_uuids=to_uuids,
@@ -251,28 +255,22 @@ class SyncReference(BaseReference):
             response_message=response.text,
         )
 
-    def add(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
+    def add(self,
+            from_uuid: Union[str, uuid.UUID],
+            from_property_name: str,
+            to_uuid: Union[str, uuid.UUID],
+        ) -> None:
         """
         Allows to link an object to an object unidirectionally.
 
         Parameters
         ----------
-        from_uuid : str
-            The ID of the object that should have the reference as part
-            of its properties. Should be a plane UUID or an URL.
-            E.g.
-            'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-            or
-            'fc7eb129-f138-457f-b727-1b29db191a67'
+        from_uuid : str or uuid.UUID
+            The UUID of the object for which to add the reference.
         from_property_name : str
-            The name of the property within the object.
-        to_uuid : str
-            The UUID of the object that should be referenced.
-            Should be a plane UUID or an URL.
-            E.g.
-            'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-            or
-            'fc7eb129-f138-457f-b727-1b29db191a67'
+            The property for which to create the reference.
+        to_uuid : str or uuid.UUID
+            The UUID of the referenced object.
 
         Examples
         --------
@@ -327,7 +325,7 @@ class SyncReference(BaseReference):
             If weaviate reports a none OK status.
         """
 
-        path, beacons = super().add(
+        path, beacons = pre_add(
             from_uuid=from_uuid,
             from_property_name=from_property_name,
             to_uuid=to_uuid,

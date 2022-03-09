@@ -64,7 +64,20 @@ class BaseClassification(ABC):
         """
 
 
-def pre_get(classification_uuid:  Union[str, uuid.UUID]):
+def pre_get(classification_uuid:  Union[str, uuid.UUID]) -> str:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    classification_uuid : Union[str, uuid.UUID]
+        Identifier of the classification.
+
+    Returns
+    -------
+    str
+        The path to the Weaviate resource.
+    """
 
     path = f'/classifications/{get_valid_uuid(classification_uuid)}'
 

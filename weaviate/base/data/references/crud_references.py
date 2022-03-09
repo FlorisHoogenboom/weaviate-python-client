@@ -1,7 +1,8 @@
 """
 BaseReference class definition.
 """
-from typing import Union
+import uuid
+from typing import Union, Tuple
 from abc import ABC, abstractmethod
 from weaviate.util import get_valid_uuid
 
@@ -12,96 +13,63 @@ class BaseReference(ABC):
     """
 
     @abstractmethod
-    def delete(self, from_uuid: str, from_property_name: str, to_uuid: str):
+    def delete(self,
+            from_uuid: Union[str, uuid.UUID],
+            from_property_name: str,
+            to_uuid: Union[str, uuid.UUID],
+        ):
         """
         Remove a reference to another object. Equal to removing one direction of an edge from the
         graph.
 
         Parameters
         ----------
-        from_uuid : str
-            The ID of the object that references another object.
+        from_uuid : str or uuid.UUID
+            The UUID of the object for which to delete the reference.
         from_property_name : str
-            The property from which the reference should be deleted.
-        to_uuid : str
+            The property that contains the reference that should be deleted.
+        to_uuid : str or uuid.UUID
             The UUID of the referenced object.
         """
 
-        # Validate and create Beacon
-        from_uuid = get_valid_uuid(from_uuid)
-        to_uuid = get_valid_uuid(to_uuid)
-        _validate_property_name(from_property_name)
-        beacon = _get_beacon(to_uuid)
-
-        path = f"/objects/{from_uuid}/references/{from_property_name}"
-
-        return path, beacon
-
     @abstractmethod
-    def replace(self, from_uuid: str, from_property_name: str, to_uuids: Union[list, str]) -> None:
+    def replace(self,
+            from_uuid: Union[str, uuid.UUID],
+            from_property_name: str,
+            to_uuids: Union[list, str, uuid.UUID],
+        ):
         """
         Allows to replace ALL references in that property with a new set of references.
         NOTE: All old references will be deleted.
 
         Parameters
         ----------
-        from_uuid : str
-            The object that should have the reference as part of its properties.
-            Should be in the form of an UUID or in form of an URL.
-            E.g.
-            'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-            or
-            'fc7eb129-f138-457f-b727-1b29db191a67'
+        from_uuid : str or uuid.UUID
+            The UUID of the object for which to replace the reference/s.
         from_property_name : str
-            The name of the property within the object.
-        to_uuids : list or str
-            The UUIDs of the objects that should be referenced.
-            Should be a list of str in the form of an UUID or str in form of an URL.
-            E.g.
-            ['http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67', ...]
-            or
-            ['fc7eb129-f138-457f-b727-1b29db191a67', ...]
-            If 'str' it is converted internally into a list of str.
+            The property that contains the reference that should be replaced.
+        to_uuids : list, str or uuid.UUID
+            The UUIDs of the objects that should be referenced. If 'str' it is converted internally
+            into a list of str.
         """
 
-        if not isinstance(to_uuids, list):
-            to_uuids = [to_uuids]
-
-        # Validate and create Beacon
-        from_uuid = get_valid_uuid(from_uuid)
-        _validate_property_name(from_property_name)
-        beacons = []
-        for to_uuid in to_uuids:
-            to_uuid = get_valid_uuid(to_uuid)
-            beacons.append(_get_beacon(to_uuid))
-
-        path = f"/objects/{from_uuid}/references/{from_property_name}"
-
-        return path, beacons
-
     @abstractmethod
-    def add(self, from_uuid: str, from_property_name: str, to_uuid: str) -> None:
+    def add(self,
+            from_uuid: Union[str, uuid.UUID],
+            from_property_name: str,
+            to_uuid: Union[str, uuid.UUID],
+        ):
         """
         Allows to link an object to an object unidirectionally.
 
         Parameters
         ----------
-        from_uuid : str
-            The ID of the object that should have the reference as part
-            of its properties. Should be a plane UUID or an URL.
-            E.g.
-            'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-            or
-            'fc7eb129-f138-457f-b727-1b29db191a67'
+         from_uuid : str or uuid.UUID
+            The UUID of the object for which to add the reference.
         from_property_name : str
-            The name of the property within the object.
-        to_uuid : str
-            The UUID of the object that should be referenced.
-            Should be a plane UUID or an URL.
-            E.g.
-            'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-            or
-            'fc7eb129-f138-457f-b727-1b29db191a67'
+            The property for which to create the reference.
+        to_uuid : str or uuid.UUID
+            The UUID of the referenced object.
         """
 
         # Validate and create Beacon
@@ -115,13 +83,13 @@ class BaseReference(ABC):
         return path, beacons
 
 
-def _get_beacon(to_uuid: str) -> dict:
+def _get_beacon(to_uuid: Union[str, uuid.UUID]) -> dict:
     """
     Get a weaviate-style beacon.
 
     Parameters
     ----------
-    to_uuid : str
+    to_uuid : str or uuid.UUID
         The UUID to create beacon for.
 
     Returns
@@ -154,3 +122,111 @@ def _validate_property_name(property_name: str) -> None:
         raise TypeError(
             f"'from_property_name' must be of type str. Given type: {type(property_name)}."
         )
+
+
+def pre_delete(
+        from_uuid: Union[str, uuid.UUID],
+        from_property_name: str,
+        to_uuid: Union[str, uuid.UUID],
+    ) -> Tuple[str, dict]:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    from_uuid : str or uuid.UUID
+        The UUID of the object for which to delete the reference.
+    from_property_name : str
+        The property that contains the reference that should be deleted.
+    to_uuid : str or uuid.UUID
+        The UUID of the referenced object.
+
+    Returns
+    -------
+    Tuple[str, dict]
+        The path to the Weaviate resource and the payload.
+    """
+
+    # Validate and create Beacon
+    from_uuid = get_valid_uuid(from_uuid)
+    to_uuid = get_valid_uuid(to_uuid)
+    _validate_property_name(from_property_name)
+    beacon = _get_beacon(to_uuid)
+
+    path = f"/objects/{from_uuid}/references/{from_property_name}"
+
+    return path, beacon
+
+
+def pre_replace(
+        from_uuid: Union[str, uuid.UUID],
+        from_property_name: str,
+        to_uuids: Union[list, str, uuid.UUID],
+    ) -> Tuple[str, dict]:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    from_uuid : str or uuid.UUID
+        The UUID of the object for which to replace the reference/s.
+    from_property_name : str
+        The property that contains the reference that should be replaced.
+    to_uuids : list, str or uuid.UUID
+        The UUIDs of the objects that should be referenced. If 'str' it is converted internally
+        into a list of str.
+
+    Returns
+    -------
+    Tuple[str, dict]
+        The path to the Weaviate resource and the payload.
+    """
+
+    if not isinstance(to_uuids, list):
+        to_uuids = [to_uuids]
+
+    # Validate and create Beacon
+    from_uuid = get_valid_uuid(from_uuid)
+    _validate_property_name(from_property_name)
+    beacons = []
+    for to_uuid in to_uuids:
+        to_uuid = get_valid_uuid(to_uuid)
+        beacons.append(_get_beacon(to_uuid))
+
+    path = f"/objects/{from_uuid}/references/{from_property_name}"
+
+    return path, beacons
+
+
+def pre_add(
+        from_uuid: Union[str, uuid.UUID],
+        from_property_name: str,
+        to_uuid: Union[str, uuid.UUID],
+    ) -> Tuple[str, dict]:
+    """
+    Allows to link an object to an object unidirectionally.
+
+    Parameters
+    ----------
+    from_uuid : str or uuid.UUID
+        The UUID of the object for which to add the reference.
+    from_property_name : str
+        The property for which to create the reference.
+    to_uuid : str or uuid.UUID
+        The UUID of the referenced object.
+
+    Returns
+    -------
+    Tuple[str, dict]
+        The path to the Weaviate resource and the payload.
+    """
+
+    # Validate and create Beacon
+    from_uuid = get_valid_uuid(from_uuid)
+    to_uuid = get_valid_uuid(to_uuid)
+    _validate_property_name(from_property_name)
+    beacons = _get_beacon(to_uuid)
+
+    path = f"/objects/{from_uuid}/references/{from_property_name}"
+
+    return path, beacons
