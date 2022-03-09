@@ -3,15 +3,15 @@ Package that contains all Async class definitions that are used by AsyncClient.
 """
 
 __all__ = [
-    'AsyncRequests',
-    'AsyncClassification',
-    'AsyncConfigBuilder',
-    'AsyncSchema',
-    'AsyncDataObject',
-    'AsyncReference',
+    'Requests',
+    'Classification',
+    'ConfigBuilder',
+    'Schema',
+    'DataObject',
+    'Reference',
 ]
 
-from .requests import AsyncRequests
-from .classification import AsyncClassification, AsyncConfigBuilder
-from .schema import AsyncSchema
-from .data import AsyncDataObject, AsyncReference
+from .requests import Requests
+from .classification import Classification, ConfigBuilder
+from .schema import Schema
+from .data import DataObject, Reference

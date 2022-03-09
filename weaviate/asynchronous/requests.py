@@ -1,23 +1,22 @@
 """
-Connection class definition.
+Requests class definition.
 """
-
 from typing import Optional
 from aiohttp.client import ClientSession, ClientResponse
 from weaviate.base.connection import Connection
 
 
-class AsyncRequests:
+class Requests:
     """
-    AsyncRequests class used to make asynchronous requests to a Weaviate instance by using a
-    Connection. It has all needed RESTful API implementations.
+    Requests class used to make asynchronous requests to a Weaviate instance by using a Connection.
+    It has all needed RESTful API implementations.
     """
 
     def __init__(self,
             connection: Connection,
         ):
         """
-        Initialize a AsyncRequests class instance.
+        Initialize a Requests class instance.
 
         Parameters
         ----------
@@ -29,7 +28,7 @@ class AsyncRequests:
 
     async def close(self):
         """
-        Close connection for AsyncRequests class instance.
+        Close connection for Requests class instance.
         """
 
         await self._session.close()

@@ -3,24 +3,28 @@ AsyncContextionary class definition.
 """
 from numbers import Real
 from weaviate.exceptions import AiohttpConnectionError, UnsuccessfulStatusCodeError
-from weaviate.base.contextionary import BaseContextionary, get_extend_payload
-from .requests import AsyncRequests
+from weaviate.base.contextionary import (
+    BaseContextionary,
+    pre_extend,
+    pre_get_concept_vector,
+)
+from .requests import Requests
 
 
-class AsyncContextionary(BaseContextionary):
+class Contextionary(BaseContextionary):
     """
-    AsyncContextionary class used to add extend the Weaviate contextionary module
+    Contextionary class used to add extend the Weaviate contextionary module
     or to get vector/s of a specific concept.
     """
 
-    def __init__(self, requests: AsyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a AsyncContextionary class instance.
+        Initialize a Contextionary class instance.
 
         Parameters
         ----------
-        requests : weaviate.asynchronous.AsyncRequests
-            AsyncRequests object to an active and running Weaviate instance.
+        requests : weaviate.asynchronous.Requests
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
@@ -60,7 +64,7 @@ class AsyncContextionary(BaseContextionary):
             If the network connection to weaviate fails.
         """
 
-        extension = get_extend_payload(
+        extension = pre_extend(
             concept=concept,
             definition=definition,
             weight=weight,
@@ -140,7 +144,7 @@ class AsyncContextionary(BaseContextionary):
             If weaviate reports a none OK status.
         """
 
-        path = "/modules/text2vec-contextionary/concepts/" + concept
+        path = pre_get_concept_vector(concept=concept)
         try:
             response = await self._requests.get(
                 path=path,

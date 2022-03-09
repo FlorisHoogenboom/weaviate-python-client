@@ -1,23 +1,22 @@
 """
-Connection class definition.
+Requests class definition.
 """
-
 from typing import Optional
 from requests import Response, Session
 from weaviate.base.connection import Connection
 
 
-class SyncRequests:
+class Requests:
     """
-    SyncRequests class used to make synchronous requests to a Weaviate instance by using a
-    Connection. It has all needed RESTful API implementations.
+    Requests class used to make synchronous requests to a Weaviate instance by using a Connection.
+    It has all needed RESTful API implementations.
     """
 
     def __init__(self,
             connection: Connection,
         ):
         """
-        Initialize a SyncRequests class instance.
+        Initialize a Requests class instance.
 
         Parameters
         ----------
@@ -29,7 +28,7 @@ class SyncRequests:
 
     def __del__(self):
         """
-        Destructor for SyncRequests class instance.
+        Destructor for Requests class instance.
         """
 
         self._session.close()

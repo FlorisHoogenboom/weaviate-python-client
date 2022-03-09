@@ -33,10 +33,16 @@ class BaseContextionary(ABC):
     def get_concept_vector(self, concept: str):
         """
         Retrieves the vector representation of the given concept.
+
+        Parameters
+        ----------
+        concept : str
+            Concept for which the vector should be retrieved. Should be camelCased for word
+            combinations.
         """
 
 
-def get_extend_payload(concept: str, definition: str, weight: Real) -> Dict[str, Any]:
+def pre_extend(concept: str, definition: str, weight: Real) -> Dict[str, Any]:
     """
     Validate all arguments for correct type and value, and construct the payload for weaviate
     request.
@@ -81,3 +87,25 @@ def get_extend_payload(concept: str, definition: str, weight: Real) -> Dict[str,
         "definition": definition,
         "weight": weight
     }
+
+
+def pre_get_concept_vector(concept: str) -> str:
+    """
+    The pre-request function that should be shared between the sync/async version of the
+    BaseContextionary.
+
+    Parameters
+    ----------
+    concept : str
+        Concept for which the vector should be retrieved. Should be camelCased for word
+        combinations.
+
+    Returns
+    -------
+    str
+        The Weaviate resource path.
+    """
+
+    path = "/modules/text2vec-contextionary/concepts/" + concept
+
+    return path

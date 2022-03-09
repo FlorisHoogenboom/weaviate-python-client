@@ -1,26 +1,30 @@
 """
-SyncContextionary class definition.
+Contextionary class definition.
 """
 from numbers import Real
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
-from weaviate.base.contextionary import BaseContextionary, get_extend_payload
-from .requests import SyncRequests
+from weaviate.base.contextionary import (
+    BaseContextionary,
+    pre_extend,
+    pre_get_concept_vector,
+)
+from .requests import Requests
 
 
-class SyncContextionary(BaseContextionary):
+class Contextionary(BaseContextionary):
     """
-    SyncContextionary class used to add extend the Weaviate contextionary module
-    or to get vector/s of a specific concept.
+    Contextionary class used to add extend the Weaviate contextionary module or to get vector/s of
+    a specific concept.
     """
 
-    def __init__(self, requests: SyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a SyncContextionary class instance.
+        Initialize a Contextionary class instance.
 
         Parameters
         ----------
-        requests : weaviate.synchronous.SyncRequests
-            SyncRequests object to an active and running Weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
@@ -60,7 +64,7 @@ class SyncContextionary(BaseContextionary):
             If the network connection to weaviate fails.
         """
 
-        extension = get_extend_payload(
+        extension = pre_extend(
             concept=concept,
             definition=definition,
             weight=weight,
@@ -140,7 +144,7 @@ class SyncContextionary(BaseContextionary):
             If weaviate reports a none OK status.
         """
 
-        path = "/modules/text2vec-contextionary/concepts/" + concept
+        path = pre_get_concept_vector(concept=concept)
         try:
             response = self._requests.get(
                 path=path,

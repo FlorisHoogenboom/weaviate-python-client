@@ -3,15 +3,15 @@ Package that contains all Sync class definitions that are used by SyncClient.
 """
 
 __all__ = [
-    'SyncRequests',
-    'SyncClassification',
-    'SyncConfigBuilder',
-    'SyncSchema',
-    'SyncDataObject',
-    'SyncReference',
+    'Requests',
+    'Classification',
+    'ConfigBuilder',
+    'Schema',
+    'DataObject',
+    'Reference',
 ]
 
-from .requests import SyncRequests
-from .classification import SyncClassification, SyncConfigBuilder
-from .schema import SyncSchema
-from .data import SyncDataObject, SyncReference
+from .requests import Requests
+from .classification import Classification, ConfigBuilder
+from .schema import Schema
+from .data import DataObject, Reference
