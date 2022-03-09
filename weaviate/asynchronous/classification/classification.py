@@ -1,50 +1,54 @@
 """
 Classification class definition.
 """
-from weaviate.asynchronous import AsyncRequests
+import uuid
+from typing import Union
 from weaviate.exceptions import UnsuccessfulStatusCodeError, AiohttpConnectionError
-from weaviate.util import get_valid_uuid
-from .config_builder import AsyncConfigBuilder
+from weaviate.base.classification import(
+    BaseClassification,
+    pre_get,
+)
+from .config_builder import ConfigBuilder
+from ..requests import Requests
 
 
-class AsyncClassification:
+class Classification(BaseClassification):
     """
-    AsyncClassification class used to schedule and/or check the status of a classification process
+    Classification class used to schedule and/or check the status of a classification process
     of Weaviate objects.
     """
 
-    def __init__(self, requests: AsyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a AsyncClassification class instance.
+        Initialize a Classification class instance.
 
         Parameters
         ----------
-        requests : weaviate.asynchronous.AsyncRequests
-            AsyncRequests object to an active and running Weaviate instance.
+        requests : weaviate.asynchronous.Requests
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
 
-    def schedule(self) -> AsyncConfigBuilder:
+    def schedule(self) -> ConfigBuilder:
         """
         Schedule a Classification of the Objects within Weaviate.
 
         Returns
         -------
-        weaviate.requests.AsyncConfigBuilder
-            A AsyncConfigBuilder that should be configured to the desired
-            classification task
+        weaviate.asynchronous.ConfigBuilder
+            A ConfigBuilder that should be configured to the desired classification task.
         """
 
-        return AsyncConfigBuilder(self._requests, self)
+        return ConfigBuilder(self._requests, self)
 
-    async def get(self, classification_uuid: str) -> dict:
+    async def get(self, classification_uuid: Union[str, uuid.UUID]) -> dict:
         """
         Polls the current state of the given classification.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -54,18 +58,16 @@ class AsyncClassification:
 
         Raises
         ------
-        ValueError
-            If not a proper uuid.
-        requests.exceptions.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        path = f'/classifications/{get_valid_uuid(classification_uuid)}'
+        path = pre_get(classification_uuid=classification_uuid)
 
         try:
-            response = self._requests.get(
+            response = await self._requests.get(
                 path=path,
             )
         except AiohttpConnectionError as conn_err:
@@ -80,13 +82,13 @@ class AsyncClassification:
             response_message=await response.text(),
         )
 
-    async def is_complete(self, classification_uuid: str) -> bool:
+    async def is_complete(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
         """
         Checks if a started classification job has completed.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -97,13 +99,13 @@ class AsyncClassification:
 
         return await self._check_status(classification_uuid, 'completed')
 
-    async def is_failed(self, classification_uuid: str) -> bool:
+    async def is_failed(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
         """
         Checks if a started classification job has failed.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -114,13 +116,13 @@ class AsyncClassification:
 
         return await self._check_status(classification_uuid, "failed")
 
-    async def is_running(self, classification_uuid: str) -> bool:
+    async def is_running(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
         """
         Checks if a started classification job is running.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -131,13 +133,13 @@ class AsyncClassification:
 
         return await self._check_status(classification_uuid, "running")
 
-    async def _check_status(self, classification_uuid: str, status: str) -> bool:
+    async def _check_status(self, classification_uuid: Union[str, uuid.UUID], status: str) -> bool:
         """
         Check for a status of a classification.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
         status : str
             Status to check for.

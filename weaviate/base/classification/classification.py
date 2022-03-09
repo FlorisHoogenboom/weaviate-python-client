@@ -1,7 +1,10 @@
 """
 BaseClassification abstract class definition.
 """
+import uuid
+from typing import Union
 from abc import ABC, abstractmethod
+from weaviate.util import get_valid_uuid
 from .config_builder import BaseConfigBuilder
 
 class BaseClassification(ABC):
@@ -14,74 +17,55 @@ class BaseClassification(ABC):
     def schedule(self) -> BaseConfigBuilder:
         """
         Schedule a Classification of the Objects within Weaviate.
-
-        Returns
-        -------
-        weaviate.base.BaseConfigBuilder
-            A ConfigBuilder that should be configured to the desired
-            classification task
         """
 
     @abstractmethod
-    def get(self, classification_uuid: str) -> dict:
+    def get(self, classification_uuid: Union[str, uuid.UUID]):
         """
         Polls the current state of the given classification.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
-
-        Returns
-        -------
-        dict
-            A dict containing the Weaviate answer.
         """
 
     @abstractmethod
-    def is_complete(self, classification_uuid: str) -> bool:
+    def is_complete(self, classification_uuid:  Union[str, uuid.UUID]):
         """
         Checks if a started classification job has completed.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
-
-        Returns
-        -------
-        bool
-            True if given classification has finished, False otherwise.
         """
 
     @abstractmethod
-    def is_failed(self, classification_uuid: str) -> bool:
+    def is_failed(self, classification_uuid:  Union[str, uuid.UUID]):
         """
         Checks if a started classification job has failed.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
-
-        Returns
-        -------
-        bool
-            True if the classification failed, False otherwise.
         """
 
     @abstractmethod
-    def is_running(self, classification_uuid: str) -> bool:
+    def is_running(self, classification_uuid:  Union[str, uuid.UUID]):
         """
         Checks if a started classification job is running.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
-
-        Returns
-        -------
-        bool
-            True if the classification is running, False otherwise.
         """
+
+
+def pre_get(classification_uuid:  Union[str, uuid.UUID]):
+
+    path = f'/classifications/{get_valid_uuid(classification_uuid)}'
+
+    return path

@@ -4,24 +4,24 @@ ConfigBuilder class definition.
 import time
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
 from weaviate.base import BaseConfigBuilder
-from weaviate.synchronous import SyncRequests
+from ..requests import Requests
 
 
-class SyncConfigBuilder(BaseConfigBuilder):
+class ConfigBuilder(BaseConfigBuilder):
     """
-    SyncConfigBuilder class that is used to configure a classification process.
+    ConfigBuilder class that is used to configure a classification process.
     """
 
-    def __init__(self, requests: SyncRequests, classification: 'SyncClassification'):
+    def __init__(self, requests: Requests, classification: 'Classification'):
         """
-        Initialize a SyncConfigBuilder class instance.
+        Initialize a ConfigBuilder class instance.
 
         Parameters
         ----------
-        requests : weaviate.sync.SyncRequests
-            SyncRequests object to an active and running weaviate instance.
-        classification : weaviate.sync.SyncClassification
-            SyncClassification object to be configured using this SyncConfigBuilder instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running weaviate instance.
+        classification : weaviate.synchronous.Classification
+            Classification object to be configured using this ConfigBuilder instance.
         """
 
         super().__init__()

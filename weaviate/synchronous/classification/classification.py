@@ -1,49 +1,53 @@
 """
 Classification class definition.
 """
+import uuid
+from typing import Union
 from weaviate.exceptions import UnsuccessfulStatusCodeError, RequestsConnectionError
-from weaviate.util import get_valid_uuid
-from ..requests import SyncRequests
-from .config_builder import SyncConfigBuilder
+from weaviate.base.classification import(
+    BaseClassification,
+    pre_get,
+)
+from .config_builder import ConfigBuilder
+from ..requests import Requests
 
-class SyncClassification:
+class Classification(BaseClassification):
     """
-    SyncClassification class used to schedule and/or check the status of a classification process
+    Classification class used to schedule and/or check the status of a classification process
     of Weaviate objects.
     """
 
-    def __init__(self, requests: SyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a SyncClassification class instance.
+        Initialize a Classification class instance.
 
         Parameters
         ----------
-        connection : weaviate.sync.SyncRequests
-            SyncRequests object to an active and running Weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
 
-    def schedule(self) -> SyncConfigBuilder:
+    def schedule(self) -> ConfigBuilder:
         """
         Schedule a Classification of the Objects within Weaviate.
 
         Returns
         -------
-        weaviate.classification.config_builder.SyncConfigBuilder
-            A SyncConfigBuilder that should be configured to the desired
-            classification task
+        weaviate.synchronous.ConfigBuilder
+            A ConfigBuilder that should be configured to the desired classification task.
         """
 
-        return SyncConfigBuilder(self._requests, self)
+        return ConfigBuilder(self._requests, self)
 
-    def get(self, classification_uuid: str) -> dict:
+    def get(self, classification_uuid: Union[str, uuid.UUID]) -> dict:
         """
         Polls the current state of the given classification.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -53,15 +57,13 @@ class SyncClassification:
 
         Raises
         ------
-        ValueError
-            If not a proper uuid.
         requests.exceptions.ConnectionError
             If the network connection to weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If weaviate reports a none OK status.
         """
 
-        path = f'/classifications/{get_valid_uuid(classification_uuid)}'
+        path = pre_get(classification_uuid=classification_uuid)
 
         try:
             response = self._requests.get(
@@ -79,13 +81,13 @@ class SyncClassification:
             response_message=response.text,
         )
 
-    def is_complete(self, classification_uuid: str) -> bool:
+    def is_complete(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
         """
         Checks if a started classification job has completed.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -96,13 +98,13 @@ class SyncClassification:
 
         return self._check_status(classification_uuid, 'completed')
 
-    def is_failed(self, classification_uuid: str) -> bool:
+    def is_failed(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
         """
         Checks if a started classification job has failed.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -113,13 +115,13 @@ class SyncClassification:
 
         return self._check_status(classification_uuid, "failed")
 
-    def is_running(self, classification_uuid: str) -> bool:
+    def is_running(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
         """
         Checks if a started classification job is running.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
 
         Returns
@@ -130,13 +132,13 @@ class SyncClassification:
 
         return self._check_status(classification_uuid, "running")
 
-    def _check_status(self, classification_uuid: str, status: str) -> bool:
+    def _check_status(self, classification_uuid: Union[str, uuid.UUID], status: str) -> bool:
         """
         Check for a status of a classification.
 
         Parameters
         ----------
-        classification_uuid : str
+        classification_uuid : str or uuid.UUID
             Identifier of the classification.
         status : str
             Status to check for.

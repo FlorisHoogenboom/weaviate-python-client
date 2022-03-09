@@ -4,24 +4,24 @@ ConfigBuilder class definition.
 import asyncio
 from weaviate.exceptions import AiohttpConnectionError, UnsuccessfulStatusCodeError
 from weaviate.base import BaseConfigBuilder
-from weaviate.asynchronous import AsyncRequests
+from weaviate.asynchronous import Requests
 
 
-class AsyncConfigBuilder(BaseConfigBuilder):
+class ConfigBuilder(BaseConfigBuilder):
     """
-    AsyncConfigBuilder class that is used to configure a classification process.
+    ConfigBuilder class that is used to configure a classification process.
     """
 
-    def __init__(self, requests: AsyncRequests, classification: 'AsyncClassification'):
+    def __init__(self, requests: Requests, classification: 'Classification'):
         """
-        Initialize a AsyncConfigBuilder class instance.
+        Initialize a ConfigBuilder class instance.
 
         Parameters
         ----------
-        requests : weaviate.asynchronous.AsyncRequests
-            AsyncRequests object to an active and running weaviate instance.
-        classification : weaviate.asynchronous.AsyncClassification
-            AsyncClassification object to be configured using this AsyncConfigBuilder instance.
+        requests : weaviate.asynchronous.Requests
+            Requests object to an active and running weaviate instance.
+        classification : weaviate.asynchronous.Classification
+            Classification object to be configured using this ConfigBuilder instance.
         """
 
         super().__init__()

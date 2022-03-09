@@ -3,4 +3,8 @@ Module that defines the base abstract classes for classification. Sync and Async
 implements its own classes to be compatible with the respective libraries.
 """
 
-from .classification import BaseClassification, BaseConfigBuilder
+from .classification import (
+    BaseClassification,
+    BaseConfigBuilder,
+    pre_get,
+)

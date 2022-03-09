@@ -3,4 +3,4 @@ Module for classifying objects within Weaviate.
 """
 
 
-from .classification import AsyncClassification, AsyncConfigBuilder
+from .classification import Classification, ConfigBuilder

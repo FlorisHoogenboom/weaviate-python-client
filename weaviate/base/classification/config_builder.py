@@ -248,4 +248,3 @@ class BaseConfigBuilder(ABC):
         """
         Start the classification. Sync/Async child should implement each its own 'do' method.
         """
-        ...
