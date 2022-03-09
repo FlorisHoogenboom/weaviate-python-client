@@ -2,33 +2,34 @@
 GraphQL query module.
 """
 from typing import List, Union
-from weaviate.connect import Connection
-from weaviate.exceptions import UnexpectedStatusCodeException, WeaviateConnectionError
-from .get import GetBuilder
-from .aggregate import AggregateBuilder
+from weaviate.exceptions import UnsuccessfulStatusCodeError, RequestsConnectionError
+from weaviate.base.gql.query import BaseQuery, pre_raw
+from .get import SyncGetBuilder
+from .aggregate import SyncAggregateBuilder
+from ..requests import SyncRequests
 
 
-class Query:
+class Query(BaseQuery):
     """
     Query class used to make `get` and/or `aggregate` GraphQL queries.
     """
 
-    def __init__(self, connection: Connection):
+    def __init__(self, requests: SyncRequests):
         """
         Initialize a Classification class instance.
 
         Parameters
         ----------
-        connection : weaviate.connect.Connection
-            Connection object to an active and running Weaviate instance.
+        requests : weaviate.synchronous.SyncRequests
+            SyncRequests object to an active and running Weaviate instance.
         """
 
-        self._connection = connection
+        self._requests = requests
 
     def get(self,
             class_name: str,
-            properties: Union[List[str], str]
-        ) -> GetBuilder:
+            properties: Union[List[str], str]=[],
+        ) -> SyncGetBuilder:
         """
         Instantiate a GetBuilder for GraphQL `get` requests.
 
@@ -45,9 +46,9 @@ class Query:
             A GetBuilder to make GraphQL `get` requests from weaviate.
         """
 
-        return GetBuilder(class_name, properties, self._connection)
+        return SyncGetBuilder(class_name, properties, self._requests)
 
-    def aggregate(self, class_name: str) -> AggregateBuilder:
+    def aggregate(self, class_name: str) -> SyncAggregateBuilder:
         """
         Instantiate an AggregateBuilder for GraphQL `aggregate` requests.
 
@@ -62,7 +63,7 @@ class Query:
             An AggregateBuilder to make GraphQL `aggregate` requests from weaviate.
         """
 
-        return AggregateBuilder(class_name, self._connection)
+        return SyncAggregateBuilder(class_name, self._requests)
 
     def raw(self, gql_query: str) -> dict:
         """
@@ -134,18 +135,23 @@ class Query:
             If weaviate reports a none OK status.
         """
 
-        if not isinstance(gql_query, str):
-            raise TypeError("Query is expected to be a string")
-
-        json_query = {"query": gql_query}
+        json_query = pre_raw(
+            gql_query=gql_query,
+        )
 
         try:
-            response = self._connection.post(
+            response = self._requests.post(
                 path="/graphql",
-                weaviate_object=json_query
+                data_json=json_query,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError('Query not executed.') from conn_err
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'Query not executed.'
+            ) from conn_err
         if response.status_code == 200:
-            return response.json()  # Successfully queried
-        raise UnexpectedStatusCodeException("GQL query failed", response)
+            return response.json()
+        raise UnsuccessfulStatusCodeError(
+            "GQL query failed",
+            status_code=response.status_code,
+            response_message=response.text,
+        )

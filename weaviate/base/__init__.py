@@ -11,6 +11,9 @@ __all__ = [
     'BaseSchema',
     'BaseDataObject',
     'BaseReference',
+    'BaseAggregateBuilder',
+    'BaseGetBuilder',
+    'BaseQuery',
 ]
 
 from .connection import Connection
@@ -18,3 +21,4 @@ from .classification import BaseClassification, BaseConfigBuilder
 from .contextionary import BaseContextionary
 from .schema import BaseProperty, BaseSchema
 from .data import BaseDataObject, BaseReference
+from .gql import BaseAggregateBuilder, BaseGetBuilder, BaseQuery

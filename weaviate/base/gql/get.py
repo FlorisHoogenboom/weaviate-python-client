@@ -2,42 +2,39 @@
 GraphQL `Get` command.
 """
 from json import dumps
+from abc import ABC, abstractmethod
 from typing import List, Union, Optional, Dict, Tuple
-from weaviate.gql.filter import (
+from weaviate.util import image_encoder_b64, capitalize_first_letter
+from .filter import (
     Where,
     NearText,
     NearVector,
-    GraphQL,
     NearObject,
     Filter,
     Ask,
-    NearImage
+    NearImage,
+    Group,
 )
-from weaviate.connect import Connection
-from weaviate.util import image_encoder_b64, capitalize_first_letter
 
 
-class GetBuilder(GraphQL):
+class BaseGetBuilder(ABC):
     """
-    GetBuilder class used to create GraphQL queries.
+    BaseGetBuilder abstract class used to create GraphQL queries.
     """
 
     def __init__(self,
             class_name: str,
-            properties: Union[List[str], str],
-            connection: Connection
+            properties: Union[List[str], str]=[],
         ):
         """
-        Initialize a GetBuilder class instance.
+        Initialize a BaseGetBuilder class instance.
 
         Parameters
         ----------
         class_name : str
             Class name of the objects to interact with.
-        properties : str or list of str
-            Properties of the objects to interact with.
-        connection : weaviate.connect.Connection
-            Connection object to an active and running Weaviate instance.
+        properties : list of str or str, optional
+            Properties of the objects to interact with. By default [].
 
         Raises
         ------
@@ -45,19 +42,21 @@ class GetBuilder(GraphQL):
             If argument/s is/are of wrong type.
         """
 
-        super().__init__(connection)
-
         if not isinstance(class_name, str):
-            raise TypeError(f"class name must be of type str but was {type(class_name)}")
+            raise TypeError(
+                f"Class name must be of type str. Given type: {type(class_name)}."
+            )
         if not isinstance(properties, (list, str)):
-            raise TypeError("properties must be of type str or "
-                f"list of str but was {type(properties)}")
+            raise TypeError(
+                "'properties' must be None or of type str or list of str. "
+                f"Given type:{type(properties)}."
+            )
         if isinstance(properties, str):
             properties = [properties]
         for prop in properties:
             if not isinstance(prop, str):
                 raise TypeError(
-                    "All the `properties` must be of type `str`!"
+                    "All the 'properties' must be of type str."
                 )
 
         self._class_name: str = capitalize_first_letter(class_name)
@@ -65,13 +64,49 @@ class GetBuilder(GraphQL):
         self._additional: dict = {'__one_level': set()}
         # '__one_level' refers to the additional properties that are just a single word, not a dict
         # thus '__one_level', only one level of complexity
-        self._where: Optional[Where] = None  # To store the where filter if it is added
-        self._limit: Optional[str] = None  # To store the limit filter if it is added
-        self._offset: Optional[str] = None  # To store the offset filter if it is added
+        self._where: Optional[Where] = None
+        self._limit: Optional[str] = None
+        self._offset: Optional[str] = None
         self._near_ask: Optional[Filter] = None # To store the `near`/`ask` clause if it is added
         self._contains_filter = False  # true if any filter is added
+        self._group: Optional[Group] = None
 
-    def with_where(self, content: dict) -> 'GetBuilder':
+    def with_group(self, content: dict) -> 'BaseGetBuilder':
+        """
+        Set `group` filter.
+
+        Parameters
+        ----------
+        content : dict
+            The content of the `group` filter to set. See examples below.
+
+        Examples
+        --------
+        The 'content' prototype is like this:
+
+        >>> content = {
+        ...     'type': '<str>',
+        ...     'force': '<float>', # percentage as float how closely merge items should be related
+        ... }
+
+        Example of the 'merge' group type:
+
+        >>> content = {
+        ...     'type': 'merge',
+        ...     'force': '0.1',
+        ... }
+
+        Returns
+        -------
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
+        """
+
+        self._group = Group(content)
+        self._contains_filter = True
+        return self
+
+    def with_where(self, content: dict) -> 'BaseGetBuilder':
         """
         Set `where` filter.
 
@@ -82,7 +117,7 @@ class GetBuilder(GraphQL):
 
         Examples
         --------
-        The `content` prototype is like this:
+        The 'content' prototype is like this:
 
         >>> content = {
         ...     'operator': '<operator>',
@@ -105,9 +140,9 @@ class GetBuilder(GraphQL):
         Single operand:
 
         >>> content = {
-        ...     'path': ["wordCount"],    # Path to the property that should be used
+        ...     'path': ["wordCount"],      # Path to the property that should be used
         ...     'operator': 'GreaterThan',  # operator
-        ...     'valueInt': 1000       # value (which is always = to the type of the path property)
+        ...     'valueInt': 1000            # value (which is = to the type of the path property)
         ... }
 
         Or
@@ -138,15 +173,15 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
         """
 
         self._where = Where(content)
         self._contains_filter = True
         return self
 
-    def with_near_text(self, content: dict) -> 'GetBuilder':
+    def with_near_text(self, content: dict) -> 'BaseGetBuilder':
         """
         Set `nearText` filter. This filter can be used with text modules (text2vec).
         E.g.: text2vec-contextionary, text2vec-transformers.
@@ -163,16 +198,16 @@ class GetBuilder(GraphQL):
 
         >>> content = {
         ...     'concepts': <list of str or str>,
-        ...     'certainty': <float>, # Optional
-        ...     'moveAwayFrom': { # Optional
+        ...     'certainty': <float>,                  # Optional
+        ...     'moveAwayFrom': {                      # Optional
         ...         'concepts': <list of str or str>,
         ...         'force': <float>
         ...     },
-        ...     'moveTo': { # Optional
+        ...     'moveTo': {                            # Optional
         ...         'concepts': <list of str or str>,
         ...         'force': <float>
         ...     },
-        ...     'autocorrect': <bool>, # Optional
+        ...     'autocorrect': <bool>,                 # Optional
         ... }
 
         Full content:
@@ -210,8 +245,8 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
@@ -220,13 +255,14 @@ class GetBuilder(GraphQL):
         """
 
         if self._near_ask is not None:
-            raise AttributeError("Cannot use multiple 'near' filters, or a 'near' filter along"
-                " with a 'ask' filter!")
+            raise AttributeError(
+                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+            )
         self._near_ask = NearText(content)
         self._contains_filter = True
         return self
 
-    def with_near_vector(self, content: dict) -> 'GetBuilder':
+    def with_near_vector(self, content: dict) -> 'BaseGetBuilder':
         """
         Set `nearVector` filter.
 
@@ -241,7 +277,7 @@ class GetBuilder(GraphQL):
 
         >>> content = {
         ...     'vector' : <list of float>,
-        ...     'certainty': <float> # Optional
+        ...     'certainty': <float>          # Optional
         ... }
 
         NOTE: Supported types for 'vector' are `list`, 'numpy.ndarray`, `torch.Tensor`
@@ -274,23 +310,24 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
         AttributeError
-            If another 'near' filter was already set.
+            If another `near` filter was already set.
         """
 
         if self._near_ask is not None:
-            raise AttributeError("Cannot use multiple 'near' filters, or a 'near' filter along"
-                " with a 'ask' filter!")
+            raise AttributeError(
+                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+            )
         self._near_ask = NearVector(content)
         self._contains_filter = True
         return self
 
-    def with_near_object(self, content: dict) -> 'GetBuilder':
+    def with_near_object(self, content: dict) -> 'BaseGetBuilder':
         """
         Set `nearObject` filter.
 
@@ -305,18 +342,18 @@ class GetBuilder(GraphQL):
 
         >>> {
         ...     'id': "e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf",
-        ...     'certainty': 0.7 # Optional
+        ...     'certainty': 0.7                                # Optional
         ... }
         >>> # alternatively
         >>> {
         ...     'beacon': "weaviate://localhost/e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf"
-        ...     'certainty': 0.7 # Optional
+        ...     'certainty': 0.7                                # Optional
         ... }
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
@@ -325,13 +362,14 @@ class GetBuilder(GraphQL):
         """
 
         if self._near_ask is not None:
-            raise AttributeError("Cannot use multiple 'near' filters, or a 'near' filter along"
-                " with a 'ask' filter!")
+            raise AttributeError(
+                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+            )
         self._near_ask = NearObject(content)
         self._contains_filter = True
         return self
 
-    def with_near_image(self, content: dict, encode: bool = True) -> 'GetBuilder':
+    def with_near_image(self, content: dict, encode: bool = True) -> 'BaseGetBuilder':
         """
         Set `nearImage` filter.
 
@@ -412,8 +450,8 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
@@ -422,15 +460,16 @@ class GetBuilder(GraphQL):
         """
 
         if self._near_ask is not None:
-            raise AttributeError("Cannot use multiple 'near' filters, or a 'near' filter along"
-                " with a 'ask' filter!")
+            raise AttributeError(
+                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+            )
         if encode:
             content['image'] = image_encoder_b64(content['image'])
         self._near_ask = NearImage(content)
         self._contains_filter = True
         return self
 
-    def with_limit(self, limit: int) -> 'GetBuilder':
+    def with_limit(self, limit: int) -> 'BaseGetBuilder':
         """
         The limit of objects returned.
 
@@ -441,8 +480,8 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
@@ -457,7 +496,7 @@ class GetBuilder(GraphQL):
         self._contains_filter = True
         return self
 
-    def with_offset(self, offset: int) -> 'GetBuilder':
+    def with_offset(self, offset: int) -> 'BaseGetBuilder':
         """
         The offset of objects returned, i.e. the starting index of the returned objects should be
         used in conjunction with the `with_limit` method.
@@ -469,8 +508,8 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
@@ -485,7 +524,7 @@ class GetBuilder(GraphQL):
         self._contains_filter = True
         return self
 
-    def with_ask(self, content: dict) -> 'GetBuilder':
+    def with_ask(self, content: dict) -> 'BaseGetBuilder':
         """
         Ask a question for which weaviate will retreive the answer from your data.
         This filter can be used only with QnA module: qna-transformers.
@@ -524,20 +563,21 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.base.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
         """
 
         if self._near_ask is not None:
-            raise AttributeError("Cannot use multiple 'near' filters, or a 'near' filter along"
-                " with a 'ask' filter!")
+            raise AttributeError(
+                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+            )
         self._near_ask = Ask(content)
         self._contains_filter = True
         return self
 
     def with_additional(self,
             properties: Union[List, str, Dict[str, Union[List[str], str]],Tuple[dict, dict]]
-        ) -> 'GetBuilder':
+        ) -> 'BaseGetBuilder':
         """
         Add additional properties (i.e. properties from `_additional` clause). See Examples below.
         If the the 'properties' is of data type `str` or `list` of `str` then the method is
@@ -701,8 +741,8 @@ class GetBuilder(GraphQL):
 
         Returns
         -------
-        weaviate.gql.get.GetBuilder
-            The updated GetBuilder.
+        weaviate.gql.get.BaseGetBuilder
+            The updated BaseGetBuilder.
 
         Raises
         ------
@@ -776,6 +816,8 @@ class GetBuilder(GraphQL):
         query = '{Get{' + self._class_name
         if self._contains_filter:
             query += '('
+            if self._group is not None:
+                query += str(self._group)
             if self._where is not None:
                 query += str(self._where)
             if self._limit is not None:
@@ -786,9 +828,15 @@ class GetBuilder(GraphQL):
                 query += str(self._near_ask)
             query += ')'
 
+        additional_props = self._additional_to_str()
+
+        if not (additional_props and self._properties):
+            raise AttributeError(
+                "No 'properties', or 'additional properties', specified to be returned. "
+                "At least one should be included."
+            )
         properties = " ".join(self._properties) + self._additional_to_str()
-        if len(properties) != 0:
-            query += '{' + properties + '}'
+        query += '{' + properties + '}'
         return query + '}}'
 
     def _additional_to_str(self) -> str:
@@ -906,3 +954,9 @@ class GetBuilder(GraphQL):
                     " `list` then all items must be of type `str`!"
                 )
             self._additional[clause_with_settings].add(value)
+
+    @abstractmethod
+    def do(self):
+        """
+        Make the Get request to Weaviate.
+        """
