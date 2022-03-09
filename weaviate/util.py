@@ -4,10 +4,9 @@ Helper functions.
 import os
 import base64
 import uuid as uuid_lib
-from typing import Union, Sequence, Any
+from typing import Union, Sequence, Any, List
 from numbers import Real
 from io import BufferedReader
-import validators
 
 
 def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
@@ -36,7 +35,9 @@ def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
 
     if isinstance(image_or_image_path, str):
         if not os.path.isfile(image_or_image_path):
-            raise ValueError("No file found at location " + image_or_image_path)
+            raise ValueError(
+                f"No file found at location {image_or_image_path}."
+            )
         with open(image_or_image_path, 'br') as file:
             content = file.read()
 
@@ -67,13 +68,13 @@ def image_decoder_b64(encoded_image: str) -> bytes:
     return base64.b64decode(encoded_image.encode('utf-8'))
 
 
-def generate_local_beacon(uuid: str) -> dict:
+def generate_local_beacon(uuid: Union[str, uuid_lib.UUID]) -> dict:
     """
     Generates a beacon with the given uuid.
 
     Parameters
     ----------
-    uuid : str
+    uuid : str or uuid.UUID
         The UUID for which to create a local beacon.
 
     Returns
@@ -84,98 +85,27 @@ def generate_local_beacon(uuid: str) -> dict:
     Raises
     ------
     TypeError
-        If 'to_uuid' is not of type str.
+        If 'uuid' is not of type str or uuid.UUID.
     ValueError
-        If the 'to_uuid' is not valid.
+        If the 'uuid' is not valid.
     """
 
-    if not isinstance(uuid, str):
-        raise TypeError(
-            f"'to_object_uuid' must be of type 'str'. Given type: {type(uuid)}."
-        )
-    if not validators.uuid(uuid):
-        raise ValueError("UUID does not have the propper form.")
-    return {"beacon": "weaviate://localhost/" + uuid}
+    _uuid = get_valid_uuid(uuid=uuid)
+    
+    return {
+        "beacon": "weaviate://localhost/" + _uuid
+    }
 
 
-def is_weaviate_object_url(url: str) -> bool:
-    """
-    Checks if the input follows a normal Weaviate 'beacon' like this:
-    'weaviate://localhost/28f3f61b-b524-45e0-9bbe-2c1550bf73d2'
-
-    Parameters
-    ----------
-    input : str
-        The URL to be validated.
-
-    Returns
-    -------
-    bool
-        True if 'input' is a Weaviate object URL.
-        False otherwise.
-    """
-
-    if not isinstance(url, str):
-        return False
-    if not url.startswith("weaviate://"):
-        return False
-    url = url[11:]
-    split = url.split("/")
-    if len(split) != 2:
-        return False
-    if split[0] != "localhost":
-        if not validators.domain(split[0]):
-            return False
-    if not validators.uuid(split[1]):
-        return False
-    return True
-
-
-def is_object_url(url: str) -> bool:
-    """
-    Validates an url like 'http://localhost:8080/v1/objects/1c9cd584-88fe-5010-83d0-017cb3fcb446'
-    or '/v1/objects/1c9cd584-88fe-5010-83d0-017cb3fcb446' references a object. It only validates
-    the path format and UUID, not the host or the protocol.
-
-    Parameters
-    ----------
-    input : str
-        The URL to be validated.
-
-    Returns
-    -------
-    bool
-        True if the 'input' is a valid path to an object.
-        False otherwise.
-    """
-
-    split = url.split("/")
-    if len(split) < 3:
-        return False
-    if not validators.uuid(split[-1]):
-        return False
-    if not split[-2] == "objects":
-        return False
-    if not split[-3] == "v1":
-        return False
-    return True
-
-
-def get_valid_uuid(uuid: str) -> str:
+def get_valid_uuid(uuid: Union[str, uuid_lib.UUID]) -> str:
     """
     Validate and extract the UUID.
 
     Parameters
     ----------
-    uuid : str
-        The UUID to be validated and extracted.
-        Should be in the form of an UUID or in form of an URL (weaviate 'beacon' or 'href').
-        E.g.
-        'http://localhost:8080/v1/objects/fc7eb129-f138-457f-b727-1b29db191a67'
-        or
-        'weaviate://localhost/28f3f61b-b524-45e0-9bbe-2c1550bf73d2'
-        or
-        'fc7eb129-f138-457f-b727-1b29db191a67'
+    uuid : str or uuid.UUID
+        The UUID to be validated and extracted. Should be either as a string (with or without
+        hypthens) or an instance of uuid.UUID.
 
     Returns
     -------
@@ -190,20 +120,24 @@ def get_valid_uuid(uuid: str) -> str:
         If 'uuid' is not valid or cannot be extracted.
     """
 
-    if not isinstance(uuid, str):
-        raise TypeError("'uuid' must be of type str but was: " + str(type(uuid)))
+    if isinstance(uuid, uuid_lib.UUID):
+        return str(uuid)
 
-    _is_weaviate_url = is_weaviate_object_url(uuid)
-    _is_object_url = is_object_url(uuid)
-    _uuid = uuid
-    if _is_weaviate_url or _is_object_url:
-        _uuid = uuid.split("/")[-1]
-    if not validators.uuid(_uuid):
-        raise ValueError("Not valid 'uuid' or 'uuid' can not be extracted from value")
+    if not isinstance(uuid, str):
+        raise TypeError(
+            f"'uuid' must be of type str or uuid.UUID. Given type: {type(uuid)}."
+        )
+
+    try:
+        _uuid = str(uuid_lib.UUID(_uuid))
+    except ValueError:
+        raise ValueError(
+            "Not valid 'uuid' or 'uuid' can not be extracted from value."
+        ) from None
     return _uuid
 
 
-def get_vector(vector: Sequence[Real]) -> list:
+def get_vector(vector: Sequence[Real]) -> List[Real]:
     """
     Get weaviate compatible format of the embedding vector.
 
@@ -215,7 +149,7 @@ def get_vector(vector: Sequence[Real]) -> list:
 
     Returns
     -------
-    list
+    List[Real]
         The embedding as a list.
 
     Raises
@@ -235,31 +169,13 @@ def get_vector(vector: Sequence[Real]) -> list:
             # if vector is tf.Tensor
             return vector.numpy().squeeze().tolist()
         except AttributeError:
-            raise TypeError("The type of the 'vector' argument is not supported!\n"
-                "Supported types are 'list', 'numpy.ndarray', 'torch.Tensor' "
-                "and 'tf.Tensor'") from None
+            raise TypeError(
+                "The type of the 'vector' argument is not supported! "
+                "Supported types are 'list', 'numpy.ndarray', 'torch.Tensor' and 'tf.Tensor'."
+            ) from None
 
 
-def get_domain_from_weaviate_url(url: str) -> str:
-    """
-    Get the domain from a weaviate URL.
-
-    Parameters
-    ----------
-    url : str
-        The weaviate URL.
-        Of this form: 'weaviate://localhost/objects/28f3f61b-b524-45e0-9bbe-2c1550bf73d2'
-
-    Returns
-    -------
-    str
-        The domain.
-    """
-
-    return url[11:].split("/")[0]
-
-
-def generate_uuid5(identifier: Any, namespace: Any = "") -> str:
+def uuid5(identifier: Any, namespace: Any = "") -> str:
     """
     Generate an UUIDv5, may be used to consistently generate the same UUID for a specific
     identifier and namespace.
