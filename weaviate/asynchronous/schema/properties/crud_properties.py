@@ -1,25 +1,24 @@
 """
-AsyncProperty class definition.
+Property class definition.
 """
 from weaviate.exceptions import AiohttpConnectionError, UnsuccessfulStatusCodeError
-from weaviate.util import capitalize_first_letter
-from weaviate.base import BaseProperty
-from ...requests import AsyncRequests
+from weaviate.base.schema.properties import BaseProperty, pre_create
+from ...requests import Requests
 
 
-class AsyncProperty(BaseProperty):
+class Property(BaseProperty):
     """
-    AsyncProperty class used to create object properties.
+    Property class used to create object properties.
     """
 
-    def __init__(self, requests: AsyncRequests):
+    def __init__(self, requests: Requests):
         """
         Initialize a SyncProperty class instance.
 
         Parameters
         ----------
-        requests : weaviate.asynchronous.AsyncRequests
-            AsyncRequests object to an active and running weaviate instance.
+        requests : weaviate.asynchronous.Requests
+            Requests object to an active and running weaviate instance.
         """
 
         self._requests = requests
@@ -58,14 +57,10 @@ class AsyncProperty(BaseProperty):
             If weaviate reports a none OK status.
         """
 
-        super().create(
+        path = pre_create(
             schema_class_name=schema_class_name,
             schema_property=schema_property,
         )
-
-        schema_class_name = capitalize_first_letter(schema_class_name)
-
-        path = f"/schema/{schema_class_name}/properties"
         try:
             response = await self._requests.post(
                 path=path,

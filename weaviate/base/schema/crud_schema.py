@@ -45,12 +45,6 @@ class BaseSchema(ABC):
             The schema to be created.
         """
 
-        if not isinstance(schema, dict):
-            raise TypeError(
-                f"'schema' must be of type dict. Given type: {type(schema)}."
-            )
-        validate_schema(schema=schema)
-
     @abstractmethod
     def create_class(self, schema_class: dict):
         """
@@ -62,23 +56,16 @@ class BaseSchema(ABC):
             The schema class to be created.
         """
 
-        if not isinstance(schema_class, dict):
-            raise TypeError(
-                f"'schema_class' must be of type 'dict'. Given type: {type(schema_class)}."
-            )
-        check_class(schema_class)
-
-
     @abstractmethod
     def delete_class(self, class_name: str) -> None:
         """
         Delete a schema class from weaviate. This deletes all associated data.
-        """
 
-        if not isinstance(class_name, str):
-            raise TypeError(
-                f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
-            )
+        Parameters
+        ----------
+        class_name : str
+            The class that should be deleted from schema.
+        """
 
     @abstractmethod
     def delete_all(self) -> None:
@@ -87,7 +74,7 @@ class BaseSchema(ABC):
         """
 
     @abstractmethod
-    def contains(self, schema: Optional[dict]=None) -> bool:
+    def contains(self, schema: Optional[dict]=None):
         """
         Check if weaviate already contains a schema.
 
@@ -100,14 +87,8 @@ class BaseSchema(ABC):
             for any existing schema, by default None.
         """
 
-        if schema is not None:
-            if not isinstance(schema, dict):
-                raise TypeError(
-                    f"'schema' must be None or of type dict. Given type: {type(schema)}"
-                )
-
     @abstractmethod
-    def update_config(self, class_name: str, config: dict) -> None:
+    def update_config(self, class_name: str, config: dict):
         """
         Update a schema configuration for a specific class.
 
@@ -132,15 +113,114 @@ class BaseSchema(ABC):
         """
 
 
-def get_path_for_get_method(class_name: Optional[str]=None) -> str:
+def pre_create(schema: dict) -> None:
     """
-    Get path for the GET request.
+    Pre-process before making a call to Weaviate.
 
     Parameters
     ----------
-    class_name : Optional[str], optional
+    schema : dict
+        The schema to be created.
+    """
+
+    if not isinstance(schema, dict):
+        raise TypeError(
+            f"'schema' must be of type dict. Given type: {type(schema)}."
+        )
+    validate_schema(schema=schema)
+
+
+def pre_create_class(schema_class: dict) -> None:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    schema_class : dict or str
+        The schema class to be created.
+    """
+
+    if not isinstance(schema_class, dict):
+        raise TypeError(
+            f"'schema_class' must be of type 'dict'. Given type: {type(schema_class)}."
+        )
+    check_class(schema_class)
+
+
+def pre_delete_class(class_name: str) -> str:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    class_name : str
+        The class that should be deleted from schema (removes all the data object of that class).
+
+    Returns
+    -------
+    str
+        The path to the resource.
+    """
+
+    if not isinstance(class_name, str):
+        raise TypeError(
+            f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+        )
+
+    path = f"/schema/{capitalize_first_letter(class_name)}"
+
+    return path
+
+
+def pre_contains(schema: Optional[dict]) -> None:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    schema : dict or None, optional
+        The (sub-)schema to check if is part of the Weaviate existing schema. If a 'schema' is
+        not None, it checks if this specific schema is already loaded. If the given schema is a
+        subset of the loaded schema it will still return True. If 'schema' is None it checks
+        for any existing schema.
+    """
+
+    if schema is not None:
+        if not isinstance(schema, dict):
+            raise TypeError(
+                f"'schema' must be None or of type dict. Given type: {type(schema)}"
+            )
+
+def pre_update_config(class_name: str) -> Tuple[str, str]:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    class_name : str
+        The class for which to update the schema configuration.
+
+    Returns
+    -------
+    Tuple[str, str]
+        The path to the resource and the class name.
+    """
+
+    class_name = capitalize_first_letter(class_name)
+    path = f"/schema/{class_name}"
+
+    return path, class_name
+
+
+def pre_get(class_name: Optional[str]) -> str:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    class_name : Optional[str]
         The class for which to return the schema. If NOT provided the whole schema is returned,
-        otherwise only the schema of this class is returned. By default None.
+        otherwise only the schema of this class is returned.
 
     Returns
     -------
@@ -206,6 +286,38 @@ def get_class_schema_with_primitives_and_path(schema_class: dict) -> Tuple[dict,
             )
         )
     return schema_class_to_return, path
+
+
+def get_complex_properties_from_class(schema_property: dict) -> dict:
+    """
+    Create the property object. All complex dataTypes should be capitalized.
+
+    Parameters
+    ----------
+    schema_property : dict
+        The raw property schema.
+
+    Returns
+    -------
+    dict
+        The pre-processed property schema.
+    """
+
+    to_return_schema_property = {
+        'name': schema_property['name'],
+        'dataType': [capitalize_first_letter(dtype) for dtype in  schema_property['dataType']],
+    }
+
+    if 'description' in schema_property:
+        to_return_schema_property['description'] = schema_property['description']
+
+    if 'indexInverted' in schema_property:
+        to_return_schema_property['indexInverted'] = schema_property['indexInverted']
+
+    if 'moduleConfig' in schema_property:
+        to_return_schema_property['moduleConfig'] = schema_property['moduleConfig']
+
+    return to_return_schema_property
 
 
 def is_sub_schema(sub_schema: dict, schema: dict) -> bool:

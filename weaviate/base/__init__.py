@@ -19,7 +19,8 @@ __all__ = [
 from .connection import Connection
 from .classification import BaseClassification, BaseConfigBuilder
 from .contextionary import BaseContextionary
-from .schema import BaseProperty, BaseSchema
+from .schema import BaseSchema
+from .schema.properties import BaseProperty
 from .data import BaseDataObject
 from .data.references import BaseReference
 from .gql import BaseAggregateBuilder, BaseGetBuilder, BaseQuery

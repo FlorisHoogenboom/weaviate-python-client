@@ -1,25 +1,24 @@
 """
-SyncProperty class definition.
+Property class definition.
 """
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
-from weaviate.util import capitalize_first_letter
-from weaviate.base import BaseProperty
-from ...requests import SyncRequests
+from weaviate.base.schema.properties import BaseProperty, pre_create
+from ...requests import Requests
 
 
-class SyncProperty(BaseProperty):
+class Property(BaseProperty):
     """
-    SyncProperty class used to create object properties.
+    Property class used to create object properties.
     """
 
-    def __init__(self, requests: SyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a SyncProperty class instance.
+        Initialize a Property class instance.
 
         Parameters
         ----------
-        requests : weaviate.synchronous.SyncRequests
-            SyncRequests object to an active and running weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running weaviate instance.
         """
 
         self._requests = requests
@@ -58,14 +57,11 @@ class SyncProperty(BaseProperty):
             If weaviate reports a none OK status.
         """
 
-        super().create(
+        path = pre_create(
             schema_class_name=schema_class_name,
             schema_property=schema_property,
         )
 
-        schema_class_name = capitalize_first_letter(schema_class_name)
-
-        path = f"/schema/{schema_class_name}/properties"
         try:
             response = self._requests.post(
                 path=path,

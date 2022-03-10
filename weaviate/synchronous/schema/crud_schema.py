@@ -1,25 +1,30 @@
 """
-SyncSchema class definition.
+Schema class definition.
 """
 from typing import Optional
 from weaviate.base.schema import (
     BaseSchema,
-    get_path_for_get_method,
     get_class_schema_with_primitives_and_path,
     is_sub_schema,
     update_nested_dict,
     is_primitive_property,
+    get_complex_properties_from_class,
     check_class,
+    pre_create,
+    pre_contains,
+    pre_create_class,
+    pre_delete_class,
+    pre_get,
+    pre_update_config,
 )
-from weaviate.util import capitalize_first_letter
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
-from .properties import SyncProperty
-from ..requests import SyncRequests
+from .properties.crud_properties import Property
+from ..requests import Requests
 
 
-class SyncSchema(BaseSchema):
+class Schema(BaseSchema):
     """
-    SyncSchema class used to interact and manipulate schemas or classes.
+    Schema class used to interact and manipulate schemas or classes.
 
     Attributes
     ----------
@@ -27,18 +32,18 @@ class SyncSchema(BaseSchema):
         A Property object to create new schema property/ies.
     """
 
-    def __init__(self, requests: SyncRequests):
+    def __init__(self, requests: Requests):
         """
-        Initialize a SyncSchema class instance.
+        Initialize a Schema class instance.
 
         Parameters
         ----------
-        requests : weaviate.synchronous.SyncRequests
-            SyncRequests object to an active and running weaviate instance.
+        requests : weaviate.synchronous.Requests
+            Requests object to an active and running weaviate instance.
         """
 
         self._requests = requests
-        self.property = SyncProperty(self._requests)
+        self.property = Property(self._requests)
 
     def create(self, schema: dict) -> None:
         """
@@ -83,7 +88,7 @@ class SyncSchema(BaseSchema):
             If the 'schema' could not be validated against the standard format.
         """
 
-        super().create(
+        pre_create(
             schema=schema,
         )
 
@@ -137,7 +142,7 @@ class SyncSchema(BaseSchema):
             If the 'schema_class' could not be validated against the standard format.
         """
 
-        super().create_class(
+        pre_create_class(
             schema_class=schema_class,
         )
 
@@ -171,11 +176,9 @@ class SyncSchema(BaseSchema):
             If weaviate reported a none OK status.
         """
 
-        super().delete_class(
+        path = pre_delete_class(
             class_name=class_name,
         )
-
-        path = f"/schema/{capitalize_first_letter(class_name)}"
         try:
             response = self._requests.delete(
                 path=path,
@@ -245,7 +248,7 @@ class SyncSchema(BaseSchema):
             True if a schema is present, False otherwise.
         """
 
-        super().contains(
+        pre_contains(
             schema=schema,
         )
 
@@ -315,12 +318,11 @@ class SyncSchema(BaseSchema):
             If weaviate reports a none OK status.
         """
 
-        class_name = capitalize_first_letter(class_name)
+        path, class_name = pre_update_config(class_name)
         class_schema = self.get(class_name)
         new_class_schema = update_nested_dict(class_schema, config)
         check_class(new_class_schema)
 
-        path = f"/schema/{class_name}"
         try:
             response = self._requests.put(
                 path=path,
@@ -426,7 +428,7 @@ class SyncSchema(BaseSchema):
             If weaviate reported a none OK status.
         """
 
-        path = get_path_for_get_method(class_name=class_name)
+        path = pre_get(class_name=class_name)
 
         try:
             response = self._requests.get(
@@ -469,21 +471,9 @@ class SyncSchema(BaseSchema):
             if is_primitive_property(_property['dataType']):
                 continue
 
-            # create the property object
-            ## All complex dataTypes should be capitalized.
-            schema_property = {
-                'name': _property['name'],
-                'dataType': [capitalize_first_letter(dtype) for dtype in  _property['dataType']],
-            }
-
-            if 'description' in _property:
-                schema_property['description'] = _property['description']
-
-            if 'indexInverted' in _property:
-                schema_property['indexInverted'] = _property['indexInverted']
-
-            if 'moduleConfig' in _property:
-                schema_property['moduleConfig'] = _property['moduleConfig']
+            schema_property = get_complex_properties_from_class(
+                schema_property=_property,
+            )
 
             self.property.create(
                 schema_class_name=schema_class['class'],

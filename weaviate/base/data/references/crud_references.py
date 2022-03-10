@@ -204,7 +204,7 @@ def pre_add(
         to_uuid: Union[str, uuid.UUID],
     ) -> Tuple[str, dict]:
     """
-    Allows to link an object to an object unidirectionally.
+    Pre-process before making a call to Weaviate.
 
     Parameters
     ----------
