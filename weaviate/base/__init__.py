@@ -11,8 +11,6 @@ __all__ = [
     'BaseSchema',
     'BaseDataObject',
     'BaseReference',
-    'BaseAggregateBuilder',
-    'BaseGetBuilder',
     'BaseQuery',
 ]
 
@@ -23,4 +21,4 @@ from .schema import BaseSchema
 from .schema.properties import BaseProperty
 from .data import BaseDataObject
 from .data.references import BaseReference
-from .gql import BaseAggregateBuilder, BaseGetBuilder, BaseQuery
+from .gql import BaseQuery

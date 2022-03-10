@@ -2,8 +2,8 @@
 BaseAggregateBuilder abstract class definition.
 """
 import json
-from abc import ABC, abstractmethod
-from typing import List, Optional
+from abc import ABC
+from typing import List, Optional, Union
 from weaviate.util import capitalize_first_letter
 from .filter import Where
 
@@ -23,9 +23,9 @@ class BaseAggregateBuilder(ABC):
         """
 
         self._class_name = capitalize_first_letter(class_name)
-        self._with_meta_count = False
+        self._meta_count: str = ''
         self._fields: List[str] = []
-        self._where: Optional[Where] = None
+        self._where: Union[Where, str] = ''
         self._group_by_properties: Optional[List[str]] = None
         self._uses_filter = False
 
@@ -39,7 +39,7 @@ class BaseAggregateBuilder(ABC):
             Updated BaseAggregateBuilder.
         """
 
-        self._with_meta_count = True
+        self._meta_count = "meta{count} "
         return self
 
     def with_fields(self, field: str) -> 'BaseAggregateBuilder':
@@ -174,26 +174,17 @@ class BaseAggregateBuilder(ABC):
         # Filter
         if self._uses_filter:
             query += "("
-        if self._where is not None:
             query += str(self._where)
-        if self._group_by_properties is not None:
-            query += f"groupBy: {json.dumps(self._group_by_properties)}"
-        if self._uses_filter:
+            if self._group_by_properties is not None:
+                query += f"groupBy: {json.dumps(self._group_by_properties)}"
             query += ")"
 
         # Body
-        query += "{"
-        if self._with_meta_count:
-            query += "meta{count}"
-        for field in self._fields:
-            query += field
+        query += (
+            "{" +
+            self._meta_count +
+            ' '.join(self._fields) +
+            "}}}"
+        )
 
-        # close
-        query += "}}}"
         return query
-
-    @abstractmethod
-    def do(self):
-        """
-        Make the Aggregate request to Weaviate.
-        """

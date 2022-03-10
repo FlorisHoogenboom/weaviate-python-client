@@ -2,8 +2,8 @@
 GraphQL `Get` command.
 """
 from json import dumps
-from abc import ABC, abstractmethod
-from typing import List, Union, Optional, Dict, Tuple
+from abc import ABC
+from typing import List, Union, Dict, Tuple
 from weaviate.util import image_encoder_b64, capitalize_first_letter
 from .filter import (
     Where,
@@ -24,7 +24,7 @@ class BaseGetBuilder(ABC):
 
     def __init__(self,
             class_name: str,
-            properties: Union[List[str], str]=[],
+            properties: Union[List[str], str, None],
         ):
         """
         Initialize a BaseGetBuilder class instance.
@@ -33,8 +33,8 @@ class BaseGetBuilder(ABC):
         ----------
         class_name : str
             Class name of the objects to interact with.
-        properties : list of str or str, optional
-            Properties of the objects to interact with. By default [].
+        properties : list of str, str or None
+            Properties of the objects to interact with.
 
         Raises
         ------
@@ -46,10 +46,13 @@ class BaseGetBuilder(ABC):
             raise TypeError(
                 f"Class name must be of type str. Given type: {type(class_name)}."
             )
+
+        if properties is None:
+            properties = []
         if not isinstance(properties, (list, str)):
             raise TypeError(
-                "'properties' must be None or of type str or list of str. "
-                f"Given type:{type(properties)}."
+                "'properties' must be of type str or list of str. "
+                f"Given type: {type(properties)}."
             )
         if isinstance(properties, str):
             properties = [properties]
@@ -64,12 +67,12 @@ class BaseGetBuilder(ABC):
         self._additional: dict = {'__one_level': set()}
         # '__one_level' refers to the additional properties that are just a single word, not a dict
         # thus '__one_level', only one level of complexity
-        self._where: Optional[Where] = None
-        self._limit: Optional[str] = None
-        self._offset: Optional[str] = None
-        self._near_ask: Optional[Filter] = None # To store the `near`/`ask` clause if it is added
+        self._where: Union[Where, str] = ''
+        self._limit: str = ''
+        self._offset: str = ''
+        self._near_ask: Union[Filter, str] = '' # To store the `near`/`ask` clause if it is added
         self._contains_filter = False  # true if any filter is added
-        self._group: Optional[Group] = None
+        self._group: Union[Group, str] = ''
 
     def with_group(self, content: dict) -> 'BaseGetBuilder':
         """
@@ -254,7 +257,7 @@ class BaseGetBuilder(ABC):
             If another 'near' filter was already set.
         """
 
-        if self._near_ask is not None:
+        if not self._near_ask:
             raise AttributeError(
                 "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
             )
@@ -319,7 +322,7 @@ class BaseGetBuilder(ABC):
             If another `near` filter was already set.
         """
 
-        if self._near_ask is not None:
+        if not self._near_ask:
             raise AttributeError(
                 "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
             )
@@ -361,7 +364,7 @@ class BaseGetBuilder(ABC):
             If another 'near' filter was already set.
         """
 
-        if self._near_ask is not None:
+        if not self._near_ask:
             raise AttributeError(
                 "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
             )
@@ -369,7 +372,7 @@ class BaseGetBuilder(ABC):
         self._contains_filter = True
         return self
 
-    def with_near_image(self, content: dict, encode: bool = True) -> 'BaseGetBuilder':
+    def with_near_image(self, content: dict, encode: bool=False) -> 'BaseGetBuilder':
         """
         Set `nearImage` filter.
 
@@ -382,7 +385,7 @@ class BaseGetBuilder(ABC):
             `content["image"]` can be an image path or a file opened in binary read mode. If False,
             the `content["image"]` MUST be a base64 encoded string (NOT bytes, i.e. NOT binary
             string that looks like this: b'BASE64ENCODED' but simple 'BASE64ENCODED').
-            By default True.
+            By default False.
 
         Examples
         --------
@@ -459,7 +462,7 @@ class BaseGetBuilder(ABC):
             If another 'near' filter was already set.
         """
 
-        if self._near_ask is not None:
+        if not self._near_ask:
             raise AttributeError(
                 "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
             )
@@ -567,7 +570,7 @@ class BaseGetBuilder(ABC):
             The updated BaseGetBuilder.
         """
 
-        if self._near_ask is not None:
+        if not self._near_ask:
             raise AttributeError(
                 "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
             )
@@ -815,18 +818,15 @@ class BaseGetBuilder(ABC):
 
         query = '{Get{' + self._class_name
         if self._contains_filter:
-            query += '('
-            if self._group is not None:
-                query += str(self._group)
-            if self._where is not None:
-                query += str(self._where)
-            if self._limit is not None:
-                query += self._limit
-            if self._offset is not None:
-                query += self._offset
-            if self._near_ask is not None:
-                query += str(self._near_ask)
-            query += ')'
+            query += (
+                '(' +
+                str(self._group) +
+                str(self._where) +
+                str(self._near_ask) +
+                self._limit +
+                self._offset +
+                ')'
+            )
 
         additional_props = self._additional_to_str()
 
@@ -954,9 +954,3 @@ class BaseGetBuilder(ABC):
                     " `list` then all items must be of type `str`!"
                 )
             self._additional[clause_with_settings].add(value)
-
-    @abstractmethod
-    def do(self):
-        """
-        Make the Get request to Weaviate.
-        """

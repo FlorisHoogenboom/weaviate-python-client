@@ -97,7 +97,7 @@ class Query(BaseQuery):
             requests=self._requests,
         )
 
-    def raw(self, gql_query: str) -> dict:
+    async def raw(self, gql_query: str) -> dict:
         """
         Allows to send simple graph QL string queries.
         Be cautious of injection risks when generating query strings.
@@ -128,7 +128,7 @@ class Query(BaseQuery):
         ...     }
         ... }
         ... \"""
-        >>> client.query.raw(query)
+        >>> await client.query.raw(query)
         {
         "data": {
             "Get": {
@@ -161,13 +161,13 @@ class Query(BaseQuery):
         ------
         TypeError
             If 'gql_query' is not of type str.
-        requests.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to weaviate fails.
         weaviate.UnexpectedStatusCodeException
             If weaviate reports a none OK status.
         """
 
-        return make_query_request(
+        return await make_query_request(
             requests=self._requests,
             query=gql_query,
         )

@@ -9,6 +9,7 @@ __all__ = [
     'DataObject',
     'Reference',
     'Schema',
+    'Query'
 ]
 
 from .requests import Requests
@@ -16,3 +17,4 @@ from .classification import Classification, ConfigBuilder
 from .data.crud_data import DataObject
 from .data.references.crud_references import Reference
 from .schema.crud_schema import Schema
+from .gql.query import Query
