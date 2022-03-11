@@ -6,7 +6,7 @@ requests ('requests' library) and asynchronous one ('aiohttp' library).
 import os
 import time
 import datetime
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, Tuple
 from numbers import Real
 import requests
 import aiohttp
@@ -271,27 +271,46 @@ class Connection:
         """
 
         if self._auth_expires < _get_epoch_time():
-            # collect data for the request
-            try:
-                response = requests.get(
-                    self._url + self._api_version_path + "/.well-known/openid-configuration",
-                    headers={"content-type": "application/json"},
-                    timeout=self._timeout_config.get_timeout_requests(),
-                    proxies=self._proxies.get_proxies_requests(),
-                )
-            except RequestsConnectionError as error:
-                raise RequestsConnectionError("Cannot connect to weaviate.") from error
-            if response.status_code != 200:
-                raise AuthenticationError("Cannot authenticate.", response=response)
-
-            response_json = response.json()
-
-            self.set_bearer(
-                client_id=response_json['clientId'],
-                href=response_json['href'],
+            client_id, href = self._get_client_id_and_href()
+            self._set_bearer(
+                client_id=client_id,
+                href=href,
             )
 
-    def set_bearer(self, client_id: str, href: str) -> None:
+    def _get_client_id_and_href(self) -> Tuple[str, str]:
+        """
+        Get the 'clientId' and 'href' from the token Issuer.
+
+        Returns
+        -------
+        Tuple[str, str]
+            The ClientID and the href where to get the token from.
+
+        Raises
+        ------
+        aiohttp.client.ClientConnectorError
+            If cannot connect to weaviate.
+        weaviate.exceptions.AuthenticationError
+            If cannot authenticate, http status code unsuccessful.
+        """
+
+        try:
+            response = requests.get(
+                self._url + self._api_version_path + "/.well-known/openid-configuration",
+                headers={"content-type": "application/json"},   
+                timeout=self._timeout_config.get_timeout_requests(),
+                proxies=self._proxies.get_proxies_requests(),
+            )
+        except RequestsConnectionError as error:
+            raise RequestsConnectionError("Cannot connect to weaviate.") from error
+        if response.status_code != 200:
+            raise AuthenticationError("Cannot authenticate.", response=response)
+
+        response_json = response.json()
+
+        return response_json['clientId'], response_json['href']
+
+    def _set_bearer(self, client_id: str, href: str) -> None:
         """
         Set bearer for a refreshed authentication.
 
@@ -348,7 +367,7 @@ class Connection:
 
         response = requests.post(
             url=response_third_part_json['token_endpoint'],
-            json=request_body,
+            data=request_body,
             timeout=self._timeout_config.get_timeout_requests(),
             proxies=self._proxies.get_proxies_requests(),
         )

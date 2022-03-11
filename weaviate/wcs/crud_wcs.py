@@ -3,18 +3,97 @@ WCS class definition.
 """
 import time
 from typing import Optional, List, Union, Dict, Tuple
-from numbers import Real
 from tqdm.auto import tqdm
-from weaviate.connect import Connection
 from weaviate.exceptions import (
-    WeaviateConnectionError,
-    UnexpectedStatusCodeException,
-    AuthenticationFailedException,
+    RequestsConnectionError,
+    UnsuccessfulStatusCodeError,
+    AuthenticationError,
 )
 from weaviate.auth import AuthClientPassword
+from weaviate.base.connection import Connection, ClientTimeout
+from weaviate.synchronous import Requests
 
 
-class WCS(Connection):
+class WCSConnection(Connection):
+    """
+    WCSConnection class used to connect and authenticate to a WCS console.
+    """
+
+    def __init__(self,
+            url: str,
+            auth_url: str,
+            auth_client_secret: AuthClientPassword,
+            timeout_config: ClientTimeout,
+            proxies: Union[dict, str, None],
+            trust_env: bool,
+        ):
+        """
+        Initialize a WCSConnection class instance.
+
+        Parameters
+        ----------
+        url : str
+            The URL to the WCS console.
+        auth_url : str
+            The URL to the Authentication service.
+        auth_client_secret : weaviate.auth.AuthClientPassword
+            User login credentials for the WCS.
+        timeout_config : weaviate.ClientTimeout
+            Set the timeout configuration for all requests to the Weaviate server.
+        proxies : dict, str or None
+            Proxies to be used for requests. Are used by both 'requests' and 'aiohttp'. Can be
+            passed as a dict ('requests' format:
+            https://docs.python-requests.org/en/stable/user/advanced/#proxies), str (HTTP/HTTPS
+            protocols are going to use this proxy) or None.
+        trust_env : bool
+            Whether to read proxies from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY
+            or https_proxy).
+            NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
+            'trust_env' is ignored.
+        """
+
+        self._auth_url = auth_url
+        super().__init__(
+            url=url,
+            auth_client_secret=auth_client_secret,
+            timeout_config=timeout_config,
+            proxies=proxies,
+            trust_env=trust_env,
+            include_aiohttp=False,
+        )
+        self._is_authentication_required = True
+
+    def log_in(self) -> None:
+        """
+        Log in to WCS.
+
+        Raises
+        ------
+        weaviate.AuthenticationError
+            If no login credentials provided, or wrong type of credentials!
+        """
+        if isinstance(self._auth_client_secret, AuthClientPassword):
+            self.refresh_authentication()
+        else:
+            raise AuthenticationError(
+                "No login credentials provided, or wrong type of credentials. "
+                "Accepted type of credentials: weaviate.auth.AuthClientPassword."
+            )
+
+    def _get_client_id_and_href(self) -> Tuple[str, str]:
+        """
+        Get the 'clientId' and 'href' from the token Issuer.
+
+        Returns
+        -------
+        Tuple[str, str]
+            The ClientID and the href where to get the token from.
+        """
+
+        return 'wcs', self._auth_url
+
+
+class WCS:
     """
     WCS class used to create/delete WCS cluster instances.
 
@@ -25,44 +104,39 @@ class WCS(Connection):
         environment.
     """
 
-    # def __getattr__(self, attr_name):
-    #     if attr_name in ('delete', 'get', 'post', 'put', 'patch'):
-    #         raise AttributeError
-    #     if attr_name in ('_delete', '_get', '_post', '_put', '_patch'):
-    #         attr_name = attr_name[1:]
-    #     return super().__getattr__(attr_name)
-
-    # def __getattribute__(self, attr_name):
-    #     if attr_name in ('delete', 'get', 'post', 'put', 'patch'):
-    #         raise AttributeError
-    #     if attr_name in ('_delete', '_get', '_post', '_put', '_patch'):
-    #         attr_name = attr_name[1:]
-    #     return super().__getattribute__(attr_name)
-
     def __init__(self,
             auth_client_secret: AuthClientPassword,
-            timeout_config: Union[Tuple[Real, Real], Real]=(2, 20),
-            dev: bool=False
+            timeout_config: ClientTimeout=ClientTimeout(20),
+            proxies: Union[dict, str, None]=None,
+            trust_env: bool=False,
+            dev: bool=False,
         ):
         """
         Initialize a WCS class instance.
 
         Parameters
         ----------
-        auth_client_secret : AuthClientPassword
-            Authentication credentials for the WCS.
+        auth_client_secret : weaviate.auth.AuthClientPassword
+            User login credentials for the WCS.
+        timeout_config : weaviate.ClientTimeout, optional
+            Set the timeout configuration for all requests to the Weaviate server.
+            By default weaviate.ClientTimeout(20).
+        proxies : dict, str or None, optional
+            Proxies to be used for requests. Are used by both 'requests' and 'aiohttp'. Can be
+            passed as a dict ('requests' format:
+            https://docs.python-requests.org/en/stable/user/advanced/#proxies), str (HTTP/HTTPS
+            protocols are going to use this proxy) or None.
+            By default None.
+        trust_env : bool, optional
+            Whether to read proxies from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY
+            or https_proxy). By default False.
+            NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
+            'trust_env' is ignored.
         dev : bool, optional
             Whether to use the development environment, i.e. https://dev.console.semi.technology/.
             If False uses the production environment, i.e. https://console.semi.technology/.
             By default False.
-        timeout_config : tuple(Real, Real) or Real, optional
-            Set the timeout configuration for all requests to the Weaviate server. It can be a
-            real number or, a tuple of two real numbers: (connect timeout, read timeout).
-            If only one real number is passed then both connect and read timeout will be set to
-            that value, by default (2, 20).
         """
-
-
 
         self.dev = dev
 
@@ -71,35 +145,21 @@ class WCS(Connection):
         else:
             url = 'https://wcs.api.semi.technology'
 
-        auth_path = (url.replace('://', '://auth.') +
-            '/auth/realms/SeMI/.well-known/openid-configuration')
-
-        # make _refresh_authentication method to point to _set_bearer method.
-        self._refresh_authentication = lambda: self._set_bearer('wcs', auth_path)
-
-        super().__init__(
-            url=url,
-            auth_client_secret=auth_client_secret,
-            timeout_config=timeout_config
+        auth_url = (
+            url.replace('://', '://auth.') +
+            '/auth/realms/SeMI/.well-known/openid-configuration'
         )
-        self._is_authentication_required = True
 
-    def _log_in(self) -> None:
-        """
-        Log in to WCS.
-
-        Raises
-        ------
-        weaviate.AuthenticationFailedException
-            If no login credentials provided, or wrong type of credentials!
-        """
-        if isinstance(self._auth_client_secret, AuthClientPassword):
-            self._refresh_authentication()
-        else:
-            raise AuthenticationFailedException(
-                "No login credentials provided, or wrong type of credentials! "
-                "Accepted type of credentials: weaviate.auth.AuthClientPassword"
-            )
+        connection = WCSConnection(
+            url=url,
+            auth_url=auth_url,
+            auth_client_secret=auth_client_secret,
+            timeout_config=timeout_config,
+            proxies=proxies,
+            trust_env=trust_env,
+        )
+        self._requests = Requests(connection=connection)
+        self._email = auth_client_secret.get_credentials()['username']
 
     def create(self,
             cluster_name: str=None,
@@ -204,19 +264,19 @@ class WCS(Connection):
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.UnsuccessfulStatusCodeError
             If creating the weaviate cluster failed for a different reason,
             more information is given in the exception.
         TypeError
-            If `config` is neither None nor of type 'dict'.
+            If 'config' is neither None nor of type dict.
         TypeError
-            If `modules` argument is of a wrong type.
+            If 'modules' argument is of a wrong type.
         KeyError
-            If one of the `modules` does not conform to the module schema.
+            If one of the 'modules' does not conform to the module schema.
         TypeError
-            In case `modules` is a list and one module has a wrong type.
+            In case 'modules' is a list and one module has a wrong type.
         TypeError
-            In case one of the modules is of type dict and the values are not of type 'str'.
+            In case one of the modules is of type dict and the values are not of type str.
         """
 
         if cluster_name is not None:
@@ -234,25 +294,27 @@ class WCS(Connection):
         else:
             if not isinstance(config, dict):
                 raise TypeError(
-                    "The `config` argument must be either None or of type 'dict', given: "
-                    f"{type(config)}"
+                    f"'config' must be either None or of type dict. Given type: {type(config)}."
                 )
             if 'id' in config:
                 cluster_name = config['id'].lower()
 
         try:
-            response = self.post(
+            response = self._requests.post(
                 path='/clusters',
-                weaviate_object=config
+                data_json=config,
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError('WCS cluster was not created.') from conn_err
-        if response.status_code == 400 and "already exists" in response.text:
-            # this line is never executed if cluster_name is None
-            return 'https://' + self.get_cluster_config(cluster_name)['meta']['PublicURL']
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'WCS cluster was not created due to connection error.'
+            ) from conn_err
 
         if response.status_code != 202:
-            raise UnexpectedStatusCodeException('Creating WCS instance', response)
+            raise UnsuccessfulStatusCodeError(
+                'Creating WCS instance.',
+                status_code=response.status_code,
+                response_message=response.text,
+            )
 
         cluster_name = response.json()['id']
 
@@ -273,7 +335,7 @@ class WCS(Connection):
             progress = 0
             while progress != 100:
                 time.sleep(2.0)
-                progress_state = self.get_cluster_config(cluster_name)["status"]["state"]
+                progress_state: dict = self.get_cluster_config(cluster_name)["status"]["state"]
                 progress = progress_state["percentage"]
                 progress_bar.update(progress - progress_bar.n)
                 title_bar.set_description(progress_state.get('message'))
@@ -301,7 +363,9 @@ class WCS(Connection):
         cluster_name = cluster_name.lower()
         response = self.get_cluster_config(cluster_name)
         if response == {}:
-            raise ValueError(f"No cluster with name: '{cluster_name}'. Check the name again!")
+            raise ValueError(
+                f"No cluster with name: '{cluster_name}'. Check the name again."
+            )
         if response["status"]["state"]["percentage"] == 100:
             return True
         return False
@@ -319,23 +383,29 @@ class WCS(Connection):
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.UnsuccessfulStatusCodeError
             If getting the weaviate clusters failed for a different reason,
             more information is given in the exception.
         """
 
         try:
-            response = self.get(
+            response = self._requests.get(
                 path='/clusters/list',
                 params={
-                    'email': self._auth_client_secret.get_credentials()['username']
+                    'email': self._email,
                 }
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError('WCS clusters were not fetched.') from conn_err
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'WCS clusters were not fetched due to connection error.'
+            ) from conn_err
         if response.status_code == 200:
             return response.json()['clusterIDs']
-        raise UnexpectedStatusCodeException('Checking WCS instance', response)
+        raise UnsuccessfulStatusCodeError(
+            'Checking WCS instance.',
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     def get_cluster_config(self, cluster_name: str) -> dict:
         """
@@ -350,29 +420,34 @@ class WCS(Connection):
         Returns
         -------
         dict
-            Details in a JSON format. If no cluster with such name was found then an empty
-            dictionary is returned.
+            Details in a JSON format.
 
         Raises
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.UnsuccessfulStatusCodeError
             If getting the weaviate cluster failed for a different reason,
             more information is given in the exception.
         """
 
         try:
-            response = self.get(
+            response = self._requests.get(
                 path='/clusters/' + cluster_name.lower(),
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError('WCS cluster info was not fetched.') from conn_err
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'WCS cluster info was not fetched due to connection error.'
+            ) from conn_err
         if response.status_code == 200:
             return response.json()
         if response.status_code == 404:
             return {}
-        raise UnexpectedStatusCodeException('Checking WCS instance', response)
+        raise UnsuccessfulStatusCodeError(
+            'Checking WCS instance.',
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     def delete_cluster(self, cluster_name: str) -> None:
         """
@@ -388,20 +463,146 @@ class WCS(Connection):
         ------
         requests.ConnectionError
             If the network connection to weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.UnsuccessfulStatusCodeError
             If deleting the weaviate cluster failed for a different reason,
             more information is given in the exception.
         """
 
         try:
-            response = self.delete(
+            response = self._requests.delete(
                 path='/clusters/' + cluster_name.lower(),
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError('WCS cluster was not deleted.') from conn_err
-        if response.status_code == 200 or response.status_code == 404:
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'WCS cluster was not deleted due to connection error.'
+            ) from conn_err
+        if response.status_code in (200, 404):
             return
-        raise UnexpectedStatusCodeException('Deleting WCS instance', response)
+        raise UnsuccessfulStatusCodeError(
+            'Deleting WCS instance.',
+            status_code=response.status_code,
+            response_message=response.text,
+        )
+
+    def get_users_of_cluster(self, cluster_name: str) -> list:
+        """
+        Get users of the WCS Weaviate cluster instance.
+
+        Parameters
+        ----------
+        cluster_name : str
+            The name of the weaviate server cluster.
+            NOTE: Case insensitive. The WCS cluster's name is always lowercased.
+
+        Raises
+        ------
+        requests.ConnectionError
+            If the network connection to weaviate fails.
+        weaviate.UnsuccessfulStatusCodeError
+            If deleting the weaviate cluster failed for a different reason,
+            more information is given in the exception.
+
+        Returns
+        -------
+        list
+            The list of users.
+        """
+
+        path = f"/clusters/{cluster_name.lower()}/users"
+
+        try:
+            response = self._requests.get(
+                path=path,
+            )
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'Could not get users of the cluster due to connection error.'
+            ) from conn_err
+        if response.status_code == 200:
+            return response.json()['users']
+        raise UnsuccessfulStatusCodeError(
+            "Getting cluster's users.",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
+
+    def add_user_to_cluster(self, cluster_name: str, user: str) -> None:
+        """
+        Add user to the WCS Weaviate cluster instance.
+
+        Parameters
+        ----------
+        cluster_name : str
+            The name of the weaviate server cluster.
+            NOTE: Case insensitive. The WCS cluster's name is always lowercased.
+        user:
+            The user to be added to WCS Weaviate cluster instance.
+
+        Raises
+        ------
+        requests.ConnectionError
+            If the network connection to weaviate fails.
+        weaviate.UnsuccessfulStatusCodeError
+            If deleting the weaviate cluster failed for a different reason,
+            more information is given in the exception.
+        """
+
+        path = f"/clusters/{cluster_name.lower()}/users/{user}"
+
+        try:
+            response = self._requests.post(
+                path=path,
+            )
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'Could not add user of the cluster due to connection error.'
+            ) from conn_err
+        if response.status_code == 200:
+            return
+        raise UnsuccessfulStatusCodeError(
+            "Adding user to cluster.",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
+
+    def remove_user_from_cluster(self, cluster_name: str, user: str) -> None:
+        """
+        Remove user from the WCS Weaviate cluster instance.
+
+        Parameters
+        ----------
+        cluster_name : str
+            The name of the weaviate server cluster.
+            NOTE: Case insensitive. The WCS cluster's name is always lowercased.
+        user:
+            The user to be removed from WCS Weaviate cluster instance.
+
+        Raises
+        ------
+        requests.ConnectionError
+            If the network connection to weaviate fails.
+        weaviate.UnsuccessfulStatusCodeError
+            If deleting the weaviate cluster failed for a different reason,
+            more information is given in the exception.
+        """
+
+        path = f"/clusters/{cluster_name.lower()}/users/{user}"
+
+        try:
+            response = self._requests.delete(
+                path=path,
+            )
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'Could not remove user from the cluster due to connection error.'
+            ) from conn_err
+        if response.status_code == 200:
+            return
+        raise UnsuccessfulStatusCodeError(
+            "Removing user from cluster.",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
 
 def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[str, str]]:
@@ -421,13 +622,13 @@ def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[
     Raises
     ------
     TypeError
-        If `modules` argument is of a wrong type.
+        If 'modules' argument is of a wrong type.
     KeyError
-        If one of the `modules` does not conform to the module schema.
+        If one of the 'modules' does not conform to the module schema.
     TypeError
-        In case `modules` is a list and one module has a wrong type.
+        In case 'modules' is a list and one module has a wrong type.
     TypeError
-        In case one of the modules is of type dict and the values are not of type 'str'.
+        In case one of the modules is of type dict and the values are not of type str.
     """
 
     def get_module_dict(module: Union[Dict[str, str], str]) -> Dict[str, str]:
@@ -436,7 +637,7 @@ def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[
 
         Parameters
         ----------
-        _module : Union[dict, str]
+        module : Union[dict, str]
             The module configuration to be validated.
 
         Returns
@@ -459,18 +660,18 @@ def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[
             ):
                 raise KeyError(
                     "A module should have a required key: 'name',  and optional keys: 'tag', "
-                    f"'repo' and/or 'inferenceUrl'! Given keys: {module.keys()}"
+                    f"'repo' and/or 'inferenceUrl'! Given keys: {module.keys()}."
                 )
             for key, value in module.items():
                 if not isinstance(value, str):
                     raise TypeError(
-                        "The type of each value of the module's dict should be 'str'! "
-                        f"The key '{key}' has type: {type(value)}"
+                        "The type of each value of the module's dict should be str. "
+                        f"The key '{key}' has type: {type(value)}."
                         )
             return module
 
         raise TypeError(
-            "Wrong type for one of the modules. Should be either 'str' or 'dict' but given: "
+            "Wrong type for one of the modules. Should be either str or dict but given: "
             f"{type(module)}"
         )
 
@@ -491,6 +692,6 @@ def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[
         return to_return
 
     raise TypeError(
-        "Wrong type for the `modules` argument. Accepted types are: NoneType, 'str', 'dict' or "
-        f"`list` but given: {type(modules)}"
+        "Wrong type for the 'modules' argument. Accepted types are: NoneType, str, dict or "
+        f"list but given: {type(modules)}"
     )
