@@ -699,7 +699,7 @@ class BaseGetBuilder(ABC):
         ...             title
         ...             author
         ...             _additional {
-        ...                 token (
+        ...                 tokens (
         ...                     properties: ["content"]
         ...                     limit: 10
         ...                     certainty: 0.8
@@ -719,7 +719,7 @@ class BaseGetBuilder(ABC):
 
         Then the python translation of this is the following:
         >>> clause = {
-        ...     'token': [ # if only one, can be passes as `str`
+        ...     'tokens': [ # if only one, can be passes as str
         ...         'certainty',
         ...         'endPosition',
         ...         'entity',
@@ -737,7 +737,7 @@ class BaseGetBuilder(ABC):
         ...     .get('Article', ['title', 'author'])\
         ...     .with_additional(
         ...         (clause, settings)
-        ...     ) # argument as `Tuple[Dict[str, List[str]], Dict[str, Any]]`
+        ...     ) # argument as Tuple[Dict[str, List[str]], Dict[str, Any]]
 
         If the desired clause does not match any example above, then the clause can always be
         converted to string before passing it to the `.with_additional()` method.

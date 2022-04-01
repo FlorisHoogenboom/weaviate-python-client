@@ -1,7 +1,8 @@
 """
 Requests class definition.
 """
-from typing import Optional
+from typing import Optional, Union
+from numbers import Real
 from requests import Response, Session
 from weaviate.base.connection import Connection
 
@@ -218,3 +219,16 @@ class Requests:
             timeout=self._connection.timeout_config.get_timeout_requests(),
             proxies=self._connection.proxies.get_proxies_requests(),
         )
+
+    @property
+    def timeout_config(self) -> Union[Real,tuple, None]:
+        """
+        Getter for 'timeout_config' of the Connection, for the 'requests' library.
+
+        Returns
+        -------
+        Union[Real,tuple, None]
+            The 'timeout_config'.
+        """
+
+        return self._connection.timeout_config.get_timeout_requests()

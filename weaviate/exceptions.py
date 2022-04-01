@@ -1,6 +1,7 @@
 """
 Weaviate Exceptions.
 """
+import json
 from typing import Optional
 from requests import Response
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -90,3 +91,21 @@ class SchemaValidationError(WeaviateBaseError):
     """
     Schema Validation Error.
     """
+
+class BatchObjectCreationError(WeaviateBaseError):
+    """
+    Batch Object Creation Error used when Batch creation succeeded but individual Objects failed to
+    be created.
+    """
+
+    def __init__(self, message: str, batch_results: list, batch_objects: list):
+
+        self.batch_objects = batch_objects
+        self.batch_results = batch_results
+
+        error_message = (
+            message +
+            ' The batch creation result is displayed here as well in case error wasnot caught: '
+            + json.dumps(batch_results)
+        )
+        super().__init__(message=error_message)

@@ -12,6 +12,7 @@ __all__ = [
     'BaseDataObject',
     'BaseReference',
     'BaseQuery',
+    'BaseBatch',
 ]
 
 from .connection import Connection
@@ -22,3 +23,4 @@ from .schema.properties import BaseProperty
 from .data import BaseDataObject
 from .data.references import BaseReference
 from .gql import BaseQuery
+from .batch import BaseBatch
