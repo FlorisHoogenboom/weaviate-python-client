@@ -16,7 +16,7 @@ from weaviate.synchronous import Requests
 
 class WCSConnection(Connection):
     """
-    WCSConnection class used to connect and authenticate to a WCS console.
+    WCSConnection class used to connect, and authenticate, to the WCS console.
     """
 
     def __init__(self,
@@ -122,8 +122,7 @@ class WCS:
             Set the timeout configuration for all requests to the Weaviate server.
             By default weaviate.ClientTimeout(20).
         proxies : dict, str or None, optional
-            Proxies to be used for requests. Are used by both 'requests' and 'aiohttp'. Can be
-            passed as a dict ('requests' format:
+            Proxies to be used for requests. Can be passed as a dict ('requests' format:
             https://docs.python-requests.org/en/stable/user/advanced/#proxies), str (HTTP/HTTPS
             protocols are going to use this proxy) or None.
             By default None.
@@ -170,19 +169,18 @@ class WCS:
             wait_for_completion: bool=True
         ) -> str:
         """
-        Create the cluster and return The Weaviate server URL.
+        Create the cluster and return the Weaviate server URL.
 
         Parameters
         ----------
         cluster_name : str, optional
-            The name of the weaviate cluster to be created, if None a random one is going to be
+            The name of the Weaviate cluster to be created, if None a random one is going to be
             generated, by default None.
             NOTE: Case insensitive. The created cluster's name is always lowercased.
         cluster_type : str, optional
             the cluster type/tier, by default 'sandbox'.
         with_auth : bool, optional
-            Enable the authentication to the cluster about to be created,
-            by default False.
+            Enable the authentication to the cluster about to be created, by default False.
         modules: str or dict or list, optional
             The modules to use, can have multiple modules. One module should look like this:
             >>> {
@@ -193,7 +191,7 @@ class WCS:
             ... }
             See the Examples for additional information.
         config : dict, optional
-            the cluster configuration. If NOT None then `cluster_name`, `cluster_type`, `module`
+            the cluster configuration. If NOT None then 'cluster_name', 'cluster_type', 'module'
             are ignored and the whole cluster configuration should be in this argument,
             by default None. See the Examples below for the complete configuration schema.
         wait_for_completion : bool, optional
@@ -202,8 +200,8 @@ class WCS:
 
         Examples
         --------
-        If the `modules` is string then it is going to be used as the MODULE_NAME with a default tag
-        for that given MODULE_NAME. If `module` is a dict then it should have the below structure.
+        If the 'modules' is string then it is going to be used as the MODULE_NAME with a default tag
+        for that given MODULE_NAME. If 'module' is a dict then it should have the below structure.
 
         Contextionary:
 
@@ -220,10 +218,10 @@ class WCS:
         ... }
 
         Both the examples above use the 'semitechnologies' repo (which is the default one).
-        The `modlues` also can be a list of individual module configuration that conforms to the
+        The 'modlues' also can be a list of individual module configuration that conforms to the
         above description.
 
-        The COMPLETE `config` argument looks like this:
+        The COMPLETE 'config' argument looks like this:
 
         >>> {
         ...     "email": "user@example.com",
@@ -263,9 +261,9 @@ class WCS:
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If creating the weaviate cluster failed for a different reason,
+            If creating the Weaviate cluster failed for a different reason,
             more information is given in the exception.
         TypeError
             If 'config' is neither None nor of type dict.
@@ -284,6 +282,7 @@ class WCS:
 
         if config is None:
             config = {
+                'email': self._email,
                 'id': cluster_name,
                 'configuration': {
                     'tier': cluster_type,
@@ -351,7 +350,7 @@ class WCS:
         Parameters
         ----------
         cluster_name : str
-            The name of the weaviate server cluster.
+            The name of the Weaviate server cluster.
             NOTE: Case insensitive. The WCS cluster's name is always lowercased.
 
         Returns
@@ -372,7 +371,7 @@ class WCS:
 
     def get_clusters(self) -> Optional[List[str]]:
         """
-        Lists all weaviate clusters registered with the this account.
+        Lists all Weaviate clusters registered with the this account.
 
         Returns
         -------
@@ -382,9 +381,9 @@ class WCS:
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If getting the weaviate clusters failed for a different reason,
+            If getting the Weaviate clusters failed for a different reason,
             more information is given in the exception.
         """
 
@@ -414,7 +413,7 @@ class WCS:
         Parameters
         ----------
         cluster_name : str
-            The name of the weaviate server cluster.
+            The name of the Weaviate server cluster.
             NOTE: Case insensitive. The WCS cluster's name is always lowercased.
 
         Returns
@@ -425,9 +424,9 @@ class WCS:
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If getting the weaviate cluster failed for a different reason,
+            If getting the Weaviate cluster failed for a different reason,
             more information is given in the exception.
         """
 
@@ -456,15 +455,15 @@ class WCS:
         Parameters
         ----------
         cluster_name : str
-            The name of the weaviate server cluster.
+            The name of the Weaviate server cluster.
             NOTE: Case insensitive. The WCS cluster's name is always lowercased.
 
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If deleting the weaviate cluster failed for a different reason,
+            If deleting the Weaviate cluster failed for a different reason,
             more information is given in the exception.
         """
 
@@ -491,15 +490,15 @@ class WCS:
         Parameters
         ----------
         cluster_name : str
-            The name of the weaviate server cluster.
+            The name of the Weaviate server cluster.
             NOTE: Case insensitive. The WCS cluster's name is always lowercased.
 
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If deleting the weaviate cluster failed for a different reason,
+            If deleting the Weaviate cluster failed for a different reason,
             more information is given in the exception.
 
         Returns
@@ -533,7 +532,7 @@ class WCS:
         Parameters
         ----------
         cluster_name : str
-            The name of the weaviate server cluster.
+            The name of the Weaviate server cluster.
             NOTE: Case insensitive. The WCS cluster's name is always lowercased.
         user:
             The user to be added to WCS Weaviate cluster instance.
@@ -541,9 +540,9 @@ class WCS:
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If deleting the weaviate cluster failed for a different reason,
+            If deleting the Weaviate cluster failed for a different reason,
             more information is given in the exception.
         """
 
@@ -572,7 +571,7 @@ class WCS:
         Parameters
         ----------
         cluster_name : str
-            The name of the weaviate server cluster.
+            The name of the Weaviate server cluster.
             NOTE: Case insensitive. The WCS cluster's name is always lowercased.
         user:
             The user to be removed from WCS Weaviate cluster instance.
@@ -580,9 +579,9 @@ class WCS:
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If deleting the weaviate cluster failed for a different reason,
+            If deleting the Weaviate cluster failed for a different reason,
             more information is given in the exception.
         """
 
@@ -607,7 +606,7 @@ class WCS:
 
 def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[str, str]]:
     """
-    Get an WCS modules configuration format.
+    Get a WCS modules configuration format.
 
     Parameters
     ----------

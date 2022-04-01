@@ -11,7 +11,7 @@ from io import BufferedReader
 
 def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
     """
-    Encode a image in a Weaviate understandable format from a binary read file or by providing
+    Encode an image in a Weaviate understandable format from a binary read file or by providing
     the image path.
 
     Parameters
@@ -36,7 +36,7 @@ def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
     if isinstance(image_or_image_path, str):
         if not os.path.isfile(image_or_image_path):
             raise ValueError(
-                f"No file found at location {image_or_image_path}."
+                f"No file found at location: {image_or_image_path}."
             )
         with open(image_or_image_path, 'br') as file:
             content = file.read()
@@ -45,14 +45,15 @@ def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
         content = image_or_image_path.read()
     else:
         raise TypeError(
-            "'image_or_image_path' should be a image path or a binary read file io.BufferedReader."
+            "'image_or_image_path' should be an image path or a binary-read file "
+            "io.BufferedReader."
         )
     return base64.b64encode(content).decode("utf-8")
 
 
 def image_decoder_b64(encoded_image: str) -> bytes:
     """
-    Decode image from a Weaviate format image.
+    Decode an image from a Weaviate format image.
 
     Parameters
     ----------
@@ -70,7 +71,7 @@ def image_decoder_b64(encoded_image: str) -> bytes:
 
 def generate_local_beacon(uuid: Union[str, uuid_lib.UUID]) -> dict:
     """
-    Generates a beacon with the given uuid.
+    Generates a beacon with the given UUID.
 
     Parameters
     ----------
@@ -91,7 +92,7 @@ def generate_local_beacon(uuid: Union[str, uuid_lib.UUID]) -> dict:
     """
 
     _uuid = get_valid_uuid(uuid=uuid)
-    
+
     return {
         "beacon": "weaviate://localhost/" + _uuid
     }
@@ -129,7 +130,7 @@ def get_valid_uuid(uuid: Union[str, uuid_lib.UUID]) -> str:
         )
 
     try:
-        _uuid = str(uuid_lib.UUID(_uuid))
+        _uuid = str(uuid_lib.UUID(uuid))
     except ValueError:
         raise ValueError(
             "Not valid 'uuid' or 'uuid' can not be extracted from value."
@@ -139,7 +140,7 @@ def get_valid_uuid(uuid: Union[str, uuid_lib.UUID]) -> str:
 
 def get_vector(vector: Sequence[Real]) -> List[Real]:
     """
-    Get weaviate compatible format of the embedding vector.
+    Get embedding vector in Weaviate compatible format.
 
     Parameters
     ----------

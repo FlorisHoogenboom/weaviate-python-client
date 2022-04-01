@@ -12,7 +12,7 @@ from ..requests import Requests
 
 class Query(BaseQuery):
     """
-    Query class used to make `get` and/or `aggregate` GraphQL queries.
+    Query class used to make 'get' and/or 'aggregate' GraphQL queries.
     """
 
     def __init__(self, requests: Requests):
@@ -32,7 +32,7 @@ class Query(BaseQuery):
             properties: Union[List[str], str, None]=None,
         ) -> GetBuilder:
         """
-        Instantiate a GetBuilder for GraphQL `get` requests.
+        Instantiate a GetBuilder for GraphQL 'get' requests.
 
         Parameters
         ----------
@@ -45,7 +45,7 @@ class Query(BaseQuery):
         Returns
         -------
         GetBuilder
-            A GetBuilder to make GraphQL `get` requests from Weaviate.
+            A GetBuilder to make GraphQL 'get' requests from Weaviate.
         """
 
         return GetBuilder(
@@ -56,7 +56,7 @@ class Query(BaseQuery):
 
     def aggregate(self, class_name: str) -> AggregateBuilder:
         """
-        Instantiate an AggregateBuilder for GraphQL `aggregate` requests.
+        Instantiate an AggregateBuilder for GraphQL 'aggregate' requests.
 
         Parameters
         ----------
@@ -66,7 +66,7 @@ class Query(BaseQuery):
         Returns
         -------
         AggregateBuilder
-            An AggregateBuilder to make GraphQL `aggregate` requests from Weaviate.
+            An AggregateBuilder to make GraphQL 'aggregate' requests from Weaviate.
         """
 
         return AggregateBuilder(
@@ -78,7 +78,7 @@ class Query(BaseQuery):
             properties: Union[List[str], str],
         ) -> ExploreBuilder:
         """
-        Instantiate an ExploreBuilder for GraphQL `explore` requests.
+        Instantiate an ExploreBuilder for GraphQL 'explore' requests.
 
         Parameters
         ----------
@@ -89,7 +89,7 @@ class Query(BaseQuery):
         Returns
         -------
         ExploreBuilder
-            An ExploreBuilder to make GraphQL `explore` requests from Weaviate.
+            An ExploreBuilder to make GraphQL 'explore' requests from Weaviate.
         """
 
         return ExploreBuilder(
@@ -162,9 +162,9 @@ class Query(BaseQuery):
         TypeError
             If 'gql_query' is not of type str.
         aiohttp.ClientConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         return await make_query_request(

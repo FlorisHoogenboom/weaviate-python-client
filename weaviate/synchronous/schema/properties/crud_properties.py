@@ -18,7 +18,7 @@ class Property(BaseProperty):
         Parameters
         ----------
         requests : weaviate.synchronous.Requests
-            Requests object to an active and running weaviate instance.
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
@@ -50,11 +50,11 @@ class Property(BaseProperty):
         TypeError
             If 'schema_class_name' is not of type 'str'.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.SchemaValidationException
             If the 'schema_property' is not valid.
         weaviate.exceptions.UnexpectedStatusCodeException
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path = pre_create(

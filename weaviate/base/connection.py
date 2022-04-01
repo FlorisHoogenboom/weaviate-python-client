@@ -158,7 +158,7 @@ class ClientTimeout:
 
 class Connection:
     """
-    Connection class used to connect and authenticate to a Weaviate instance. If Authentication
+    Connection class used to connect, and authenticate, to a Weaviate instance. If Authentication
     is used, it automatically gets a new token in case it expired.
     """
 
@@ -246,7 +246,7 @@ class Connection:
         if response.status_code == 200:
             if self._auth_client_secret is None:
                 raise ValueError(
-                    f"No login credentials provided. The weaviate instance at {self._url} requires "
+                    f"No login credentials provided. The Weaviate instance at {self._url} requires "
                     "login credential, use argument 'auth_client_secret'."
                 )
             self._is_authentication_required = True
@@ -297,7 +297,7 @@ class Connection:
         try:
             response = requests.get(
                 self._url + self._api_version_path + "/.well-known/openid-configuration",
-                headers={"content-type": "application/json"},   
+                headers={"content-type": "application/json"},
                 timeout=self._timeout_config.get_timeout_requests(),
                 proxies=self._proxies.get_proxies_requests(),
             )
@@ -402,7 +402,7 @@ class Connection:
 
     def get_url(self, path: str) -> str:
         """
-        Construct and return the full weaviate URL to the resource 'path'.
+        Construct and return the full Weaviate URL to the resource 'path'.
 
         Parameters
         ----------

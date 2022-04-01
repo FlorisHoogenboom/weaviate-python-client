@@ -37,7 +37,7 @@ class BaseSchema(ABC):
     @abstractmethod
     def create(self, schema: dict):
         """
-        Create the schema at the weaviate instance.
+        Create the schema at the Weaviate instance.
 
         Parameters
         ----------
@@ -48,7 +48,7 @@ class BaseSchema(ABC):
     @abstractmethod
     def create_class(self, schema_class: dict):
         """
-        Create a single class as part of the schema in weaviate.
+        Create a single class as part of the schema in Weaviate.
 
         Parameters
         ----------
@@ -59,7 +59,7 @@ class BaseSchema(ABC):
     @abstractmethod
     def delete_class(self, class_name: str) -> None:
         """
-        Delete a schema class from weaviate. This deletes all associated data.
+        Delete a schema class from Weaviate. This deletes all associated data.
 
         Parameters
         ----------
@@ -76,7 +76,7 @@ class BaseSchema(ABC):
     @abstractmethod
     def contains(self, schema: Optional[dict]=None):
         """
-        Check if weaviate already contains a schema.
+        Check if Weaviate already contains a schema.
 
         Parameters
         ----------
@@ -103,7 +103,7 @@ class BaseSchema(ABC):
     @abstractmethod
     def get(self, class_name: Optional[str]=None):
         """
-        Get the schema from weaviate.
+        Get the schema from Weaviate.
 
         Parameters
         ----------
@@ -251,7 +251,7 @@ def get_class_schema_with_primitives_and_path(schema_class: dict) -> Tuple[dict,
     Returns
     -------
     Tuple[dict, str]
-        Class schema with only primitive properties and the weaviate path to the resource.
+        Class schema with only primitive properties and the Weaviate path to the resource.
     """
 
     path = '/schema'

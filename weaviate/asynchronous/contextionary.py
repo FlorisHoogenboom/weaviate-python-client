@@ -61,7 +61,7 @@ class Contextionary(BaseContextionary):
         aiohttp.ClientConnectionError
             If text2vec-contextionary could not be extended.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         """
 
         extension = pre_extend(
@@ -139,9 +139,9 @@ class Contextionary(BaseContextionary):
         Raises
         ------
         aiohttp.ClientConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path = pre_get_concept_vector(concept=concept)

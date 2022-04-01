@@ -24,7 +24,7 @@ from ..requests import Requests
 
 class DataObject(BaseDataObject):
     """
-    DataObject class used to manipulate object to/from weaviate. This class has CRUD methods.
+    DataObject class used to manipulate object to/from Weaviate. This class has CRUD methods.
 
     Attributes
     ----------
@@ -39,7 +39,7 @@ class DataObject(BaseDataObject):
         Parameters
         ----------
         requests : weaviate.synchronous.Requests
-            Requests object to an active and running weaviate instance.
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
@@ -62,7 +62,7 @@ class DataObject(BaseDataObject):
             The class name associated with the object given.
         uuid : str, uuid.UUID or None, optional
             The object's UUID. The object to will have this UUID if it is provided, otherwise
-            weaviate will generate an UUID for this object, by default None.
+            Weaviate will generate an UUID for this object, by default None.
         vector: Sequence[Real] or None, optional
             The embedding of the object that should be created. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
@@ -96,9 +96,9 @@ class DataObject(BaseDataObject):
         ValueError
             If one of the arguments has an invalid value.
         weaviate.exception.ObjectAlreadyExistsException
-            If an object with the given uuid already exists within weaviate.
+            If an object with the given uuid already exists within Weaviate.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If creating the object in Weaviate failed for a different reason other than connection,
             more information is given in the error message.
@@ -205,7 +205,7 @@ class DataObject(BaseDataObject):
         ValueError
             If one of the arguments has an invalid value.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If updating the object in Weaviate failed for a different reason than connection,
             more information is given in the error message.
@@ -300,7 +300,7 @@ class DataObject(BaseDataObject):
         ValueError
             If one of the arguments has an invalid value.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If replacing the object in Weaviate failed for a different reason than connection,
             more information is given in the error message.
@@ -370,9 +370,9 @@ class DataObject(BaseDataObject):
         Raises
         ------
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         return self.get(
@@ -389,7 +389,7 @@ class DataObject(BaseDataObject):
             offset: Optional[int]=None,
         ) -> Optional[Union[List[dict], dict]]:
         """
-        Gets objects from weaviate, the default maximum number of objects depends of Weaviate
+        Gets objects from Weaviate, the default maximum number of objects depends of Weaviate
         server's 'QUERY_DEFAULTS_LIMIT'. If 'uuid' is None a maximum of 'QUERY_DEFAULTS_LIMIT'
         objects are returned, use 'limit' argument to query more than 'QUERY_DEFAULTS_LIMIT'.
         If 'uuid' is specified the result is the same as for method '.get_by_uuid(...)'. One could
@@ -421,9 +421,9 @@ class DataObject(BaseDataObject):
         Raises
         ------
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path, params = pre_get(
@@ -456,7 +456,7 @@ class DataObject(BaseDataObject):
 
     def delete(self, uuid: Union[str, uuid_lib.UUID]) -> None:
         """
-        Delete an existing object from weaviate.
+        Delete an existing object from Weaviate.
 
         Parameters
         ----------
@@ -489,9 +489,9 @@ class DataObject(BaseDataObject):
         ValueError
             If 'uuid' is not properly formed.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path = pre_delete_exists(
@@ -515,12 +515,12 @@ class DataObject(BaseDataObject):
 
     def exists(self, uuid: Union[str, uuid_lib.UUID]) -> bool:
         """
-        Check if the object exist in weaviate.
+        Check if the object exist in Weaviate.
 
         Parameters
         ----------
         uuid : str or uuid.UUID
-            The UUID of the object that may or may not exist within weaviate.
+            The UUID of the object that may or may not exist within Weaviate.
 
         Examples
         --------
@@ -546,9 +546,9 @@ class DataObject(BaseDataObject):
         ValueError
             If 'uuid' is not properly formed.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path = pre_delete_exists(
@@ -580,7 +580,7 @@ class DataObject(BaseDataObject):
             vector: Optional[Sequence[Real]]=None
         ) -> dict:
         """
-        Validate an object against weaviate.
+        Validate an object against Weaviate.
 
         Parameters
         ----------
@@ -631,7 +631,7 @@ class DataObject(BaseDataObject):
         ValueError
             If argument contains an invalid value.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             If validating the object against Weaviate failed with a different reason.
         """

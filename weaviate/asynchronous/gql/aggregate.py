@@ -1,5 +1,5 @@
 """
-GraphQL `Aggregate` command.
+GraphQL 'Aggregate' clause.
 """
 from weaviate.base.gql.aggregate import BaseAggregateBuilder
 from .util import SendRequest

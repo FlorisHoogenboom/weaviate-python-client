@@ -1,5 +1,5 @@
 """
-GraphQL `Get` command.
+GraphQL 'Get' clause.
 """
 from typing import Union, List
 from weaviate.base.gql.get import BaseGetBuilder

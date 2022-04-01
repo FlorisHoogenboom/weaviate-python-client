@@ -1,5 +1,5 @@
 """
-GraphQL filters for `Get` and `Aggregate` commands.
+GraphQL filters for 'Get' and 'Aggregate' commands.
 GraphQL abstract class for GraphQL commands to inherit from.
 """
 from json import dumps
@@ -21,7 +21,7 @@ class Filter(ABC):
         Parameters
         ----------
         content : dict
-            The content of the `Filter` clause.
+            The content of the 'Filter' clause.
         """
 
 
@@ -41,7 +41,7 @@ class Filter(ABC):
 
 class NearText(Filter):
     """
-    NearText class used to filter weaviate objects. Can be used with text models only (text2vec).
+    NearText class used to filter Weaviate objects. Can be used with text models only (text2vec).
     E.g.: text2vec-contextionary, text2vec-transformers.
     """
 
@@ -52,7 +52,7 @@ class NearText(Filter):
         Parameters
         ----------
         content : dict
-            The content of the `nearText` clause.
+            The content of the 'nearText' clause.
 
         Raises
         ------
@@ -107,7 +107,7 @@ class NearText(Filter):
 
 class NearVector(Filter):
     """
-    NearVector class used to filter weaviate objects.
+    NearVector class used to filter Weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -117,7 +117,7 @@ class NearVector(Filter):
         Parameters
         ----------
         content : list
-            The content of the `nearVector` clause.
+            The content of the 'nearVector' clause.
 
         Raises
         ------
@@ -159,7 +159,7 @@ class NearVector(Filter):
 
 class NearObject(Filter):
     """
-    NearObject class used to filter weaviate objects.
+    NearObject class used to filter Weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -169,7 +169,7 @@ class NearObject(Filter):
         Parameters
         ----------
         content : list
-            The content of the `nearVector` clause.
+            The content of the 'nearVector' clause.
 
         Raises
         ------
@@ -216,7 +216,7 @@ class NearObject(Filter):
 
 class Ask(Filter):
     """
-    Ask class used to filter weaviate objects by asking a question.
+    Ask class used to filter Weaviate objects by asking a question.
     """
 
     def __init__(self, content: dict):
@@ -226,7 +226,7 @@ class Ask(Filter):
         Parameters
         ----------
         content : list
-            The content of the `ask` clause.
+            The content of the 'ask' clause.
 
         Raises
         ------
@@ -295,7 +295,7 @@ class Ask(Filter):
 
 class NearImage(Filter):
     """
-    NearObject class used to filter weaviate objects.
+    NearObject class used to filter Weaviate objects.
     """
 
     def __init__(self, content: dict, ):
@@ -305,7 +305,7 @@ class NearImage(Filter):
         Parameters
         ----------
         content : list
-            The content of the `nearImage` clause.
+            The content of the 'nearImage' clause.
 
         Raises
         ------
@@ -345,7 +345,7 @@ class NearImage(Filter):
 
 class Group(Filter):
     """
-    Group filter class used to group weaviate objects.
+    Group filter class used to group Weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -355,7 +355,7 @@ class Group(Filter):
         Parameters
         ----------
         content : dict
-            The content of the `where` filter clause.
+            The content of the 'where' filter clause.
 
         Raises
         ------
@@ -396,7 +396,7 @@ class Group(Filter):
 
 class Where(Filter):
     """
-    Where filter class used to filter weaviate objects.
+    Where filter class used to filter Weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -406,7 +406,7 @@ class Where(Filter):
         Parameters
         ----------
         content : dict
-            The content of the `where` filter clause.
+            The content of the 'where' filter clause.
 
         Raises
         ------
@@ -436,7 +436,7 @@ class Where(Filter):
         Parameters
         ----------
         content : dict
-            The content of the `where` filter clause.
+            The content of the 'where' filter clause.
 
         Raises
         ------
@@ -461,7 +461,7 @@ class Where(Filter):
         Parameters
         ----------
         content : dict
-            The content of the `where` filter clause.
+            The content of the 'where' filter clause.
 
         Raises
         ------
@@ -471,7 +471,7 @@ class Where(Filter):
 
         if "operator" not in content:
             raise ValueError(
-                f"Filter is missing required filed `operator`. Given: {content}."
+                f"Filter is missing required filed 'operator'. Given: {content}."
             )
         _content = deepcopy(content)
         self.operator = _content["operator"]
@@ -494,7 +494,7 @@ class Where(Filter):
 
         operands_str = []
         for operand in self.operands:
-            # remove the `where: ` from the operands and the last space
+            # remove the 'where: ' from the operands and the last space
             operands_str.append(str(operand)[7:-1])
         operands = ", ".join(operands_str)
         return f'where: {{operator: {self.operator} operands: [{operands}]}} '
@@ -598,7 +598,7 @@ def _check_concept(content: dict) -> None:
 
 def _check_objects(content: dict) -> None:
     """
-    Validate the `objects` sub clause of the `move` clause.
+    Validate the 'objects' sub clause of the 'move' clause.
 
     Parameters
     ----------
@@ -624,7 +624,7 @@ def _check_objects(content: dict) -> None:
     for obj in content["objects"]:
         if len(obj) != 1 or ('id' not in obj and 'beacon' not in obj):
             raise ValueError(
-                "Each object from the `move` clause should have ONLY 'id' OR 'beacon'."
+                "Each object from the 'move' clause should have ONLY 'id' OR 'beacon'."
             )
 
 

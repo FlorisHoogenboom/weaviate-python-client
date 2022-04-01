@@ -72,7 +72,7 @@ class BaseAggregateBuilder(ABC):
 
         Examples
         --------
-        The `content` prototype is like this:
+        The 'content' prototype is like this:
 
         >>> content = {
         ...     'operator': '<operator>',
@@ -90,7 +90,7 @@ class BaseAggregateBuilder(ABC):
         ...     ]
         ... }
 
-        This is a complete `where` filter but it does not have to be like this all the time.
+        This is a complete 'where' filter but it does not have to be like this all the time.
 
         Single operand:
 
@@ -139,7 +139,7 @@ class BaseAggregateBuilder(ABC):
     def with_group_by_filter(self, properties: List[str]) -> 'BaseAggregateBuilder':
         """
         Add a group by filter to the query. Might requires the user to set
-        an additional group by clause using `with_fields(..)`.
+        an additional group by clause using '.with_fields(...)'.
 
         Parameters
         ----------

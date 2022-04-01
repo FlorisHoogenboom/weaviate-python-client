@@ -21,14 +21,12 @@ class AuthCredentials(ABC):
 
 class AuthClientCredentials(AuthCredentials):
     """
-    Using a client secret for authentication.
-    In case of grand type client credentials.
+    Using a client secret for authentication. In case of grand type 'client_credentials'.
     """
 
     def __init__(self, client_secret: str):
         """
-        Using a client secret for authentication.
-        In case of grand type client credentials.
+        Initialize an AuthClientCredentials class instance.
 
         Parameters
         ----------
@@ -38,7 +36,12 @@ class AuthClientCredentials(AuthCredentials):
 
         super().__init__()
         self._credentials_body["grant_type"] = "client_credentials"
-        self.client_secret_encoded = base64.b64encode(client_secret.encode('ascii')).decode('ascii')
+        self.client_secret_encoded = (
+            base64.b64encode(
+                client_secret.encode('ascii')
+            )
+            .decode('ascii')
+        )
 
     def get_credentials(self) -> dict:
         """
@@ -60,14 +63,12 @@ class AuthClientCredentials(AuthCredentials):
 
 class AuthClientPassword(AuthCredentials):
     """
-    Using username and password for authentication.
-    In case of grand type password.
+    Using username and password for authentication. In case of grand type 'password'.
     """
 
     def __init__(self, username: str, password: str) -> None:
         """
-        Using username and password for authentication.
-        In case of grand type password.
+        Initialize an AuthClientPassword class instance.
 
         Parameters
         ----------

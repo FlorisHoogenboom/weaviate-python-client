@@ -25,9 +25,9 @@ async def make_query_request(requests: Requests, query: str) -> dict:
     Raises
     ------
     aiohttp.ClientConnectionError
-        If the network connection to weaviate fails.
+        If the network connection to Weaviate fails.
     weaviate.UnsuccessfulStatusCodeError
-        If weaviate reports a none OK status.
+        If Weaviate reports a none OK status.
     """
 
     try:
@@ -50,7 +50,7 @@ async def make_query_request(requests: Requests, query: str) -> dict:
 class SendRequest(ABC):
     """
     SendRequest abstract class from which all GraphQl query types should inherit from.
-    I contain the `do` method that is common to all query types.
+    I contain the 'do' method that is common to all query types.
     """
 
     _requests: Requests
@@ -79,9 +79,9 @@ class SendRequest(ABC):
         Raises
         ------
         aiohttp.ClientConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         return await make_query_request(

@@ -1,5 +1,5 @@
 """
-GraphQL abstract query module.
+BaseQuery abstract class definition.
 """
 from abc import ABC, abstractmethod
 from typing import List, Union

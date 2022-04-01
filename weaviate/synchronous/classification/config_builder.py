@@ -3,7 +3,7 @@ ConfigBuilder class definition.
 """
 import time
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
-from weaviate.base import BaseConfigBuilder
+from weaviate.base.classification import BaseConfigBuilder
 from ..requests import Requests
 
 
@@ -19,7 +19,7 @@ class ConfigBuilder(BaseConfigBuilder):
         Parameters
         ----------
         requests : weaviate.synchronous.Requests
-            Requests object to an active and running weaviate instance.
+            Requests object to an active and running Weaviate instance.
         classification : weaviate.synchronous.Classification
             Classification object to be configured using this ConfigBuilder instance.
         """
@@ -40,7 +40,7 @@ class ConfigBuilder(BaseConfigBuilder):
         Raises
         ------
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
             Unexpected error.
         """

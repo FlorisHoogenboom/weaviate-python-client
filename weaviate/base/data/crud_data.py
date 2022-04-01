@@ -14,7 +14,7 @@ from weaviate.util import (
 
 class BaseDataObject(ABC):
     """
-    BaseDataObject abstract class used to manipulate object to/from weaviate.
+    BaseDataObject abstract class used to manipulate object to/from Weaviate.
     """
 
     @abstractmethod
@@ -35,7 +35,7 @@ class BaseDataObject(ABC):
             The class name associated with the object given.
         uuid : str, uuid.UUID or None, optional
             The object's UUID. The object to will have this UUID if it is provided, otherwise
-            weaviate will generate an UUID for this object, by default None.
+            Weaviate will generate an UUID for this object, by default None.
         vector: Sequence[Real] or None, optional
             The embedding of the object that should be created. Used only for class objects that
             do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
@@ -120,7 +120,7 @@ class BaseDataObject(ABC):
             offset: Optional[int]=None,
         ):
         """
-        Gets objects from weaviate, the default maximum number of objects depends of Weaviate
+        Gets objects from Weaviate, the default maximum number of objects depends of Weaviate
         server's 'QUERY_DEFAULTS_LIMIT'. If 'uuid' is None a maximum of 'QUERY_DEFAULTS_LIMIT'
         objects are returned, use 'limit' argument to query more than 'QUERY_DEFAULTS_LIMIT'.
         If 'uuid' is specified the result is the same as for method '.get_by_uuid(...)'. One could
@@ -207,7 +207,7 @@ def pre_create(
         The class name associated with the object given.
     uuid : str, uuid.UUID or None
         The object's UUID. The object to will have this UUID if it is provided, otherwise
-        weaviate will generate an UUID for this object.
+        Weaviate will generate an UUID for this object.
     vector: Sequence[Real] or None
         The embedding of the object that should be created. Used only for class objects that
         do not have a vectorization module. Supported types are 'list', 'numpy.ndarray',
@@ -492,7 +492,7 @@ def _get_params(
     Returns
     -------
     dict
-        A dictionary including weaviate-accepted additional properties
+        A dictionary including Weaviate-accepted additional properties
         and/or 'vector' property.
     """
 

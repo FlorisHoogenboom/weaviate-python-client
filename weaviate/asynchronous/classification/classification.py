@@ -59,9 +59,9 @@ class Classification(BaseClassification):
         Raises
         ------
         aiohttp.ClientConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path = pre_get(classification_uuid=classification_uuid)

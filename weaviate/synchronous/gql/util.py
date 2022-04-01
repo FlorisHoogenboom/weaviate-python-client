@@ -25,9 +25,9 @@ def make_query_request(requests: Requests, query: str) -> dict:
     Raises
     ------
     requests.ConnectionError
-        If the network connection to weaviate fails.
+        If the network connection to Weaviate fails.
     weaviate.UnsuccessfulStatusCodeError
-        If weaviate reports a none OK status.
+        If Weaviate reports a none OK status.
     """
 
     try:
@@ -79,9 +79,9 @@ class SendRequest(ABC):
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         return make_query_request(

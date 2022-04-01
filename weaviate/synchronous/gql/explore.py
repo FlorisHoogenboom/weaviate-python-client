@@ -1,5 +1,5 @@
 """
-GraphQL `Explore` command.
+GraphQL 'Explore' clause.
 """
 from typing import Union, List
 from weaviate.base.gql.explore import BaseExploreBuilder

@@ -25,7 +25,7 @@ class Reference(BaseReference):
         Parameters
         ----------
         requests : weaviate.synchronous.Requests
-            Requests object to an active and running weaviate instance.
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
@@ -115,9 +115,9 @@ class Reference(BaseReference):
         ValueError
             If one of the parameters has a wrong value.
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path, beacon = pre_delete(
@@ -228,9 +228,9 @@ class Reference(BaseReference):
         ValueError
             If one of the parameters has a wrong value.
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path, beacons = pre_replace(
@@ -320,9 +320,9 @@ class Reference(BaseReference):
         ValueError
             If one of the parameters has a wrong value.
         requests.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path, beacons = pre_add(

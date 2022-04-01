@@ -85,7 +85,7 @@ class BaseReference(ABC):
 
 def _get_beacon(to_uuid: Union[str, uuid.UUID]) -> dict:
     """
-    Get a weaviate-style beacon.
+    Get a Weaviate-style beacon.
 
     Parameters
     ----------

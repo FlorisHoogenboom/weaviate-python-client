@@ -39,7 +39,7 @@ class Schema(BaseSchema):
         Parameters
         ----------
         requests : weaviate.synchronous.Requests
-            Requests object to an active and running weaviate instance.
+            Requests object to an active and running Weaviate instance.
         """
 
         self._requests = requests
@@ -47,7 +47,7 @@ class Schema(BaseSchema):
 
     def create(self, schema: dict) -> None:
         """
-        Create the schema at the weaviate instance.
+        Create the schema at the Weaviate instance.
 
         Parameters
         ----------
@@ -79,11 +79,11 @@ class Schema(BaseSchema):
         TypeError
             If the 'schema' is neither a string nor a dict.
         ValueError
-            If 'schema' can not be converted into a weaviate schema.
+            If 'schema' can not be converted into a Weaviate schema.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reported a none OK status.
+            If Weaviate reported a none OK status.
         weaviate.exceptions.SchemaValidationError
             If the 'schema' could not be validated against the standard format.
         """
@@ -101,7 +101,7 @@ class Schema(BaseSchema):
 
     def create_class(self, schema_class: dict) -> None:
         """
-        Create a single class as part of the schema in weaviate.
+        Create a single class as part of the schema in Weaviate.
 
         Parameters
         ----------
@@ -133,11 +133,11 @@ class Schema(BaseSchema):
         TypeError
             If the 'schema_class' is neither a string nor a dict.
         ValueError
-            If 'schema_class' can not be converted into a weaviate schema.
+            If 'schema_class' can not be converted into a Weaviate schema.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reported a none OK status.
+            If Weaviate reported a none OK status.
         weaviate.exceptions.SchemaValidationError
             If the 'schema_class' could not be validated against the standard format.
         """
@@ -155,12 +155,12 @@ class Schema(BaseSchema):
 
     def delete_class(self, class_name: str) -> None:
         """
-        Delete a schema class from weaviate. This deletes all associated data.
+        Delete a schema class from Weaviate. This deletes all associated data.
 
         Parameters
         ----------
         class_name : str
-            The class that should be deleted from weaviate.
+            The class that should be deleted from Weaviate.
 
         Examples
         --------
@@ -171,9 +171,9 @@ class Schema(BaseSchema):
         TypeError
             If 'class_name' argument not of type 'str'.
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reported a none OK status.
+            If Weaviate reported a none OK status.
         """
 
         path = pre_delete_class(
@@ -210,7 +210,7 @@ class Schema(BaseSchema):
 
     def contains(self, schema: Optional[dict]=None) -> bool:
         """
-        Check if weaviate already contains a schema.
+        Check if Weaviate already contains a schema.
 
         Parameters
         ----------
@@ -313,9 +313,9 @@ class Schema(BaseSchema):
         Raises
         ------
         requests.exceptions.ConnectionError
-            If the network connection to weaviate fails.
+            If the network connection to Weaviate fails.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reports a none OK status.
+            If Weaviate reports a none OK status.
         """
 
         path, class_name = pre_update_config(class_name)
@@ -341,7 +341,7 @@ class Schema(BaseSchema):
 
     def get(self, class_name: Optional[str]=None) -> dict:
         """
-        Get the schema from weaviate.
+        Get the schema from Weaviate.
 
         Parameters
         ----------
@@ -423,9 +423,9 @@ class Schema(BaseSchema):
         Raises
         ------
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reported a none OK status.
+            If Weaviate reported a none OK status.
         """
 
         path = pre_get(class_name=class_name)
@@ -458,9 +458,9 @@ class Schema(BaseSchema):
         Raises
         ------
         requests.exceptions.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reported a none OK status.
+            If Weaviate reported a none OK status.
         """
 
         if 'properties' not in schema_class:
@@ -500,14 +500,14 @@ class Schema(BaseSchema):
         Parameters
         ----------
         schema_class : dict
-            A single weaviate formated class
+            A single Weaviate formated class
 
         Raises
         ------
         requests.ConnectionError
-            If the network connection to weaviate failed.
+            If the network connection to Weaviate failed.
         weaviate.exceptions.UnsuccessfulStatusCodeError
-            If weaviate reported a none OK status.
+            If Weaviate reported a none OK status.
         """
 
         # Create the class

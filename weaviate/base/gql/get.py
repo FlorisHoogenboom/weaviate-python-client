@@ -1,5 +1,5 @@
 """
-GraphQL `Get` command.
+BaseGetBuilder abstract class definition.
 """
 from json import dumps
 from abc import ABC
@@ -70,18 +70,18 @@ class BaseGetBuilder(ABC):
         self._where: Union[Where, str] = ''
         self._limit: str = ''
         self._offset: str = ''
-        self._near_ask: Union[Filter, str] = '' # To store the `near`/`ask` clause if it is added
+        self._near_ask: Union[Filter, str] = '' # To store the 'near'/'ask' clause if it is added
         self._contains_filter = False  # true if any filter is added
         self._group: Union[Group, str] = ''
 
     def with_group(self, content: dict) -> 'BaseGetBuilder':
         """
-        Set `group` filter.
+        Set 'group' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `group` filter to set. See examples below.
+            The content of the 'group' filter to set. See examples below.
 
         Examples
         --------
@@ -111,12 +111,12 @@ class BaseGetBuilder(ABC):
 
     def with_where(self, content: dict) -> 'BaseGetBuilder':
         """
-        Set `where` filter.
+        Set 'where' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `where` filter to set. See examples below.
+            The content of the 'where' filter to set. See examples below.
 
         Examples
         --------
@@ -138,7 +138,7 @@ class BaseGetBuilder(ABC):
         ...     ]
         ... }
 
-        This is a complete `where` filter but it does not have to be like this all the time.
+        This is a complete 'where' filter but it does not have to be like this all the time.
 
         Single operand:
 
@@ -186,14 +186,14 @@ class BaseGetBuilder(ABC):
 
     def with_near_text(self, content: dict) -> 'BaseGetBuilder':
         """
-        Set `nearText` filter. This filter can be used with text modules (text2vec).
+        Set 'nearText' filter. This filter can be used with text modules (text2vec).
         E.g.: text2vec-contextionary, text2vec-transformers.
-        NOTE: The 'autocorrect' field is enabled only with the `text-spellcheck` Weaviate module.
+        NOTE: The 'autocorrect' field is enabled only with the 'text-spellcheck' Weaviate module.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearText` filter to set. See examples below.
+            The content of the 'nearText' filter to set. See examples below.
 
         Examples
         --------
@@ -259,7 +259,7 @@ class BaseGetBuilder(ABC):
 
         if not self._near_ask:
             raise AttributeError(
-                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+                "Cannot use multiple 'near' filters, or a 'near' filter and an 'ask' filter."
             )
         self._near_ask = NearText(content)
         self._contains_filter = True
@@ -267,12 +267,12 @@ class BaseGetBuilder(ABC):
 
     def with_near_vector(self, content: dict) -> 'BaseGetBuilder':
         """
-        Set `nearVector` filter.
+        Set 'nearVector' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearVector` filter to set. See examples below.
+            The content of the 'nearVector' filter to set. See examples below.
 
         Examples
         --------
@@ -283,8 +283,8 @@ class BaseGetBuilder(ABC):
         ...     'certainty': <float>          # Optional
         ... }
 
-        NOTE: Supported types for 'vector' are `list`, 'numpy.ndarray`, `torch.Tensor`
-                and `tf.Tensor`.
+        NOTE: Supported types for 'vector' are 'list', 'numpy.ndarray', 'torch.Tensor'
+                and 'tf.Tensor'.
 
         Full content:
 
@@ -319,12 +319,12 @@ class BaseGetBuilder(ABC):
         Raises
         ------
         AttributeError
-            If another `near` filter was already set.
+            If another 'near' filter was already set.
         """
 
         if not self._near_ask:
             raise AttributeError(
-                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+                "Cannot use multiple 'near' filters, or a 'near' filter and an 'ask' filter."
             )
         self._near_ask = NearVector(content)
         self._contains_filter = True
@@ -332,12 +332,12 @@ class BaseGetBuilder(ABC):
 
     def with_near_object(self, content: dict) -> 'BaseGetBuilder':
         """
-        Set `nearObject` filter.
+        Set 'nearObject' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearObject` filter to set. See examples below.
+            The content of the 'nearObject' filter to set. See examples below.
 
         Examples
         --------
@@ -366,7 +366,7 @@ class BaseGetBuilder(ABC):
 
         if not self._near_ask:
             raise AttributeError(
-                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+                "Cannot use multiple 'near' filters, or a 'near' filter and an 'ask' filter."
             )
         self._near_ask = NearObject(content)
         self._contains_filter = True
@@ -374,16 +374,16 @@ class BaseGetBuilder(ABC):
 
     def with_near_image(self, content: dict, encode: bool=False) -> 'BaseGetBuilder':
         """
-        Set `nearImage` filter.
+        Set 'nearImage' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearObject` filter to set. See examples below.
+            The content of the 'nearObject' filter to set. See examples below.
         encode : bool, optional
-            Whether to encode the `content["image"]` to base64 and convert to string. If True, the
-            `content["image"]` can be an image path or a file opened in binary read mode. If False,
-            the `content["image"]` MUST be a base64 encoded string (NOT bytes, i.e. NOT binary
+            Whether to encode the 'content["image"]' to base64 and convert to string. If True, the
+            'content["image"]' can be an image path or a file opened in binary read mode. If False,
+            the 'content["image"]' MUST be a base64 encoded string (NOT bytes, i.e. NOT binary
             string that looks like this: b'BASE64ENCODED' but simple 'BASE64ENCODED').
             By default False.
 
@@ -396,7 +396,7 @@ class BaseGetBuilder(ABC):
         ...     'certainty': 0.7 # Optional
         ... }
 
-        With `encoded` True:
+        With 'encoded' True:
 
         >>> content = {
         ...     'image': "my_image_path.png",
@@ -416,7 +416,7 @@ class BaseGetBuilder(ABC):
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
         >>> my_image_file.close()
 
-        With `encoded` False:
+        With 'encoded' False:
 
         >>> from weaviate.util import image_encoder_b64, image_decoder_b64
         >>> encoded_image = image_encoder_b64("my_image_path.png")
@@ -464,7 +464,7 @@ class BaseGetBuilder(ABC):
 
         if not self._near_ask:
             raise AttributeError(
-                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+                "Cannot use multiple 'near' filters, or a 'near' filter and an 'ask' filter."
             )
         if encode:
             content['image'] = image_encoder_b64(content['image'])
@@ -502,7 +502,7 @@ class BaseGetBuilder(ABC):
     def with_offset(self, offset: int) -> 'BaseGetBuilder':
         """
         The offset of objects returned, i.e. the starting index of the returned objects should be
-        used in conjunction with the `with_limit` method.
+        used in conjunction with the 'with_limit' method.
 
         Parameters
         ----------
@@ -531,12 +531,12 @@ class BaseGetBuilder(ABC):
         """
         Ask a question for which weaviate will retreive the answer from your data.
         This filter can be used only with QnA module: qna-transformers.
-        NOTE: The 'autocorrect' field is enabled only with the `text-spellcheck` Weaviate module.
+        NOTE: The 'autocorrect' field is enabled only with the 'text-spellcheck' Weaviate module.
 
         Parameters
         ----------
         content : dict
-            The content of the `ask` filter to set. See examples below.
+            The content of the 'ask' filter to set. See examples below.
 
         Examples
         --------
@@ -572,7 +572,7 @@ class BaseGetBuilder(ABC):
 
         if not self._near_ask:
             raise AttributeError(
-                "Cannot use multiple `near` filters, or a `near` filter and an `ask` filter."
+                "Cannot use multiple 'near' filters, or a 'near' filter and an 'ask' filter."
             )
         self._near_ask = Ask(content)
         self._contains_filter = True
@@ -582,22 +582,22 @@ class BaseGetBuilder(ABC):
             properties: Union[List, str, Dict[str, Union[List[str], str]],Tuple[dict, dict]]
         ) -> 'BaseGetBuilder':
         """
-        Add additional properties (i.e. properties from `_additional` clause). See Examples below.
-        If the the 'properties' is of data type `str` or `list` of `str` then the method is
-        idempotent, if it is of type `dict` or `tuple` then the exiting property is going to be
-        replaced. To set the setting of one of the additional property use the `tuple` data type
-        where `properties` look like this (clause: dict, settings: dict) where the 'settings' are
+        Add additional properties (i.e. properties from '_additional' clause). See Examples below.
+        If the the 'properties' is of data type 'str' or 'list' of 'str' then the method is
+        idempotent, if it is of type 'dict' or 'tuple' then the exiting property is going to be
+        replaced. To set the setting of one of the additional property use the 'tuple' data type
+        where 'properties' look like this (clause: dict, settings: dict) where the 'settings' are
         the properties inside the '(...)' of the clause. See Examples for more information.
 
         Parameters
         ----------
         properties : str, list of str, dict[str, str], dict[str, list of str] or tuple[dict, dict]
-            The additional properties to include in the query. Can be property name as `str`,
+            The additional properties to include in the query. Can be property name as 'str',
             a list of property names, a dictionary (clause without settings) where the value is a
-            `str` or list of `str`, or a `tuple` of 2 elements:
+            'str' or list of 'str', or a 'tuple' of 2 elements:
                 (clause: Dict[str, str or list[str]], settings: Dict[str, Any])
             where the 'clause' is the property and all its sub-properties and the 'settings' is the
-            setting of the property, i.e. everything that is inside the `(...)` right after the
+            setting of the property, i.e. everything that is inside the '(...)' right after the
             property name. See Examples below.
 
         Examples
@@ -619,7 +619,7 @@ class BaseGetBuilder(ABC):
         ... '''
         >>> client.query\
         ...     .get('Article', ['title', 'author'])\
-        ...     .with_additional('id']) # argument as `str`
+        ...     .with_additional('id']) # argument as 'str'
 
         >>> # multiple additional property with this GraphQL query
         >>> '''
@@ -638,7 +638,7 @@ class BaseGetBuilder(ABC):
         ... '''
         >>> client.query\
         ...     .get('Article', ['title', 'author'])\
-        ...     .with_additional(['id', 'certainty']) # argument as `List[str]`
+        ...     .with_additional(['id', 'certainty']) # argument as 'List[str]'
 
         >>> # additional properties as clause with this GraphQL query
         >>> '''
@@ -666,7 +666,7 @@ class BaseGetBuilder(ABC):
         ...         {
         ...             'classification' : ['basedOn', 'classifiedFields', 'completed', 'id']
         ...         }
-        ...     ) # argument as `dict[str, List[str]]`
+        ...     ) # argument as 'dict[str, List[str]]'
         >>> # or with this GraphQL query
         >>> '''
         ... {
@@ -689,7 +689,7 @@ class BaseGetBuilder(ABC):
         ...         {
         ...             'classification' : 'completed'
         ...         }
-        ...     ) # argument as `Dict[str, str]`
+        ...     ) # argument as 'Dict[str, str]'
 
         Consider the following GraphQL clause:
         >>> '''
@@ -740,7 +740,7 @@ class BaseGetBuilder(ABC):
         ...     ) # argument as Tuple[Dict[str, List[str]], Dict[str, Any]]
 
         If the desired clause does not match any example above, then the clause can always be
-        converted to string before passing it to the `.with_additional()` method.
+        converted to string before passing it to the '.with_additional()' method.
 
         Returns
         -------
@@ -762,7 +762,7 @@ class BaseGetBuilder(ABC):
             for prop in properties:
                 if not isinstance(prop, str):
                     raise TypeError(
-                        "If type of 'properties' is `list` then all items must be of type `str`!"
+                        "If type of 'properties' is 'list' then all items must be of type 'str'!"
                     )
                 self._additional['__one_level'].add(prop)
             return self
@@ -773,15 +773,15 @@ class BaseGetBuilder(ABC):
 
         if not isinstance(properties, dict):
             raise TypeError(
-                "The 'properties' argument must be either of type `str`, `list`, `dict` or "
-                f"`tuple`! Given: {type(properties)}"
+                "The 'properties' argument must be either of type 'str', 'list', 'dict' or "
+                f"'tuple'! Given: {type(properties)}"
             )
 
-        # only `dict` type here
+        # only 'dict' type here
         for key, values in properties.items():
             if not isinstance(key, str):
                 raise TypeError(
-                    "If type of 'properties' is `dict` then all keys must be of type `str`!"
+                    "If type of 'properties' is 'dict' then all keys must be of type 'str'!"
                 )
             self._additional[key] = set()
             if isinstance(values, str):
@@ -789,19 +789,19 @@ class BaseGetBuilder(ABC):
                 continue
             if not isinstance(values, list):
                 raise TypeError(
-                    "If type of 'properties' is `dict` then all the values must be either of type "
-                    f"`str` or `list` of `str`! Given: {type(values)}!"
+                    "If type of 'properties' is 'dict' then all the values must be either of type "
+                    f"'str' or 'list' of 'str'! Given: {type(values)}!"
                 )
             if len(values) == 0:
                 raise ValueError(
-                    "If type of 'properties' is `dict` and a value is of type `list` then at least"
+                    "If type of 'properties' is 'dict' and a value is of type 'list' then at least"
                     " one element should be present!"
                 )
             for value in values:
                 if not isinstance(value, str):
                     raise TypeError(
-                        "If type of 'properties' is `dict` and a value is of type `list` then all "
-                        "items must be of type `str`!"
+                        "If type of 'properties' is 'dict' and a value is of type 'list' then all "
+                        "items must be of type 'str'!"
                     )
                 self._additional[key].add(value)
         return self
@@ -841,7 +841,7 @@ class BaseGetBuilder(ABC):
 
     def _additional_to_str(self) -> str:
         """
-        Convert `self._additional` attribute to a `str`.
+        Convert 'self._additional' attribute to a 'str'.
 
         Returns
         -------
@@ -888,24 +888,24 @@ class BaseGetBuilder(ABC):
 
         if len(tuple_value) != 2:
             raise ValueError(
-                "If type of 'properties' is `tuple` then it should have length 2: "
+                "If type of 'properties' is 'tuple' then it should have length 2: "
                 "(clause: <dict>, settings: <dict>)"
             )
 
         clause, settings = tuple_value
         if not isinstance(clause, dict) or not isinstance(settings, dict):
             raise TypeError(
-                "If type of 'properties' is `tuple` then it should have this data type: "
+                "If type of 'properties' is 'tuple' then it should have this data type: "
                 "(<dict>, <dict>)"
             )
         if len(clause) != 1:
             raise ValueError(
-                "If type of 'properties' is `tuple` then the 'clause' (first element) should "
+                "If type of 'properties' is 'tuple' then the 'clause' (first element) should "
                 f"have only one key. Given: {len(clause)}"
             )
         if len(settings) == 0:
             raise ValueError(
-                "If type of 'properties' is `tuple` then the 'settings' (second element) should "
+                "If type of 'properties' is 'tuple' then the 'settings' (second element) should "
                 f"have at least one key. Given: {len(settings)}"
             )
 
@@ -913,8 +913,8 @@ class BaseGetBuilder(ABC):
 
         if not isinstance(clause_key, str):
             raise TypeError(
-                "If type of 'properties' is `tuple` then first element's key should be of type "
-                "`str`!"
+                "If type of 'properties' is 'tuple' then first element's key should be of type "
+                "'str'!"
             )
 
         clause_with_settings = clause_key + '('
@@ -922,14 +922,14 @@ class BaseGetBuilder(ABC):
             for key, value in sorted(settings.items(), key=lambda key_value: key_value[0]):
                 if not isinstance(key, str):
                     raise TypeError(
-                        "If type of 'properties' is `tuple` then the second elements (<dict>) "
-                        "should have all the keys of type `str`!"
+                        "If type of 'properties' is 'tuple' then the second elements (<dict>) "
+                        "should have all the keys of type 'str'!"
                     )
                 clause_with_settings += key + ': ' + dumps(value) + ' '
         except TypeError:
             raise TypeError(
-                "If type of 'properties' is `tuple` then the second elements (<dict>) "
-                "should have all the keys of type `str`!"
+                "If type of 'properties' is 'tuple' then the second elements (<dict>) "
+                "should have all the keys of type 'str'!"
             ) from None
         clause_with_settings += ')'
 
@@ -939,18 +939,18 @@ class BaseGetBuilder(ABC):
             return
         if not isinstance(values, list):
             raise TypeError(
-                "If type of 'properties' is `tuple` then first element's dict values must be "
-                f"either of type `str` or `list` of `str`! Given: {type(values)}!"
+                "If type of 'properties' is 'tuple' then first element's dict values must be "
+                f"either of type 'str' or 'list' of 'str'! Given: {type(values)}!"
             )
         if len(values) == 0:
             raise ValueError(
-                "If type of 'properties' is `tuple` and first element's dict value is of type "
-                "`list` then at least one element should be present!"
+                "If type of 'properties' is 'tuple' and first element's dict value is of type "
+                "'list' then at least one element should be present!"
             )
         for value in values:
             if not isinstance(value, str):
                 raise TypeError(
-                    "If type of 'properties' is `tuple` and first element's dict value is of type "
-                    " `list` then all items must be of type `str`!"
+                    "If type of 'properties' is 'tuple' and first element's dict value is of type "
+                    " 'list' then all items must be of type 'str'!"
                 )
             self._additional[clause_with_settings].add(value)

@@ -1,5 +1,5 @@
 """
-GraphQL `Explore` command.
+BaseExploreBuilder abstract class definition.
 """
 from abc import ABC
 from typing import List, Union
@@ -56,14 +56,14 @@ class BaseExploreBuilder(ABC):
 
     def with_near_text(self, content: dict) -> 'BaseExploreBuilder':
         """
-        Set `nearText` filter. This filter can be used with text modules (text2vec).
+        Set 'nearText' filter. This filter can be used with text modules (text2vec).
         E.g.: text2vec-contextionary, text2vec-transformers.
-        NOTE: The 'autocorrect' field is enabled only with the `text-spellcheck` Weaviate module.
+        NOTE: The 'autocorrect' field is enabled only with the 'text-spellcheck' Weaviate module.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearText` filter to set. See examples below.
+            The content of the 'nearText' filter to set. See examples below.
 
         Examples
         --------
@@ -129,7 +129,7 @@ class BaseExploreBuilder(ABC):
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple `near` filters."
+                "Cannot use multiple 'near' filters."
             )
         self._near = NearText(content)
         self._contains_near = True
@@ -137,12 +137,12 @@ class BaseExploreBuilder(ABC):
 
     def with_near_vector(self, content: dict) -> 'BaseExploreBuilder':
         """
-        Set `nearVector` filter.
+        Set 'nearVector' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearVector` filter to set. See examples below.
+            The content of the 'nearVector' filter to set. See examples below.
 
         Examples
         --------
@@ -153,8 +153,8 @@ class BaseExploreBuilder(ABC):
         ...     'certainty': <float>          # Optional
         ... }
 
-        NOTE: Supported types for 'vector' are `list`, 'numpy.ndarray`, `torch.Tensor`
-                and `tf.Tensor`.
+        NOTE: Supported types for 'vector' are 'list', 'numpy.ndarray', 'torch.Tensor'
+                and 'tf.Tensor'.
 
         Full content:
 
@@ -189,12 +189,12 @@ class BaseExploreBuilder(ABC):
         Raises
         ------
         AttributeError
-            If another `near` filter was already set.
+            If another 'near' filter was already set.
         """
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple `near` filters."
+                "Cannot use multiple 'near' filters."
             )
         self._near = NearVector(content)
         self._contains_near = True
@@ -202,12 +202,12 @@ class BaseExploreBuilder(ABC):
 
     def with_near_object(self, content: dict) -> 'BaseExploreBuilder':
         """
-        Set `nearObject` filter.
+        Set 'nearObject' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearObject` filter to set. See examples below.
+            The content of the 'nearObject' filter to set. See examples below.
 
         Examples
         --------
@@ -236,7 +236,7 @@ class BaseExploreBuilder(ABC):
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple `near` filters."
+                "Cannot use multiple 'near' filters."
             )
         self._near = NearObject(content)
         self._contains_near = True
@@ -244,16 +244,16 @@ class BaseExploreBuilder(ABC):
 
     def with_near_image(self, content: dict, encode: bool=False) -> 'BaseExploreBuilder':
         """
-        Set `nearImage` filter.
+        Set 'nearImage' filter.
 
         Parameters
         ----------
         content : dict
-            The content of the `nearObject` filter to set. See examples below.
+            The content of the 'nearObject' filter to set. See examples below.
         encode : bool, optional
-            Whether to encode the `content["image"]` to base64 and convert to string. If True, the
-            `content["image"]` can be an image path or a file opened in binary read mode. If False,
-            the `content["image"]` MUST be a base64 encoded string (NOT bytes, i.e. NOT binary
+            Whether to encode the 'content["image"]' to base64 and convert to string. If True, the
+            'content["image"]' can be an image path or a file opened in binary read mode. If False,
+            the 'content["image"]' MUST be a base64 encoded string (NOT bytes, i.e. NOT binary
             string that looks like this: b'BASE64ENCODED' but simple 'BASE64ENCODED').
             By default True.
 
@@ -266,7 +266,7 @@ class BaseExploreBuilder(ABC):
         ...     'certainty': 0.7 # Optional
         ... }
 
-        With `encoded` True:
+        With 'encoded' True:
 
         >>> content = {
         ...     'image': "my_image_path.png",
@@ -286,7 +286,7 @@ class BaseExploreBuilder(ABC):
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
         >>> my_image_file.close()
 
-        With `encoded` False:
+        With 'encoded' False:
 
         >>> from weaviate.util import image_encoder_b64, image_decoder_b64
         >>> encoded_image = image_encoder_b64("my_image_path.png")
@@ -334,7 +334,7 @@ class BaseExploreBuilder(ABC):
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple `near` filters."
+                "Cannot use multiple 'near' filters."
             )
         if encode:
             content['image'] = image_encoder_b64(content['image'])
@@ -371,7 +371,7 @@ class BaseExploreBuilder(ABC):
     def with_offset(self, offset: int) -> 'BaseExploreBuilder':
         """
         The offset of objects returned, i.e. the starting index of the returned objects should be
-        used in conjunction with the `with_limit` method.
+        used in conjunction with the 'with_limit' method.
 
         Parameters
         ----------
@@ -407,7 +407,7 @@ class BaseExploreBuilder(ABC):
 
         if not self._contains_near:
             raise AttributeError(
-                "No `near` filter provided. Cannot perform Explore without `near` filter."
+                "No 'near' filter provided. Cannot perform Explore without 'near' filter."
             )
 
         properties = " ".join(self._properties)
