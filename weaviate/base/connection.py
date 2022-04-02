@@ -10,6 +10,7 @@ from typing import Optional, Union, Any, Tuple
 from numbers import Real
 import requests
 import aiohttp
+import ujson
 from weaviate.exceptions import (
     AuthenticationError,
     RequestsConnectionError,
@@ -306,7 +307,7 @@ class Connection:
         if response.status_code != 200:
             raise AuthenticationError("Cannot authenticate.", response=response)
 
-        response_json = response.json()
+        response_json = ujson.loads(response.content)
 
         return response_json['clientId'], response_json['href']
 
@@ -377,7 +378,7 @@ class Connection:
                 "Authentication access denied. Are the credentials correct?"
             )
 
-        response_json = response.json()
+        response_json = ujson.loads(response.content)
         self._auth_bearer = response_json['access_token']
         # -2 for some lagtime
         self._auth_expires = int(_get_epoch_time() + response_json['expires_in'] - 2)

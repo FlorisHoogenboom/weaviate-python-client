@@ -3,6 +3,7 @@ Classification class definition.
 """
 import uuid
 from typing import Union
+import ujson
 from weaviate.exceptions import UnsuccessfulStatusCodeError, RequestsConnectionError
 from weaviate.base.classification import(
     BaseClassification,
@@ -74,7 +75,7 @@ class Classification(BaseClassification):
                 'Classification status could not be retrieved due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()
+            return ujson.loads(response.content)
         raise UnsuccessfulStatusCodeError(
             "Get classification status.",
             status_code=response.status_code,

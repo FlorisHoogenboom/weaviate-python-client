@@ -4,6 +4,7 @@ Batch class definitions.
 import sys
 import time
 from typing import Optional, Sequence
+import ujson
 from requests import ReadTimeout, Response
 from weaviate.exceptions import (
     RequestsConnectionError,
@@ -430,7 +431,7 @@ class Batch(BaseBatch):
                 data_type='objects',
                 batch_request=self._objects_batch,
             )
-            results = response.json()
+            results = ujson.loads(response.content)
             if check_batch_result(results):
                 raise BatchObjectCreationError(
                     "One or more batch objects creation failed. If the error is caught, the "
@@ -532,7 +533,7 @@ class Batch(BaseBatch):
             ref_per_second = len(self._reference_batch) / response.elapsed.total_seconds()
             self._recommended_num_references = round(ref_per_second * self._creation_time)
             self._reference_batch = ReferenceBatchRequest()
-            return response.json()
+            return ujson.loads(response.content)
         return []
 
     def _auto_create(self) -> None:

@@ -2,6 +2,7 @@
 Schema class definition.
 """
 from typing import Optional
+import ujson
 from weaviate.base.schema import (
     BaseSchema,
     get_class_schema_with_primitives_and_path,
@@ -439,7 +440,7 @@ class Schema(BaseSchema):
                 'Schema could not be retrieved due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()
+            return ujson.loads(response.content)
         raise UnsuccessfulStatusCodeError(
             "Get schema.",
             status_code=response.status_code,

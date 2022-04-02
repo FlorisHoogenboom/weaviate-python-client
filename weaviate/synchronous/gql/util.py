@@ -2,6 +2,7 @@
 Helper functions for this module.
 """
 from abc import ABC, abstractmethod
+import ujson
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
 from ..requests import Requests
 
@@ -40,7 +41,7 @@ def make_query_request(requests: Requests, query: str) -> dict:
             'Query was not successful.'
         ) from conn_err
     if response.status_code == 200:
-        return response.json()
+        return ujson.loads(response.content)
     raise UnsuccessfulStatusCodeError(
         "Query was not successful",
         status_code=response.status_code,

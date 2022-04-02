@@ -3,6 +3,7 @@ DataObject class definition.
 """
 import uuid as uuid_lib
 from numbers import Real
+import ujson
 from typing import Union, Optional, List, Sequence
 from weaviate.base.data import (
     BaseDataObject,
@@ -120,11 +121,11 @@ class DataObject(BaseDataObject):
                 'Object was not added due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return str(response.json()["id"])
+            return str(ujson.loads(response.content)["id"])
 
         object_does_already_exist = False
         try:
-            if 'already exists' in response.json()['error'][0]['message']:
+            if 'already exists' in ujson.loads(response.content)['error'][0]['message']:
                 object_does_already_exist = True
         except KeyError:
             pass
@@ -444,8 +445,8 @@ class DataObject(BaseDataObject):
             ) from conn_err
         if response.status_code == 200:
             if uuid is None:
-                return response.json()['objects']
-            return response.json()
+                return ujson.loads(response.content)['objects']
+            return ujson.loads(response.content)
         if uuid is not None and response.status_code == 404:
             return None
         raise UnsuccessfulStatusCodeError(
@@ -661,7 +662,7 @@ class DataObject(BaseDataObject):
             return result
         if response.status_code == 422:
             result["valid"] = False
-            result["error"] = response.json()["error"]
+            result["error"] = ujson.loads(response.content)["error"]
             return result
         raise UnsuccessfulStatusCodeError(
             "Validate object.",

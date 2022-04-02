@@ -2,6 +2,7 @@
 Contextionary class definition.
 """
 from numbers import Real
+import ujson
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
 from weaviate.base.contextionary import (
     BaseContextionary,
@@ -155,7 +156,7 @@ class Contextionary(BaseContextionary):
             ) from conn_err
         else:
             if response.status_code == 200:
-                return response.json()
+                return ujson.loads(response.content)
             raise UnsuccessfulStatusCodeError(
                 "text2vec-contextionary vector.",
                 status_code=response.status_code,

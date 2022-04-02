@@ -2,7 +2,9 @@
 WCS class definition.
 """
 import time
+
 from typing import Optional, List, Union, Dict, Tuple
+import ujson
 from tqdm.auto import tqdm
 from weaviate.exceptions import (
     RequestsConnectionError,
@@ -315,7 +317,7 @@ class WCS:
                 response_message=response.text,
             )
 
-        cluster_name = response.json()['id']
+        cluster_name = ujson.loads(response.content)['id']
 
         if wait_for_completion is True:
             title_bar = tqdm(
@@ -399,7 +401,7 @@ class WCS:
                 'WCS clusters were not fetched due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()['clusterIDs']
+            return ujson.loads(response.content)['clusterIDs']
         raise UnsuccessfulStatusCodeError(
             'Checking WCS instance.',
             status_code=response.status_code,
@@ -439,7 +441,7 @@ class WCS:
                 'WCS cluster info was not fetched due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()
+            return ujson.loads(response.content)
         if response.status_code == 404:
             return {}
         raise UnsuccessfulStatusCodeError(
@@ -518,7 +520,7 @@ class WCS:
                 'Could not get users of the cluster due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()['users']
+            return ujson.loads(response.content)['users']
         raise UnsuccessfulStatusCodeError(
             "Getting cluster's users.",
             status_code=response.status_code,

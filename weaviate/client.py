@@ -3,6 +3,7 @@ Client class definition.
 """
 from typing import Optional, Tuple, Union
 from numbers import Real
+import ujson
 from .auth import AuthCredentials
 from .exceptions import UnsuccessfulStatusCodeError, WeaviateConnectionError
 from .connect import Connection
@@ -180,7 +181,7 @@ class Client:
                 'Could not get meta data due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()
+            return ujson.loads(response.content)
         raise UnsuccessfulStatusCodeError("Meta endpoint.", response)
 
     def get_open_id_configuration(self) -> Optional[dict]:
@@ -207,7 +208,7 @@ class Client:
                 'Could not get openid-configuration due to connection error.'
             ) from conn_err
         if response.status_code == 200:
-            return response.json()
+            return ujson.loads(response.content)
         if response.status_code == 404:
             return None
         raise UnsuccessfulStatusCodeError("Meta endpoint", response)

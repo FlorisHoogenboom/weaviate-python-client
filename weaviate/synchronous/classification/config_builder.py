@@ -2,6 +2,7 @@
 ConfigBuilder class definition.
 """
 import time
+import ujson
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
 from weaviate.base.classification import BaseConfigBuilder
 from ..requests import Requests
@@ -55,7 +56,7 @@ class ConfigBuilder(BaseConfigBuilder):
                 'Classification may not started due to connection error.'
             ) from conn_err
         if response.status_code == 201:
-            return response.json()
+            return ujson.loads(response.content)
         raise UnsuccessfulStatusCodeError(
             "Start classification.",
             status_code=response.status_code,
