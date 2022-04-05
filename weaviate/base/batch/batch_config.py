@@ -50,7 +50,7 @@ class BatchConfig:
     @property
     def rolling_frame_size(self) -> int:
         """
-        Settter and Getter for 'rolling_frame_size'. 
+        Settter and Getter for 'rolling_frame_size'.
 
         Parameters
         ----------
@@ -76,14 +76,14 @@ class BatchConfig:
     @rolling_frame_size.setter
     def rolling_frame_size(self, rolling_frame_size: int) -> None:
         """
-        Set new rolling_frame_size. 
+        Set new rolling_frame_size.
 
         Parameters
         ----------
         rolling_frame_size : int
             The rolling frame size of the data creation time.
             NOTE: MUST be a positive integer.
-        
+
         Raises
         ------
         TypeError
@@ -204,7 +204,7 @@ class BatchConfig:
             )
         if timeout_retries < 0:
             raise ValueError(
-                f"'timeout_retries' must be positive, i.e. greater or equal that zero (>=0)."
+                "'timeout_retries' must be positive, i.e. greater or equal that zero (>=0)."
             )
         self._timeout_retries = timeout_retries
 

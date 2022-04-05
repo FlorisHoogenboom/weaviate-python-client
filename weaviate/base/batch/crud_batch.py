@@ -167,10 +167,10 @@ class BaseBatch(ABC):
         _check_positive_num(batch_size, 'batch_size', int)
         _check_bool(dynamic, 'dynamic')
 
-        self._batch_config.size = batch_size        
+        self._batch_config.size = batch_size
 
         if dynamic is False:
-            self._batching_type = BatchType.AUTO
+            self._batch_config.type = BatchType.AUTO
         else:
             self._batch_config.type = BatchType.DYNAMIC
             self._batch_config.init_recommended_num_objects(
