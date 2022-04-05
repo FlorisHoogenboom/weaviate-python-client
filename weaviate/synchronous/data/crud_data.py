@@ -3,8 +3,8 @@ DataObject class definition.
 """
 import uuid as uuid_lib
 from numbers import Real
-import ujson
 from typing import Union, Optional, List, Sequence
+import ujson
 from weaviate.base.data import (
     BaseDataObject,
     pre_replace,

@@ -12,22 +12,12 @@ from .batch_config import BatchType, BatchConfig
 class BaseBatch(ABC):
     """
     BaseBatch class used to add multiple objects or object references at once into weaviate.
-    To add data to the Batch use these methods of this class: `add_data_object` and
-    `add_reference`. This object also stores 2 recommended batch size variables, one for objects
-    and one for references. The recommended batch size is updated with every batch creation, and
-    is the number of data objects/references that can be sent/processed by the Weaviate server in
-    `creation_time` interval (see `configure` or `__call__` method on how to set this value, by
-    default it is set to 10). The initial value is None/batch_size and is updated with every batch
-    create methods. The values can be accessed with the getters: `recommended_num_objects` and
-    `recommended_num_references`.
-    NOTE: If the UUID of one of the objects already exists then the existing object will be
-    replaced by the new object.
     """
 
     def __init__(self):
         """
         Initialize a Batch class instance. This defaults to manual creation configuration.
-        See docs for the `configure` or `__call__` method for different types of configurations.
+        See docs for the 'configure' or '__call__' method for different types of configurations.
 
         Parameters
         ----------
@@ -46,27 +36,32 @@ class BaseBatch(ABC):
             **kwargs,
         ):
         """
-        Configure the instance to your needs. (`__call__` and `configure` methods are the same).
+        Configure the instance to your needs. ('__call__' and 'configure' methods are the same).
         NOTE: Changes only the attributes of the passed arguments.
 
         Parameters
         ----------
         batch_size : Optional[int], optional
-            The batch size to be use. This value sets the Batch functionality, if `batch_size` is
-            None then no auto-creation is done (`callback` and `dynamic` are ignored). If it is a
-            positive number auto-creation is enabled and the value represents: 1) in case `dynamic`
-            is False -> the number of data in the Batch (sum of objects and references) when to
-            auto-create; 2) in case `dynamic` is True -> the initial value for both
-            `recommended_num_objects` and `recommended_num_references`, initial value None
+            The batch size to be use. This value sets the Batch functionality, if 'batch_size' is
+            None then no auto-creation is done ('dynamic' is ignored). If it is a positive number,
+            auto-creation is enabled and the value represents:
+                1) in case 'dynamic' is False -> the number of data in the Batch (sum of objects
+                and references) when to auto-create;
+                2) in case 'dynamic' is True -> is used as the initial value for both
+                'recommended_num_objects' and 'recommended_num_references', (initial value None)
         creation_time : Real, optional
             The time interval it should take the Batch to be created, used ONLY for computing
-            `recommended_num_objects` and `recommended_num_references`, initial value 10.0
+            'recommended_num_objects' and 'recommended_num_references', initial value 10.0
         timeout_retries : int, optional
             Number of times to retry to create a Batch that failed with TimeOut error,
             initial value 0
         callback : Optional[Callable[[list, list], None]], optional
-            A callback function on the results of each object batch types. It is
-            used only when `batch_size` is NOT None, initial value None
+            A callback function on the results of each object batch only. The callback has to have
+            two arguments: one for the list of results, and one for the list of objects themselves
+            in case it is needed to get the object that failed.
+            NOTE: If 'raise_object_error' is True, then the error is going to be raised before
+            calling the 'callback' function. Set 'raise_object_error' to False if 'callback' is
+            needed to be called and handle the errors in there.
         dynamic : bool, optional
             Whether to use dynamic batching or not, initial value False
         rolling_frame_size : int
@@ -75,8 +70,9 @@ class BaseBatch(ABC):
             'creation_time' span. recommended number of objects/references to be created in the
             'creation_time' span, initial value 5
         raise_object_error: bool
-            Whether to raise `BatchObjectCreationError` in case one of the object creation failed.
+            Whether to raise 'BatchObjectCreationError' in case one of the object creation failed.
             If False, one could use the 'callback' argument to check which objects failed creation.
+            This influences the 'callback' argument, see the 'callback' argument description.
             Initial value True.
 
         Raises
@@ -96,27 +92,32 @@ class BaseBatch(ABC):
             **kwargs
         ):
         """
-        Configure the instance to your needs. (`__call__` and `configure` methods are the same).
+        Configure the instance to your needs. ('__call__' and 'configure' methods are the same).
         NOTE: Changes only the attributes of the passed arguments.
 
         Parameters
         ----------
         batch_size : Optional[int], optional
-            The batch size to be use. This value sets the Batch functionality, if `batch_size` is
-            None then no auto-creation is done (`callback` and `dynamic` are ignored). If it is a
-            positive number auto-creation is enabled and the value represents: 1) in case `dynamic`
-            is False -> the number of data in the Batch (sum of objects and references) when to
-            auto-create; 2) in case `dynamic` is True -> the initial value for both
-            `recommended_num_objects` and `recommended_num_references`, initial value None
+            The batch size to be use. This value sets the Batch functionality, if 'batch_size' is
+            None then no auto-creation is done ('dynamic' is ignored). If it is a positive number,
+            auto-creation is enabled and the value represents:
+                1) in case 'dynamic' is False -> the number of data in the Batch (sum of objects
+                and references) when to auto-create;
+                2) in case 'dynamic' is True -> is used as the initial value for both
+                'recommended_num_objects' and 'recommended_num_references', (initial value None)
         creation_time : Real, optional
             The time interval it should take the Batch to be created, used ONLY for computing
-            `recommended_num_objects` and `recommended_num_references`, initial value 10.0
+            'recommended_num_objects' and 'recommended_num_references', initial value 10.0
         timeout_retries : int, optional
             Number of times to retry to create a Batch that failed with TimeOut error,
             initial value 0
-        callback : Optional[Callable[[dict], None]], optional
-            A callback function on the results of each (objects and references) batch types. It is
-            used only when `batch_size` is NOT None, initial value None
+        callback : Optional[Callable[[list, list], None]], optional
+            A callback function on the results of each object batch only. The callback has to have
+            two arguments: one for the list of results, and one for the list of objects themselves
+            in case it is needed to get the object that failed.
+            NOTE: If 'raise_object_error' is True, then the error is going to be raised before
+            calling the 'callback' function. Set 'raise_object_error' to False if 'callback' is
+            needed to be called and handle the errors in there.
         dynamic : bool, optional
             Whether to use dynamic batching or not, initial value False
         rolling_frame_size : int
@@ -125,14 +126,10 @@ class BaseBatch(ABC):
             'creation_time' span. recommended number of objects/references to be created in the
             'creation_time' span, initial value 5
         raise_object_error: bool
-            Whether to raise `BatchObjectCreationError` in case one of the object creation failed.
+            Whether to raise 'BatchObjectCreationError' in case one of the object creation failed.
             If False, one could use the 'callback' argument to check which objects failed creation.
+            This influences the 'callback' argument, see the 'callback' argument description.
             Initial value True.
-
-        Returns
-        -------
-        Batch
-            Updated self.
 
         Raises
         ------
@@ -151,6 +148,7 @@ class BaseBatch(ABC):
         raise_object_error = kwargs.get('raise_object_error', self._batch_config.raise_object_error)
 
         _check_positive_num(creation_time, 'creation_time', Real)
+        _check_bool(raise_object_error, 'raise_object_error')
 
         self._batch_config.creation_time = creation_time
         self._batch_config.timeout_retries = timeout_retries
@@ -202,8 +200,8 @@ class BaseBatch(ABC):
             UUID of the object as a string, by default None
         vector: Sequence, optional
             The embedding of the object that should be created. Used only class objects that do not
-            have a vectorization module. Supported types are `list`, 'numpy.ndarray`,
-            `torch.Tensor` and `tf.Tensor`,
+            have a vectorization module. Supported types are 'list', 'numpy.ndarray',
+            'torch.Tensor' and 'tf.Tensor',
             by default None.
 
         Raises
@@ -310,7 +308,7 @@ class BaseBatch(ABC):
     def flush(self):
         """
         Flush both objects and references to the Weaviate server and call the callback function
-        if one is provided. (See the docs for `configure` or `__call__` for how to set one.)
+        if one is provided. (See the docs for 'configure' or '__call__' for how to set one.)
         """
 
     def num_objects(self) -> int:
@@ -442,7 +440,7 @@ class BaseBatch(ABC):
         -------
         Optional[int]
             The current value of the batch_size. It is NOT the current number of data in the Batch.
-            See the documentation for `configure` or `__call__` for more information.
+            See the documentation for 'configure' or '__call__' for more information.
         """
 
         return self._batch_config.size
