@@ -5,26 +5,31 @@ from typing import Any, Optional
 from weaviate.exceptions import SchemaValidationError
 
 
-ALLOWED_CLASS_KEYS = [
-    'class',
-    'description',
-    'vectorIndexType',
-    'vectorIndexConfig',
-    'vectorizer',
-    'moduleConfig',
-    'properties',
-    'invertedIndexConfig',
-    'shardingConfig',
-]
+ALLOWED_CLASS_KEYS = set(
+    [
+        "class",
+        "vectorIndexType",
+        "vectorIndexConfig",
+        "moduleConfig",
+        "description",
+        "vectorizer",
+        "properties",
+        "invertedIndexConfig",
+        "shardingConfig",
+    ]
+)
 
 
-ALLOWED_PROPERTY_KEYS = [
-    'name',
-    'description',
-    'dataType',
-    'moduleConfig',
-    'indexInverted'
-]
+ALLOWED_PROPERTY_KEYS = set(
+    [
+        "dataType",
+        "name",
+        "moduleConfig",
+        "description",
+        "indexInverted",
+        "tokenization",
+    ]
+)
 
 
 def validate_schema(schema: dict) -> None:
@@ -44,7 +49,7 @@ def validate_schema(schema: dict) -> None:
 
     if "classes" not in schema:
         raise SchemaValidationError(
-            "Schema must have 'classes' key at the first level of the 'dict'/JSON object"
+            "Schema must have 'classes' key at the first level of the 'dict'/JSON object."
         )
 
     _check_dict_value_type("classes", schema["classes"], list)
@@ -136,7 +141,7 @@ def check_property(class_property: dict, class_name: str) -> None:
         # Test types
         if key in ['dataType']:
             _check_dict_value_type(key, class_property[key], list, class_name)
-        if key in ['name', 'description']:
+        if key in ['name', 'description', "tokenization"]:
             _check_dict_value_type(key, class_property[key], str, class_name)
         if key in ['indexInverted']:
             _check_dict_value_type(key, class_property[key], bool, class_name)

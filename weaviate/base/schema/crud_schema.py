@@ -5,7 +5,12 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple
 from weaviate.exceptions import SchemaValidationError
 from weaviate.util import capitalize_first_letter
-from .validate_schema import validate_schema, check_class
+from .validate_schema import (
+    validate_schema,
+    check_class,
+    ALLOWED_CLASS_KEYS,
+    ALLOWED_PROPERTY_KEYS,
+)
 
 
 PRIMITIVE_WEAVIATE_TYPES = set(
@@ -24,7 +29,7 @@ PRIMITIVE_WEAVIATE_TYPES = set(
         "text[]",
         "geoCoordinates",
         "blob",
-        "phoneNumber"
+        "phoneNumber",
     ]
 )
 
@@ -112,6 +117,37 @@ class BaseSchema(ABC):
             otherwise only the schema of this class is returned. By default None.
         """
 
+    @abstractmethod
+    def get_class_shards(self, class_name: str):
+        """
+        Get the status of all shards in an index.
+
+        Parameters
+        ----------
+        class_name : str
+            The class for which to return the status of all shards in an index.
+        """
+
+    @abstractmethod
+    def update_class_shard(self,
+            class_name: str,
+            status: str,
+            shard_name: Optional[str]=None,
+        ) -> list:
+        """
+        Get the status of all shards in an index.
+
+        Parameters
+        ----------
+        class_name : str
+            The class for which to update the status of all shards in an index.
+        status : str
+            The new status of the shard. The available options are: 'READY' and 'READONLY'.
+        shard_name : str or None, optional
+            The shard name for which to update the status of the class of the shard. If None then
+            all the shards are going to be updated to the 'status'. By default None.
+        """
+
 
 def pre_create(schema: dict) -> None:
     """
@@ -191,6 +227,7 @@ def pre_contains(schema: Optional[dict]) -> None:
                 f"'schema' must be None or of type dict. Given type: {type(schema)}"
             )
 
+
 def pre_update_config(class_name: str) -> Tuple[str, str]:
     """
     Pre-process before making a call to Weaviate.
@@ -239,6 +276,69 @@ def pre_get(class_name: Optional[str]) -> str:
     return path
 
 
+def pre_get_class_shards(class_name: str) -> str:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    class_name : str
+        The class for which to return the shards.
+
+    Returns
+    -------
+    str
+        The path to the resource.
+    """
+
+    if not isinstance(class_name, str):
+        raise TypeError(
+            f"'class_name' argument must be of type str. Given type: {type(class_name)}."
+        )
+    path = f'/schema/{capitalize_first_letter(class_name)}/shards'
+
+    return path
+
+
+def pre_update_class_shard(class_name: str, status: str, shard_name: Optional[str]) -> tuple:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    class_name : str
+        The class for which to update the status of all shards in an index.
+    status : str
+        The new status of the shard. The available options are: 'READY' and 'READONLY'.
+    shard_name : str or None, optional
+        The shard name for which to update the status of the class of the shard. If None then
+        all the shards are going to be updated to the 'status'. By default None.
+
+    Returns
+    -------
+    tuple
+        The path to class shards resource and the data to be sent to Weaviate.
+    """
+
+    if not isinstance(class_name, str):
+        raise TypeError(
+            f"'class_name' argument must be of type str. Given type: {type(class_name)}."
+        )
+    if not isinstance(shard_name, str) and shard_name is not None:
+        raise TypeError(
+            f"'shard_name' argument must be of type str. Given type: {type(shard_name)}."
+        )
+    if not isinstance(status, str):
+        raise TypeError(
+            f"'status' argument must be of type str. Given type: {type(status)}."
+        )
+
+    data = {'status': status}
+    shards_path = f'/schema/{capitalize_first_letter(class_name)}/shards/'
+
+    return shards_path, data
+
+
 def get_class_schema_with_primitives_and_path(schema_class: dict) -> Tuple[dict, str]:
     """
     Validate and construct a new class schema with only primitive properties.
@@ -261,23 +361,9 @@ def get_class_schema_with_primitives_and_path(schema_class: dict) -> Tuple[dict,
         'properties': []
     }
 
-    if 'description' in schema_class:
-        schema_class_to_return['description'] = schema_class['description']
-
-    if 'vectorIndexType' in schema_class:
-        schema_class_to_return['vectorIndexType'] = schema_class['vectorIndexType']
-
-    if 'vectorIndexConfig' in schema_class:
-        schema_class_to_return['vectorIndexConfig'] = schema_class['vectorIndexConfig']
-
-    if 'vectorizer' in schema_class:
-        schema_class_to_return['vectorizer'] = schema_class['vectorizer']
-
-    if 'moduleConfig' in schema_class:
-        schema_class_to_return['moduleConfig'] = schema_class['moduleConfig']
-
-    if 'shardingConfig' in schema_class:
-        schema_class_to_return['shardingConfig'] = schema_class['shardingConfig']
+    for class_field in ALLOWED_CLASS_KEYS - set(["class", "properties"]):
+        if class_field in schema_class:
+            schema_class_to_return[class_field] = schema_class[class_field]
 
     if 'properties' in schema_class:
         schema_class_to_return['properties'] = (
@@ -308,14 +394,9 @@ def get_complex_properties_from_class(schema_property: dict) -> dict:
         'dataType': [capitalize_first_letter(dtype) for dtype in  schema_property['dataType']],
     }
 
-    if 'description' in schema_property:
-        to_return_schema_property['description'] = schema_property['description']
-
-    if 'indexInverted' in schema_property:
-        to_return_schema_property['indexInverted'] = schema_property['indexInverted']
-
-    if 'moduleConfig' in schema_property:
-        to_return_schema_property['moduleConfig'] = schema_property['moduleConfig']
+    for property_field in ALLOWED_PROPERTY_KEYS - set(["name", "dataType"]):
+        if property_field in schema_property:
+            to_return_schema_property[property_field] = schema_property[property_field]
 
     return to_return_schema_property
 

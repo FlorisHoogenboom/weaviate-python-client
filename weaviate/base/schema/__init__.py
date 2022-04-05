@@ -16,6 +16,8 @@ from .crud_schema import (
     pre_delete_class,
     pre_get,
     pre_update_config,
+    pre_get_class_shards,
+    pre_update_class_shard,
 )
 from .validate_schema import (
     validate_schema,

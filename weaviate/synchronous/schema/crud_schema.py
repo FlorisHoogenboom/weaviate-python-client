@@ -17,6 +17,8 @@ from weaviate.base.schema import (
     pre_delete_class,
     pre_get,
     pre_update_config,
+    pre_get_class_shards,
+    pre_update_class_shard,
 )
 from weaviate.exceptions import RequestsConnectionError, UnsuccessfulStatusCodeError
 from .properties.crud_properties import Property
@@ -446,6 +448,145 @@ class Schema(BaseSchema):
             status_code=response.status_code,
             response_message=response.text,
         )
+
+    def get_class_shards(self, class_name: str) -> list:
+        """
+        Get the status of all shards in an index.
+
+        Parameters
+        ----------
+        class_name : str
+            The class for which to return the status of all shards in an index.
+
+        Returns
+        -------
+        list
+            The list of shards configuration.
+
+        Examples
+        --------
+        Schema contains a single class: Article
+
+        >>> client.schema.get_class_shards('Article')
+        [{'name': '2rPgsA2yngW3', 'status': 'READY'}]
+
+        Raises
+        ------
+        requests.exceptions.ConnectionError
+            If the network connection to Weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If Weaviate reported a none OK status.
+        """
+
+        path = pre_get_class_shards(class_name=class_name)
+
+        try:
+            response = self._requests.get(
+                path=path,
+            )
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                "Class shards' status could not be retrieved due to connection error."
+            ) from conn_err
+        if response.status_code != 200:
+            raise UnsuccessfulStatusCodeError(
+                "Get shards' status",
+                status_code=response.status_code,
+                response_message=response.text,
+            )
+        return ujson.loads(response.content)
+
+    def update_class_shard(self,
+            class_name: str,
+            status: str,
+            shard_name: Optional[str]=None,
+        ) -> list:
+        """
+        Get the status of all shards in an index.
+
+        Parameters
+        ----------
+        class_name : str
+            The class for which to update the status of all shards in an index.
+        status : str
+            The new status of the shard. The available options are: 'READY' and 'READONLY'.
+        shard_name : str or None, optional
+            The shard name for which to update the status of the class of the shard. If None then
+            all the shards are going to be updated to the 'status'. By default None.
+
+        Returns
+        -------
+        list
+            The updated statuses.
+
+        Examples
+        --------
+        Schema contains a single class: Article
+
+        >>> client.schema.get_class_shards('Article')
+        [{'name': 'node1', 'status': 'READY'}, {'name': 'node2', 'status': 'READY'}]
+
+        For a specific shard:
+
+        >>> client.schema.update_class_shard('Article', 'READONLY', 'node2')
+        {'status': 'READONLY'}
+        >>> client.schema.get_class_shards('Article')
+        [{'name': 'node1', 'status': 'READY'}, {'name': 'node2', 'status': 'READONLY'}]
+
+        For all shards of the class:
+
+        >>> client.schema.update_class_shard('Article', 'READONLY')
+        [{'status': 'READONLY'},{'status': 'READONLY'}]
+        >>> client.schema.get_class_shards('Article')
+        [{'name': 'node1', 'status': 'READONLY'}, {'name': 'node2', 'status': 'READONLY'}]
+
+        Raises
+        ------
+        requests.exceptions.ConnectionError
+            If the network connection to Weaviate failed.
+        weaviate.exceptions.UnsuccessfulStatusCodeError
+            If Weaviate reported a none OK status.
+        """
+
+        shards_path, data = pre_update_class_shard(
+            class_name=class_name,
+            status=status,
+            shard_name=shard_name,
+        )
+
+        if shard_name is None:
+            shards_config = self.get_class_shards(
+                class_name=class_name,
+            )
+            shard_names = [shard_config['name'] for shard_config in shards_config]
+        else:
+            shard_names = [shard_name]
+
+        to_return = []
+
+        for _shard_name in shard_names:
+            path = shards_path + _shard_name
+            try:
+                response = self._requests.put(
+                    path=path,
+                    data_json=data,
+                )
+            except RequestsConnectionError as conn_err:
+                raise RequestsConnectionError(
+                    f"Class shards' status could not be updated for shard '{_shard_name}' due to "
+                    "connection error."
+                ) from conn_err
+            if response.status_code != 200:
+                raise UnsuccessfulStatusCodeError(
+                    f"Update shard '{_shard_name}' status",
+                    status_code=response.status_code,
+                    response_message=response.text,
+                )
+            to_return.append(ujson.loads(response.content))
+
+        if shard_name is None:
+            return to_return
+        return to_return[0]
 
     def _create_complex_properties_from_class(self, schema_class: dict) -> None:
         """
