@@ -2,7 +2,7 @@
 Requests class definition.
 """
 from typing import Optional
-from aiohttp.client import ClientSession, ClientResponse
+from aiohttp.client import ClientSession, ClientResponse, ClientTimeout
 from weaviate.base.connection import Connection
 
 
@@ -218,3 +218,16 @@ class Requests:
             timeout=self._connection.timeout_config.get_timeout_aiohttp(),
             proxy=self._connection.proxies.get_proxy_aiohttp(),
         )
+
+    @property
+    def timeout_config(self) -> ClientTimeout:
+        """
+        Getter for 'timeout_config' of the Connection, for the 'aiohttp' library.
+
+        Returns
+        -------
+        aiohttp.ClientTimeout
+            The 'timeout_config'.
+        """
+
+        return self._connection.timeout_config.get_timeout_aiohttp()

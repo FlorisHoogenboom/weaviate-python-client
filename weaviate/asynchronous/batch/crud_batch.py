@@ -7,7 +7,7 @@ from typing import Optional, Sequence
 import ujson
 from requests import ReadTimeout, Response
 from weaviate.exceptions import (
-    RequestsConnectionError,
+    AiohttpConnectionError,
     UnsuccessfulStatusCodeError,
     BatchObjectCreationError,
 )
@@ -172,9 +172,9 @@ class Batch(BaseBatch):
         # set all protected attributes
         self._requests = requests
 
-    def __call__(self,
+    async def __call__(self,
             **kwargs,
-        ) -> 'Batch':
+        ):
         """
         Configure the instance to your needs. ('__call__' and 'configure' methods are the same).
         NOTE: Changes only the attributes of the passed arguments.
@@ -215,11 +215,6 @@ class Batch(BaseBatch):
             This influences the 'callback' argument, see the 'callback' argument description.
             Initial value True.
 
-        Returns
-        -------
-        Batch
-            Updated self.
-
         Raises
         ------
         TypeError
@@ -233,10 +228,10 @@ class Batch(BaseBatch):
         )
 
         if self._batch_config.type != BatchType.MANUAL:
-            self._auto_create()
+            await self._auto_create()
         return self
 
-    def add_data_object(self,
+    async def add_data_object(self,
             data_object: dict,
             class_name: str,
             uuid: Optional[str]=None,
@@ -277,9 +272,9 @@ class Batch(BaseBatch):
         )
 
         if self._batch_config.type != BatchType.MANUAL:
-            self._auto_create()
+            await self._auto_create()
 
-    def add_reference(self,
+    async def add_reference(self,
             from_object_uuid: str,
             from_object_class_name: str,
             from_property_name: str,
@@ -315,9 +310,9 @@ class Batch(BaseBatch):
         )
 
         if self._batch_config.type != BatchType.MANUAL:
-            self._auto_create()
+            await self._auto_create()
 
-    def _create_data(self,
+    async def _create_data(self,
             data_type: str,
             batch_request: BatchRequest,
         ) -> Response:
@@ -352,7 +347,7 @@ class Batch(BaseBatch):
         try:
             for i in range(self._batch_config.timeout_retries + 1):
                 try:
-                    response = self._requests.post(
+                    response = await self._requests.post(
                         path='/batch/' + data_type,
                         data_json=batch_request.get_request_body(),
                     )
@@ -366,14 +361,12 @@ class Batch(BaseBatch):
                     time.sleep(2 * (i + 1))
                 else:
                     break
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError(
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
                 'Batch was not added to Weaviate.'
             ) from conn_err
         except ReadTimeout as timeout_error:
-            timeout_config = self._requests.timeout_config
-            if isinstance(timeout_config, tuple):
-                timeout_config = timeout_config[1]
+            timeout_config = self._requests.timeout_config.total
             message = (
                 f"The '{data_type}' creation was cancelled because it took "
                 f"longer than the configured timeout of {timeout_config}s. "
@@ -381,15 +374,15 @@ class Batch(BaseBatch):
                 "Aim to, on average, complete batch request within less than 10s"
             )
             raise ReadTimeout(message) from timeout_error
-        if response.status_code == 200:
+        if response.status == 200:
             return response
         raise UnsuccessfulStatusCodeError(
             f"Create {data_type} in batch",
-            status_code=response.status_code,
-            response_message=response.text,
+            status_code=response.status,
+            response_message=await response.text(),
         )
 
-    def create_objects(self) -> list:
+    async def create_objects(self) -> list:
         """
         Creates multiple Objects at once in Weaviate.
         NOTE: If the UUID of one of the objects already exists then the existing object will be
@@ -437,12 +430,13 @@ class Batch(BaseBatch):
             If Weaviate reports a none OK status.
         """
 
+        # TODO: compute elapsed time
         if len(self._objects_batch) != 0:
-            response = self._create_data(
+            response = await self._create_data(
                 data_type='objects',
                 batch_request=self._objects_batch,
             )
-            results = ujson.loads(response.content)
+            results = await response.json()
             if check_batch_result(results) and self._batch_config.raise_object_error:
                 raise BatchObjectCreationError(
                     "One or more batch objects creation failed. If the error is caught, the "
@@ -463,11 +457,12 @@ class Batch(BaseBatch):
             self._batch_config.add_object_creation_time_to_frame(
                 creation_time=object_creation_time,
             )
+            # TODO: cannot be done last
             self._objects_batch = ObjectBatchRequest()
             return results
         return []
 
-    def create_references(self) -> list:
+    async def create_references(self) -> list:
         """
         Creates multiple References at once in Weaviate.
         Adding References in batch is faster but it ignors validations like class name
@@ -541,8 +536,9 @@ class Batch(BaseBatch):
             If Weaviate reports a none OK status.
         """
 
+        # TODO: compute elapsed time
         if len(self._reference_batch) != 0:
-            response = self._create_data(
+            response = await self._create_data(
                 data_type='references',
                 batch_request=self._reference_batch,
             )
@@ -551,11 +547,12 @@ class Batch(BaseBatch):
             self._batch_config.add_reference_creation_time_to_frame(
                 creation_time=reference_creation_time,
             )
+            # TODO: cannot be done last
             self._reference_batch = ReferenceBatchRequest()
-            return ujson.loads(response.content)
+            return await response.json()
         return []
 
-    def _auto_create(self) -> None:
+    async def _auto_create(self) -> None:
         """
         Auto create both objects and references in the batch. This protected method works with a
         fixed batch size (BatchType.AUTO) and with dynamic batching (BatchType.DYNAMIC). For a
@@ -566,7 +563,7 @@ class Batch(BaseBatch):
         # greater or equal in case the self._batch_size is changed manually
         if self._batch_config.type == BatchType.AUTO:
             if sum(self.shape) >= self._batch_config.size:
-                self.flush()
+                await self.flush()
             return
 
         if self._batch_config.type == BatchType.DYNAMIC:
@@ -574,19 +571,19 @@ class Batch(BaseBatch):
                 self.num_objects() >= self._batch_config.recommended_num_objects
                 or self.num_references() >= self._batch_config.recommended_num_references
             ):
-                self.flush()
+                await self.flush()
             return
         # just in case
         raise ValueError(f"Unsupported batching type '{self._batch_config.type}'.")
 
-    def flush(self) -> None:
+    async def flush(self) -> None:
         """
         Flush both objects and references to the Weaviate server and call the callback function
         if one is provided. (See the docs for 'configure' or '__call__' for how to set one.)
         """
 
-        self.create_objects()
-        self.create_references()
+        await self.create_objects()
+        await self.create_references()
 
     def __enter__(self):
         return self
