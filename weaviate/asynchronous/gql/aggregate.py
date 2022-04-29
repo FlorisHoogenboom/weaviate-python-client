@@ -20,7 +20,7 @@ class AggregateBuilder(BaseAggregateBuilder, SendRequest):
         ----------
         class_name : str
             Class name of the objects to be aggregated.
-        requests : weaviate.synchronous.Requests
+        requests : weaviate.asynchronous.Requests
             Requests object to an active and running Weaviate instance.
         """
 

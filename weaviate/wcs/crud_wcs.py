@@ -13,7 +13,7 @@ from weaviate.exceptions import (
 )
 from weaviate.auth import AuthClientPassword
 from weaviate.base.connection import Connection, ClientTimeout
-from weaviate.synchronous import Requests
+from weaviate.synchronous.requests import Requests
 
 
 class WCSConnection(Connection):

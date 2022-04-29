@@ -4,7 +4,7 @@ ConfigBuilder class definition.
 import asyncio
 from weaviate.exceptions import AiohttpConnectionError, UnsuccessfulStatusCodeError
 from weaviate.base.classification import BaseConfigBuilder
-from weaviate.asynchronous import Requests
+from ..requests import Requests
 
 
 class ConfigBuilder(BaseConfigBuilder):

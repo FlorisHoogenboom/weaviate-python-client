@@ -32,13 +32,13 @@ class DataObject(BaseDataObject):
         A Reference object to create objects cross-references.
     """
 
-    async def __init__(self, requests: Requests):
+    def __init__(self, requests: Requests):
         """
         Initialize a DataObject class instance.
 
         Parameters
         ----------
-        requests : weaviate.synchronous.Requests
+        requests : weaviate.asynchronous.Requests
             Requests object to an active and running Weaviate instance.
         """
 
@@ -72,12 +72,12 @@ class DataObject(BaseDataObject):
         --------
         Schema contains a class Author with only 'name' and 'age' primitive property.
 
-        >>> await client.data_object.create(
+        >>> await async_client.data_object.create(
         ...     data_object = {'name': 'Neil Gaiman', 'age': 60},
         ...     class_name = 'Author',
         ... )
         '46091506-e3a0-41a4-9597-10e3064d8e2d'
-        >>> await client.data_object.create(
+        >>> await async_client.data_object.create(
         ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
@@ -120,11 +120,11 @@ class DataObject(BaseDataObject):
                 'Object was not added due to connection error.'
             ) from conn_err
         if response.status == 200:
-            return str(await response.json()["id"])
+            return str((await response.json())["id"])
 
         object_does_already_exist = False
         try:
-            if 'already exists' in await response.json()['error'][0]['message']:
+            if 'already exists' in (await response.json())['error'][0]['message']:
                 object_does_already_exist = True
         except KeyError:
             pass
@@ -162,11 +162,11 @@ class DataObject(BaseDataObject):
 
         Examples
         --------
-        >>> author_id = await client.data_object.create(
+        >>> author_id = await async_client.data_object.create(
         ...     data_object = {'name': 'Philip Pullman', 'age': 64},
         ...     class_name = 'Author'
         ... )
-        >>> await client.data_object.get(author_id)
+        >>> await async_client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -179,12 +179,12 @@ class DataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> await client.data_object.update(
+        >>> await async_client.data_object.update(
         ...     data_object = {'age': 74},
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
-        >>> await client.data_object.get(author_id)
+        >>> await async_client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -259,11 +259,11 @@ class DataObject(BaseDataObject):
 
         Examples
         --------
-        >>> author_id = await client.data_object.create(
+        >>> author_id = await async_client.data_object.create(
         ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
-        >>> await client.data_object.get(author_id)
+        >>> await async_client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -276,12 +276,12 @@ class DataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> await client.data_object.replace(
+        >>> await async_client.data_object.replace(
         ...     data_object = {'name': 'H.P. Lovecraft'},
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
-        >>> await client.data_object.get(author_id)
+        >>> await async_client.data_object.get(author_id)
         {
             "additional": {},
             "class": "Author",
@@ -348,7 +348,7 @@ class DataObject(BaseDataObject):
 
         Examples
         --------
-        >>> await client.data_object.get_by_id("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await async_client.data_object.get_by_id("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
         {
             "additional": {},
             "class": "Author",
@@ -411,7 +411,6 @@ class DataObject(BaseDataObject):
         offset : int or None
             The starting index for object retrival.
 
-
         Returns
         -------
         List[dict], dict or None
@@ -444,7 +443,7 @@ class DataObject(BaseDataObject):
             ) from conn_err
         if response.status == 200:
             if uuid is None:
-                return await response.json()['objects']
+                return (await response.json())['objects']
             return await response.json()
         if uuid is not None and response.status == 404:
             return None
@@ -465,7 +464,7 @@ class DataObject(BaseDataObject):
 
         Examples
         --------
-        >>> await client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await async_client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
         {
             "additional": {},
             "class": "Author",
@@ -478,8 +477,8 @@ class DataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> await client.data_object.delete("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
-        >>> await client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await async_client.data_object.delete("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> await async_client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
         None
 
         Raises
@@ -524,14 +523,14 @@ class DataObject(BaseDataObject):
 
         Examples
         --------
-        >>> await client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
+        >>> await async_client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
         False
-        >>> await client.data_object.create(
+        >>> await async_client.data_object.create(
         ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
-        >>> await client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
+        >>> await async_client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
         True
 
         Returns
@@ -599,12 +598,12 @@ class DataObject(BaseDataObject):
         --------
         Assume we have a Author class only 'name' property, NO 'age'.
 
-        >>> await client.data_object.validate(
+        >>> await async_client.data_object.validate(
         ...     data_object = {'name': 'H. Lovecraft'},
         ...     class_name = 'Author'
         ... )
         {'error': None, 'valid': True}
-        >>> await client.data_object.validate(
+        >>> await async_client.data_object.validate(
         ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
@@ -661,7 +660,7 @@ class DataObject(BaseDataObject):
             return result
         if response.status == 422:
             result["valid"] = False
-            result["error"] = await response.json()["error"]
+            result["error"] = (await response.json())["error"]
             return result
         raise UnsuccessfulStatusCodeError(
             "Validate object.",

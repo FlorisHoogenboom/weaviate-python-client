@@ -53,24 +53,26 @@ class Reference(BaseReference):
         Assume we have two classes, Author and Book.
 
         >>> # Create the objects first
-        >>> await client.data_object.create(
+        >>> await async_client.data_object.create(
         ...     data_object = {'name': 'Ray Bradbury'},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
-        >>> await client.data_object.create(
+        >>> await async_client.data_object.create(
         ...     data_object = {'title': 'The Martian Chronicles'},
         ...     class_name = 'Book',
         ...     uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d'
         ... )
         >>> # Add the cross references
         >>> ## Author -> Book
-        >>> await client.data_object.reference.add(
+        >>> await async_client.data_object.reference.add(
         ...     from_uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
         ...     from_property_name = 'wroteBooks',
         ...     to_uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d' # Book UUID
         ... )
-        >>> await client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
+        >>> await async_client.data_object.get(
+        ...     'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
+        ... )
         {
             "additional": {},
             "class": "Author",
@@ -89,12 +91,14 @@ class Reference(BaseReference):
             "vectorWeights": null
         }
         >>> # delete the reference
-        >>> await client.data_object.reference.delete(
+        >>> await async_client.data_object.reference.delete(
         ...     from_uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
         ...     from_property_name = 'wroteBooks',
         ...     to_uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d' # Book UUID
         ... )
-        >>> await client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
+        >>> await async_client.data_object.get(
+        ...     'e067f671-1202-42c6-848b-ff4d1eb804ab' # Author UUID
+        ... )
         {
             "additional": {},
             "class": "Author",
@@ -168,7 +172,9 @@ class Reference(BaseReference):
         to this list 3,4,9. After the replace, the data object 1.wroteBooks is now 3,4,9, but no
         longer contains 7.
 
-        >>> await client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
+        >>> await async_client.data_object.get(
+        ...     'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
+        ... )
         {
             "additional": {},
             "class": "Author",
@@ -188,7 +194,7 @@ class Reference(BaseReference):
         }
         Currently there is only one 'Book' reference.
         Replace all the references of the Author for property name 'wroteBooks'.
-        >>> await client.data_object.reference.replace(
+        >>> await async_client.data_object.reference.replace(
         ...     from_uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
         ...     from_property_name = 'wroteBooks',
         ...     to_uuids = [
@@ -196,7 +202,9 @@ class Reference(BaseReference):
         ...         '3e2e6795-298b-47e9-a2cb-3d8a77a24d8a'
         ...     ]
         ... )
-        >>> await client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
+        >>> await async_client.data_object.get(
+        ...     'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
+        ... )
         {
             "additional": {},
             "class": "Author",
@@ -277,24 +285,26 @@ class Reference(BaseReference):
         Assume we have two classes, Author and Book.
 
         >>> # Create the objects first
-        >>> client.data_object.create(
+        >>> async_client.data_object.create(
         ...     data_object = {'name': 'Ray Bradbury'},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
-        >>> client.data_object.create(
+        >>> async_client.data_object.create(
         ...     data_object = {'title': 'The Martian Chronicles'},
         ...     class_name = 'Book',
         ...     uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d'
         ... )
         >>> # Add the cross references
         >>> ## Author -> Book
-        >>> client.data_object.reference.add(
+        >>> async_client.data_object.reference.add(
         ...     from_uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
         ...     from_property_name = 'wroteBooks',
         ...     to_uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d' # Book UUID
         ... )
-        >>> client.data_object.get('e067f671-1202-42c6-848b-ff4d1eb804ab') # Author UUID
+        >>> async_client.data_object.get(
+        ...     'e067f671-1202-42c6-848b-ff4d1eb804ab', # Author UUID
+        ... )
         {
             "additional": {},
             "class": "Author",

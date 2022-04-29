@@ -21,7 +21,7 @@ class Query(BaseQuery):
 
         Parameters
         ----------
-        requests : weaviate.synchronous.Requests
+        requests : weaviate.asynchronous.Requests
             Requests object to an active and running Weaviate instance.
         """
 
@@ -49,9 +49,9 @@ class Query(BaseQuery):
         """
 
         return GetBuilder(
+            requests=self._requests,
             class_name=class_name,
             properties=properties,
-            requests=self._requests,
         )
 
     def aggregate(self, class_name: str) -> AggregateBuilder:
@@ -70,8 +70,8 @@ class Query(BaseQuery):
         """
 
         return AggregateBuilder(
-            class_name=class_name,
             requests=self._requests,
+            class_name=class_name,
         )
 
     def explore(self,
@@ -93,8 +93,8 @@ class Query(BaseQuery):
         """
 
         return ExploreBuilder(
-            properties=properties,
             requests=self._requests,
+            properties=properties,
         )
 
     async def raw(self, gql_query: str) -> dict:
@@ -128,7 +128,7 @@ class Query(BaseQuery):
         ...     }
         ... }
         ... \"""
-        >>> await client.query.raw(query)
+        >>> await async_client.query.raw(query)
         {
         "data": {
             "Get": {

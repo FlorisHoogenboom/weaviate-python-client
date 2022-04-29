@@ -75,7 +75,7 @@ class Schema(BaseSchema):
         ...         }
         ...     ]
         ... }
-        >>> await client.schema.create(author_class_schema)
+        >>> await async_client.schema.create(author_class_schema)
 
         Raises
         ------
@@ -129,7 +129,7 @@ class Schema(BaseSchema):
         ...         }
         ...     ]
         ... }
-        >>> await client.schema.create_class(author_schema_class)
+        >>> await async_client.schema.create_class(author_schema_class)
 
         Raises
         ------
@@ -167,7 +167,7 @@ class Schema(BaseSchema):
 
         Examples
         --------
-        >>> await client.schema.delete_class('Author')
+        >>> await async_client.schema.delete_class('Author')
 
         Raises
         ------
@@ -204,7 +204,7 @@ class Schema(BaseSchema):
 
         Examples
         --------
-        >>> await client.schema.delete_all()
+        >>> await async_client.schema.delete_all()
         """
 
         schema = await self.get()
@@ -226,10 +226,10 @@ class Schema(BaseSchema):
 
         Examples
         --------
-        >>> schema = await client.schema.get()
-        >>> client.schema.contains(schema)
+        >>> schema = await async_client.schema.get()
+        >>> async_client.schema.contains(schema)
         True
-        >>> schema = await client.schema.get()
+        >>> schema = await async_client.schema.get()
         >>> schema['classes'].append(
             {
                 "class": "Animal",
@@ -243,7 +243,7 @@ class Schema(BaseSchema):
                 ]
             }
         )
-        >>> await client.schema.contains(schema)
+        >>> await async_client.schema.contains(schema)
         False
 
         Returns
@@ -281,7 +281,7 @@ class Schema(BaseSchema):
         -------
         In the example below we have a Weaviate instance with a class 'Test'.
 
-        >>> await client.schema.get('Test')
+        >>> await async_client.schema.get('Test')
         {
             'class': 'Test',
             ...
@@ -291,7 +291,7 @@ class Schema(BaseSchema):
             },
             ...
         }
-        >>> await client.schema.update_config(
+        >>> await async_client.schema.update_config(
         ...     class_name='Test',
         ...     config={
         ...         'vectorIndexConfig': {
@@ -299,7 +299,7 @@ class Schema(BaseSchema):
         ...         }
         ...     }
         ... )
-        >>> await client.schema.get('Test')
+        >>> await async_client.schema.get('Test')
         {
             'class': 'Test',
             ...
@@ -363,12 +363,12 @@ class Schema(BaseSchema):
         --------
         No schema present in client
 
-        >>> async client.schema.get()
+        >>> async async_client.schema.get()
         {'classes': []}
 
         Schema present in client
 
-        >>> async client.schema.get()
+        >>> async async_client.schema.get()
         {
             "classes": [
                 {
@@ -398,7 +398,7 @@ class Schema(BaseSchema):
             ]
         }
 
-        >>> async client.schema.get('Animal')
+        >>> async async_client.schema.get('Animal')
         {
             "class": "Animal",
             "description": "An Animal",
@@ -463,7 +463,7 @@ class Schema(BaseSchema):
         --------
         Schema contains a single class: Article
 
-        >>> await client.schema.get_class_shards('Article')
+        >>> await async_client.schema.get_class_shards('Article')
         [{'name': '2rPgsA2yngW3', 'status': 'READY'}]
 
         Raises
@@ -519,21 +519,21 @@ class Schema(BaseSchema):
         --------
         Schema contains a single class: Article
 
-        >>> await client.schema.get_class_shards('Article')
+        >>> await async_client.schema.get_class_shards('Article')
         [{'name': 'node1', 'status': 'READY'}, {'name': 'node2', 'status': 'READY'}]
 
         For a specific shard:
 
-        >>> await client.schema.update_class_shard('Article', 'READONLY', 'node2')
+        >>> await async_client.schema.update_class_shard('Article', 'READONLY', 'node2')
         {'status': 'READONLY'}
-        >>> client.schema.get_class_shards('Article')
+        >>> async_client.schema.get_class_shards('Article')
         [{'name': 'node1', 'status': 'READY'}, {'name': 'node2', 'status': 'READONLY'}]
 
         For all shards of the class:
 
-        >>> await client.schema.update_class_shard('Article', 'READONLY')
+        >>> await async_client.schema.update_class_shard('Article', 'READONLY')
         [{'status': 'READONLY'},{'status': 'READONLY'}]
-        >>> await client.schema.get_class_shards('Article')
+        >>> await async_client.schema.get_class_shards('Article')
         [{'name': 'node1', 'status': 'READONLY'}, {'name': 'node2', 'status': 'READONLY'}]
 
         Raises

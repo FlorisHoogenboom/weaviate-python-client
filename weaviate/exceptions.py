@@ -1,8 +1,8 @@
 """
 Weaviate Exceptions.
 """
-import json
 from typing import Optional
+import ujson
 from requests import Response
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from aiohttp.client_exceptions import ClientConnectionError as AiohttpConnectionError
@@ -40,10 +40,12 @@ class UnsuccessfulStatusCodeError(WeaviateBaseError):
 
         Parameters
         ----------
-        message: str
+        message : str
             An error message specific to the context in which the error occurred.
-        response: requests.Response
-            The request response for which the status code was unsuccessful.
+        status_code : int
+            The request response's status unsuccessful code.
+        response_message : str
+            The response error message.
         """
 
         error_message = (
@@ -106,6 +108,41 @@ class BatchObjectCreationError(WeaviateBaseError):
         error_message = (
             message +
             ' The batch creation result is displayed here as well in case error wasnot caught: '
-            + json.dumps(batch_results)
+            + ujson.dumps(batch_results)
         )
         super().__init__(message=error_message)
+
+
+class BatchUnsuccessfulStatusCodeError(UnsuccessfulStatusCodeError):
+    """
+    Is raised in case the batch request status code returned from Weaviate server is not handled in
+    the client implementation.
+    """
+
+    def __init__(self,
+            message: str,
+            status_code: int,
+            response_messages: dict,
+            batch_items: list,
+        ):
+        """
+        Batch Unsuccessful Status Code exception initializer.
+
+        Parameters
+        ----------
+        message : str
+            An error message specific to the context in which the error occurred.
+        status_code : int
+            The request response's status unsuccessful code.
+        response_messages : dict
+            The response error message.
+        """
+
+        super().__init__(
+            message=message,
+            status_code=status_code,
+            response_message=ujson.dumps(response_messages),
+        )
+
+        self.batch_items = batch_items
+        self.response_messages = response_messages

@@ -4,11 +4,10 @@ Batch class definitions.
 import sys
 import time
 from typing import Optional, Sequence
-import ujson
-from requests import ReadTimeout, Response
+from aiohttp import ServerTimeoutError, ClientResponse
 from weaviate.exceptions import (
     AiohttpConnectionError,
-    UnsuccessfulStatusCodeError,
+    BatchUnsuccessfulStatusCodeError,
     BatchObjectCreationError,
 )
 from weaviate.base.batch import (
@@ -81,76 +80,77 @@ class Batch(BaseBatch):
 
     For Case I:
 
-    >>> client.batch.shape
+    >>> async_client.batch.shape
     (0, 0)
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_reference(object_1, 'MyClass', 'myProp', object_2)
-    >>> client.batch.shape
+    >>> await async_client.batch.add_data_object({}, 'MyClass')
+    >>> await async_client.batch.add_data_object({}, 'MyClass')
+    >>> await async_client.batch.add_reference(object_1, 'MyClass', 'myProp', object_2)
+    >>> async_client.batch.shape
     (2, 1)
-    >>> client.batch.create_objects()
-    >>> client.batch.shape
+    >>> await async_client.batch.create_objects()
+    >>> async_client.batch.shape
     (0, 1)
-    >>> client.batch.create_references()
-    >>> client.batch.shape
+    >>> await async_client.batch.create_references()
+    >>> async_client.batch.shape
     (0, 0)
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
-    >>> client.batch.shape
+    >>> await async_client.batch.add_data_object({}, 'MyClass')
+    >>> await async_client.batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
+    >>> async_client.batch.shape
     (1, 1)
-    >>> client.batch.flush()
-    >>> client.batch.shape
+    >>> await async_client.batch.flush()
+    >>> async_client.batch.shape
     (0, 0)
 
     Or with a context manager:
 
-    >>> with client.batch as batch:
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
+    >>> async with async_client.batch as batch:
+    ...     await batch.add_data_object({}, 'MyClass')
+    ...     await batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
     >>> # flush was called
-    >>> client.batch.shape
+    >>> async_client.batch.shape
     (0, 0)
 
     For Case II:
 
-    >>> client.batch(batch_size=3)
-    >>> client.batch.shape
+    >>> await async_client.batch(batch_size=3)
+    >>> async_client.batch.shape
     (0, 0)
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_reference(object_1, 'MyClass', 'myProp', object_2)
-    >>> client.batch.shape
+    >>> await async_client.batch.add_data_object({}, 'MyClass')
+    >>> await async_client.batch.add_reference(object_1, 'MyClass', 'myProp', object_2)
+    >>> async_client.batch.shape
     (1, 1)
-    >>> client.batch.add_data_object({}, 'MyClass') # sum of data_objects and references reached
-    >>> client.batch.shape
+    >>> # sum of data_objects and references reached
+    >>> await async_client.batch.add_data_object({}, 'MyClass')
+    >>> async_client.batch.shape
     (0, 0)
 
     Or with a context manager and '__call__' method:
 
-    >>> with client.batch(batch_size=3) as batch:
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_1, 'MyClass', 'myProp', object_4)
+    >>> async with async_client.batch(batch_size=3) as batch:
+    ...     await batch.add_data_object({}, 'MyClass')
+    ...     await batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
+    ...     await batch.add_data_object({}, 'MyClass')
+    ...     await batch.add_reference(object_1, 'MyClass', 'myProp', object_4)
     >>> # flush was called
-    >>> client.batch.shape
+    >>> async_client.batch.shape
     (0, 0)
 
     Or with a context manager and setter:
 
-    >>> client.batch.batch_size = 3
-    >>> with client.batch as batch:
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_1, 'MyClass', 'myProp', object_4)
+    >>> await async_client.batch.configure(batch_size=3)
+    >>> async with async_client.batch as batch:
+    ...     await batch.add_data_object({}, 'MyClass')
+    ...     await batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
+    ...     await batch.add_data_object({}, 'MyClass')
+    ...     await batch.add_reference(object_1, 'MyClass', 'myProp', object_4)
     >>> # flush was called
-    >>> client.batch.shape
+    >>> async_client.batch.shape
     (0, 0)
 
     For Case III:
     Same as Case II but you need to configure or enable 'dynamic' batching.
 
-    >>> client.batch.configure(batch_size=3, dynamic=True) # 'batch_size' must be an valid int
+    >>> await async_client.batch.configure(batch_size=3, dynamic=True)
 
     See the documentation of the 'configure'( or '__call__') and the setters for more information
     on how/why and what you need to configure/set in order to use a particular Case.
@@ -163,13 +163,11 @@ class Batch(BaseBatch):
 
         Parameters
         ----------
-        requests : weaviate.synchronous.Requests
+        requests : weaviate.asynchronous.Requests
             Requests object to an active and running Weaviate instance.
         """
 
         super().__init__()
-
-        # set all protected attributes
         self._requests = requests
 
     async def __call__(self,
@@ -315,7 +313,7 @@ class Batch(BaseBatch):
     async def _create_data(self,
             data_type: str,
             batch_request: BatchRequest,
-        ) -> Response:
+        ) -> ClientResponse:
         """
         Create data in batches, either Objects or References. This does NOT guarantee
         that each batch item (only Objects) is added/created. This can lead to a successfull
@@ -333,14 +331,14 @@ class Batch(BaseBatch):
 
         Returns
         -------
-        requests.Response
-            The requests response.
+        aiohttp.ClientResponse
+            The aiohttp request response.
 
         Raises
         ------
-        requests.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to Weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.BatchUnexpectedStatusCodeException
             If Weaviate reports a none OK status.
         """
 
@@ -351,7 +349,7 @@ class Batch(BaseBatch):
                         path='/batch/' + data_type,
                         data_json=batch_request.get_request_body(),
                     )
-                except ReadTimeout:
+                except ServerTimeoutError:
                     if i == self._batch_config.timeout_retries:
                         raise
                     print(
@@ -361,11 +359,7 @@ class Batch(BaseBatch):
                     time.sleep(2 * (i + 1))
                 else:
                     break
-        except AiohttpConnectionError as conn_err:
-            raise AiohttpConnectionError(
-                'Batch was not added to Weaviate.'
-            ) from conn_err
-        except ReadTimeout as timeout_error:
+        except ServerTimeoutError as timeout_error:
             timeout_config = self._requests.timeout_config.total
             message = (
                 f"The '{data_type}' creation was cancelled because it took "
@@ -373,13 +367,18 @@ class Batch(BaseBatch):
                 f"Try reducing the batch size (currently {len(batch_request)}) to a lower value. "
                 "Aim to, on average, complete batch request within less than 10s"
             )
-            raise ReadTimeout(message) from timeout_error
+            raise ServerTimeoutError(message) from timeout_error
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError(
+                'Batch was not added to Weaviate.'
+            ) from conn_err
         if response.status == 200:
             return response
-        raise UnsuccessfulStatusCodeError(
+        raise BatchUnsuccessfulStatusCodeError(
             f"Create {data_type} in batch",
             status_code=response.status,
-            response_message=await response.text(),
+            response_messages=await response.json(),
+            batch_items=batch_request.get_request_body(),
         )
 
     async def create_objects(self) -> list:
@@ -390,12 +389,12 @@ class Batch(BaseBatch):
 
         Examples
         --------
-        Here 'client' is an instance of the 'weaviate.Client'.
+        Here 'async_client' is an instance of the 'weaviate.AsyncClient'.
 
         Add objects to the object batch.
 
-        >>> client.batch.add_data_object({}, 'ExistingClass')
-        >>> result = client.batch.create_objects(batch)
+        >>> await async_client.batch.add_data_object({}, 'ExistingClass')
+        >>> result = await async_client.batch.create_objects(batch)
         >>> import json
         >>> print(json.dumps(result, indent=4))
         [
@@ -424,19 +423,28 @@ class Batch(BaseBatch):
 
         Raises
         ------
-        requests.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to Weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.BatchUnexpectedStatusCodeException
             If Weaviate reports a none OK status.
+        weaviate.exceptions.BatchObjectCreationError
+            If one object failed to be created. Raised only if Batch is configured with:
+                raise_object_error = True
         """
 
-        # TODO: compute elapsed time
+
         if len(self._objects_batch) != 0:
+
+            objects_batch = self._objects_batch
+            self._objects_batch = ObjectBatchRequest()
+
+            start = time.monotonic()
             response = await self._create_data(
                 data_type='objects',
-                batch_request=self._objects_batch,
+                batch_request=objects_batch,
             )
             results = await response.json()
+            elapsed_seconds = time.monotonic() - start
             if check_batch_result(results) and self._batch_config.raise_object_error:
                 raise BatchObjectCreationError(
                     "One or more batch objects creation failed. If the error is caught, the "
@@ -444,21 +452,19 @@ class Batch(BaseBatch):
                     "attribute. The batch objects can also be accessed using this error's "
                     "'.batch_objects' attribute.",
                     batch_results=results,
-                    batch_objects=self._objects_batch.get_request_body()['objects']
+                    batch_objects=objects_batch.get_request_body()['objects']
                 )
 
             if self._batch_config.callback is not None:
                 self._batch_config.callback(
                     results,
-                    self._objects_batch.get_request_body()['objects'],
+                    objects_batch.get_request_body()['objects'],
                 )
 
-            object_creation_time = response.elapsed.total_seconds() / len(self._objects_batch)
+            object_creation_time = elapsed_seconds / len(objects_batch)
             self._batch_config.add_object_creation_time_to_frame(
                 creation_time=object_creation_time,
             )
-            # TODO: cannot be done last
-            self._objects_batch = ObjectBatchRequest()
             return results
         return []
 
@@ -473,7 +479,7 @@ class Batch(BaseBatch):
 
         Examples
         --------
-        Here 'client' is an instance of the 'weaviate.Client'.
+        Here 'async_client' is an instance of the 'weaviate.AsyncClient'.
 
         Object that does not exist in Weaviate.
 
@@ -485,20 +491,22 @@ class Batch(BaseBatch):
         >>> object_3 = '254cbccd-89f4-4b29-9c1b-001a3339d89a'
         >>> object_4 = '254cbccd-89f4-4b29-9c1b-001a3339d89b'
 
-        >>> client.batch.add_reference(object_1, 'NonExistingClass', 'existsWith', object_2)
-        >>> client.batch.add_reference(object_3, 'ExistingClass', 'existsWith', object_4)
+        >>> await async_client\
+        ...     .batch.add_reference(object_1, 'NonExistingClass', 'existsWith', object_2)
+        >>> await async_client\
+        ...     .batch.add_reference(object_3, 'ExistingClass', 'existsWith', object_4)
 
         Both references were added to the batch request without error because they meet the
         required citeria (See the documentation of the 'weaviate.Batch.add_reference' method
         for more information).
 
-        >>> result = client.batch.create_references()
+        >>> result = await async_client.batch.create_references()
 
         As it can be noticed the reference batch creation is successful (no error thrown). Now we
         can inspect the 'result'.
 
         >>> import json
-        >>> print(result, indent=4))
+        >>> print(json.dumps(result, indent=4))
         [
             {
                 "from": "weaviate://localhost/NonExistingClass/
@@ -520,8 +528,8 @@ class Batch(BaseBatch):
 
         Both references were added successfully but one of them is corrupted (links two objects
         of nonexisting class and one of the objects is not yet created). To make use of the
-        validation, crete each references individually (see the client.data_object.reference.add
-        method).
+        validation, crete each references individually
+        (see the `async_client.data_object.reference.add()` method).
 
         Returns
         -------
@@ -530,26 +538,31 @@ class Batch(BaseBatch):
 
         Raises
         ------
-        requests.ConnectionError
+        aiohttp.ClientConnectionError
             If the network connection to Weaviate fails.
-        weaviate.UnexpectedStatusCodeException
+        weaviate.exceptions.BatchUnexpectedStatusCodeException
             If Weaviate reports a none OK status.
         """
 
-        # TODO: compute elapsed time
+
         if len(self._reference_batch) != 0:
+
+            reference_batch = self._reference_batch
+            self._reference_batch = ReferenceBatchRequest()
+
+            start = time.monotonic()
             response = await self._create_data(
                 data_type='references',
-                batch_request=self._reference_batch,
+                batch_request=reference_batch,
             )
+            results = await response.json()
+            elapsed_seconds = time.monotonic() - start
 
-            reference_creation_time = response.elapsed.total_seconds() / len(self._reference_batch)
+            reference_creation_time = elapsed_seconds / len(reference_batch)
             self._batch_config.add_reference_creation_time_to_frame(
                 creation_time=reference_creation_time,
             )
-            # TODO: cannot be done last
-            self._reference_batch = ReferenceBatchRequest()
-            return await response.json()
+            return results
         return []
 
     async def _auto_create(self) -> None:
@@ -585,8 +598,8 @@ class Batch(BaseBatch):
         await self.create_objects()
         await self.create_references()
 
-    def __enter__(self):
+    async def __aenter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.flush()
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.flush()

@@ -12,7 +12,7 @@ async def make_query_request(requests: Requests, query: str) -> dict:
 
     Parameters
     ----------
-    requests : Requests
+    requests : weaviate.asynchronous.Requests
         A Requests object instance.
     query : str
         The query as a string.

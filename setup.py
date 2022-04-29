@@ -1,6 +1,6 @@
 from builtins import open
 from os import path
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.egg_info import egg_info
 from weaviate.version import __version__
 
@@ -32,26 +32,15 @@ setup(
   long_description_content_type='text/x-rst',
   author="SeMI Technologies",
   author_email="hello@semi.technology",
-  packages=[
-    "weaviate",
-    "weaviate.connect",
-    "weaviate.schema",
-    "weaviate.schema.properties",
-    "weaviate.batch",
-    "weaviate.classification",
-    "weaviate.contextionary",
-    "weaviate.data",
-    "weaviate.data.references",
-    "weaviate.gql",
-    "weaviate.wcs",
-  ],
+  packages=find_packages(where='weaviate'),
+  package_dir={'': 'weaviate'},
   python_requires='>=3.6',
   install_requires=[
     "requests>=2.23.0,<2.28.0",
-    "validators>=0.18.2,<0.19.0",
+    "aiohttp>=3.8.1,<3.9.0"
     "tqdm>=4.59.0,<5.0.0",
-    "ujson>=5.1.0,<5.2.0",
+    "ujson>=5.1.0,<5.3.0",
   ],
   license_files = ('LICENSE.md',),
-  cmdclass = {'egg_info': egg_info_ex},
+  # cmdclass = {'egg_info': egg_info_ex},
 )

@@ -43,7 +43,7 @@ class Property(BaseProperty):
         ...     "description": "The Author's age",
         ...     "name": "age"
         ... }
-        >>> await client.schema.property.create('Author', property_age)
+        >>> await async_client.schema.property.create('Author', property_age)
 
         Raises
         ------

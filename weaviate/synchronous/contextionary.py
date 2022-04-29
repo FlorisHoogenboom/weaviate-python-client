@@ -12,6 +12,9 @@ from weaviate.base.contextionary import (
 from .requests import Requests
 
 
+__all__ = ['Contextionary']
+
+
 class Contextionary(BaseContextionary):
     """
     Contextionary class used to add extend the Weaviate contextionary module or to get vector/s of

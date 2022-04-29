@@ -13,19 +13,19 @@ class ExploreBuilder(BaseExploreBuilder, SendRequest):
     """
 
     def __init__(self,
-            properties: Union[List[str], str],
             requests: Requests,
+            properties: Union[List[str], str],
         ):
         """
         Initialize a ExploreBuilder class instance.
 
         Parameters
         ----------
+        requests : weaviate.asynchronous.Requests
+            Requests object to an active and running Weaviate instance.
         properties : list of str or str
             Property/ies of the Explore filter to be returned. Currently there are 3 choices:
                 'beacon', 'certainty', 'className'.
-        requests : weaviate.synchronous.Requests
-            Requests object to an active and running Weaviate instance.
 
         Raises
         ------

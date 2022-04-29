@@ -271,7 +271,7 @@ def pre_get(class_name: Optional[str]) -> str:
             raise TypeError(
                 f"'class_name' must be of type str. Given type: {type(class_name)}."
             )
-        path += capitalize_first_letter(class_name)
+        path += '/' + capitalize_first_letter(class_name)
 
     return path
 

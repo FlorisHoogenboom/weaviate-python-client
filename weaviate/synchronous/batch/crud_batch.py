@@ -8,7 +8,7 @@ import ujson
 from requests import ReadTimeout, Response
 from weaviate.exceptions import (
     RequestsConnectionError,
-    UnsuccessfulStatusCodeError,
+    BatchUnsuccessfulStatusCodeError,
     BatchObjectCreationError,
 )
 from weaviate.base.batch import (
@@ -366,10 +366,6 @@ class Batch(BaseBatch):
                     time.sleep(2 * (i + 1))
                 else:
                     break
-        except RequestsConnectionError as conn_err:
-            raise RequestsConnectionError(
-                'Batch was not added to Weaviate.'
-            ) from conn_err
         except ReadTimeout as timeout_error:
             timeout_config = self._requests.timeout_config
             if isinstance(timeout_config, tuple):
@@ -381,12 +377,17 @@ class Batch(BaseBatch):
                 "Aim to, on average, complete batch request within less than 10s"
             )
             raise ReadTimeout(message) from timeout_error
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
+                'Batch was not added to Weaviate.'
+            ) from conn_err
         if response.status_code == 200:
             return response
-        raise UnsuccessfulStatusCodeError(
+        raise BatchUnsuccessfulStatusCodeError(
             f"Create {data_type} in batch",
             status_code=response.status_code,
-            response_message=response.text,
+            response_messages=ujson.loads(response.content),
+            batch_items=batch_request.get_request_body(),
         )
 
     def create_objects(self) -> list:
@@ -503,7 +504,7 @@ class Batch(BaseBatch):
         can inspect the 'result'.
 
         >>> import json
-        >>> print(result, indent=4))
+        >>> print(json.dumps(result, indent=4))
         [
             {
                 "from": "weaviate://localhost/NonExistingClass/

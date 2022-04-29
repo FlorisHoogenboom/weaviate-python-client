@@ -72,7 +72,7 @@ class Proxies:
         """
 
         if self._include_aiohttp:
-            return self._proxies_requests
+            return self._proxy_aiohttp
         raise AttributeError(
             "The 'aiohttp' proxy attribute is not set. This means that method is NOT called "
             "the AsyncClient. If it is, please report the Issue."
@@ -165,10 +165,10 @@ class Connection:
 
     def __init__(self,
             url: str,
-            auth_client_secret: Optional[AuthCredentials]=None,
-            timeout_config: ClientTimeout=ClientTimeout(20),
-            proxies: Union[dict, str, None]=None,
-            trust_env: bool=False,
+            auth_client_secret: Optional[AuthCredentials],
+            timeout_config: ClientTimeout,
+            proxies: Union[dict, str, None],
+            trust_env: bool,
             include_aiohttp: bool=False,
         ):
         """
@@ -178,23 +178,22 @@ class Connection:
         ----------
         url : str
             URL to a running Weaviate instance.
-        auth_client_secret : weaviate.auth.AuthCredentials or None, optional
+        auth_client_secret : weaviate.auth.AuthCredentials or None
             User login credentials for the Weaviate instance at 'url', by default None.
-        timeout_config : weaviate.ClientTimeout, optional
+        timeout_config : weaviate.ClientTimeout
             Set the timeout configuration for all requests to the Weaviate server.
-            By default weaviate.ClientTimeout(20).
-        proxies : dict, str or None, optional
+        proxies : dict, str or None
             Proxies to be used for requests. Are used by both 'requests' and 'aiohttp'. Can be
             passed as a dict ('requests' format:
             https://docs.python-requests.org/en/stable/user/advanced/#proxies), str (HTTP/HTTPS
             protocols are going to use this proxy) or None.
             By default None.
-        trust_env : bool, optional
+        trust_env : bool
             Whether to read proxies from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY
             or https_proxy). By default False.
             NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
             'trust_env' is ignored.
-        include_aiohttp : bool, optional
+        include_aiohttp : bool
             Whether to create proxy compatible with 'aiohttp' library, by default False.
             (This should be true only for the AsyncClient).
 

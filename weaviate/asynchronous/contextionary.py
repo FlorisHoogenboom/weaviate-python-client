@@ -11,6 +11,9 @@ from weaviate.base.contextionary import (
 from .requests import Requests
 
 
+__all__ = ['Contextionary']
+
+
 class Contextionary(BaseContextionary):
     """
     Contextionary class used to add extend the Weaviate contextionary module
@@ -46,7 +49,7 @@ class Contextionary(BaseContextionary):
 
         Examples
         --------
-        >>> await client.contextionary.extend(
+        >>> await async_client.contextionary.extend(
         ...     concept = 'palantir',
         ...     definition = 'spherical stone objects used for communication in Middle-earth'
         ... )
@@ -99,7 +102,7 @@ class Contextionary(BaseContextionary):
 
         Examples
         --------
-        >>> await client.contextionary.get_concept_vector('king')
+        >>> await async_client.contextionary.get_concept_vector('king')
         {
             "individualWords": [
                 {

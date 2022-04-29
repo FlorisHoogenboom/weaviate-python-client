@@ -1,12 +1,12 @@
 """
 Client class definition.
 """
-from typing import Optional, Tuple, Union
-from numbers import Real
+from typing import Optional, Union
 import ujson
-from .auth import AuthCredentials
-from .exceptions import UnsuccessfulStatusCodeError, WeaviateConnectionError
-from .connect import Connection
+from weaviate.base.connection import Connection, ClientTimeout
+from weaviate.auth import AuthCredentials
+from weaviate.exceptions import UnsuccessfulStatusCodeError, RequestsConnectionError
+from .requests import Requests
 from .classification import Classification
 from .schema import Schema
 from .contextionary import Contextionary
@@ -43,9 +43,10 @@ class Client:
 
     def __init__(self,
             url: str='http://localhost:8080',
-            auth_client_secret: AuthCredentials=None,
-            timeout_config: Union[tuple, Real, None]=20,
-            session_proxies: Optional[dict]=None,
+            auth_client_secret: Optional[AuthCredentials]=None,
+            timeout_config: ClientTimeout=ClientTimeout(20),
+            proxies: Union[dict, str, None]=None,
+            trust_env: bool=False,
         ):
         """
         Initialize a Client class instance.
@@ -53,18 +54,24 @@ class Client:
         Parameters
         ----------
         url : str
-            The URL to the weaviate instance.
-        auth_client_secret : weaviate.AuthCredentials, optional
-            Authentication client secret, by default None.
-        timeout_config : tuple(Real, Real), Real or None, optional
-            Set the timeout configuration for all requests to the Weaviate server. It can be a
-            real number or, a tuple of two real numbers: (connect timeout, read timeout).
-            If only one real number is passed then both connect and read timeout will be set to
-            that value, by default 20.
-        session_proxies : dict or None, optional
-            The HTTP and/or HTTPS proxies to use for the requests Session. Can be passed as a dict
-            or None to read from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY or
-            https_proxy).
+            URL to a running Weaviate instance.
+            By default 'http://localhost:8080'.
+        auth_client_secret : weaviate.auth.AuthCredentials or None, optional
+            User login credentials for the Weaviate instance at 'url', by default None.
+        timeout_config : weaviate.ClientTimeout, optional
+            Set the timeout configuration for all requests to the Weaviate server.
+            By default weaviate.ClientTimeout(20).
+        proxies : dict, str or None, optional
+            Proxies to be used for requests. Are used by both 'requests' and 'aiohttp'. Can be
+            passed as a dict ('requests' format:
+            https://docs.python-requests.org/en/stable/user/advanced/#proxies), str (HTTP/HTTPS
+            protocols are going to use this proxy) or None.
+            By default None.
+        trust_env : bool, optional
+            Whether to read proxies from the ENV variables: (HTTP_PROXY or http_proxy, HTTPS_PROXY
+            or https_proxy). By default False.
+            NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
+            'trust_env' is ignored.
 
         Examples
         --------
@@ -97,23 +104,23 @@ class Client:
                 f"'url' must be of type 'str'. Given type: {type(url)}"
             )
 
-        url = url.strip('/')
-
+        self.url = url.strip('/')
         self._connection = Connection(
-            url=url,
+            url=self.url,
             auth_client_secret=auth_client_secret,
             timeout_config=timeout_config,
-            session_proxies=session_proxies,
+            proxies=proxies,
+            trust_env=trust_env,
+            include_aiohttp=False,
         )
-        self.classification = Classification(self._connection)
-        self.schema = Schema(self._connection)
-        self.batch = Batch(self._connection)
-        self.data_object = DataObject(self._connection)
-        self.query = Query(self._connection)
+        self._requests = Requests(self._connection)
 
-        meta = self.get_meta()
-        if 'text2vec-contextionary' in meta['modules']:
-            self.contextionary = Contextionary(self._connection)
+        self.classification = Classification(self._requests)
+        self.schema = Schema(self._requests)
+        self.batch = Batch(self._requests)
+        self.data_object = DataObject(self._requests)
+        self.query = Query(self._requests)
+        self.contextionary = Contextionary(self._requests)
 
     def is_ready(self) -> bool:
         """
@@ -127,10 +134,10 @@ class Client:
         """
 
         try:
-            response = self._connection.get(
+            response = self._requests.get(
                 path="/.well-known/ready",
             )
-        except WeaviateConnectionError:
+        except RequestsConnectionError:
             return False
         if response.status_code == 200:
             return True
@@ -148,10 +155,10 @@ class Client:
         """
 
         try:
-            response = self._connection.get(
+            response = self._requests.get(
                 path="/.well-known/live",
             )
-        except WeaviateConnectionError:
+        except RequestsConnectionError:
             return False
         if response.status_code == 200:
             return True
@@ -173,16 +180,20 @@ class Client:
         """
 
         try:
-            response = self._connection.get(
+            response = self._requests.get(
                 path="/meta",
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Could not get meta data due to connection error.'
             ) from conn_err
         if response.status_code == 200:
             return ujson.loads(response.content)
-        raise UnsuccessfulStatusCodeError("Meta endpoint.", response)
+        raise UnsuccessfulStatusCodeError(
+            "Meta endpoint.",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     def get_open_id_configuration(self) -> Optional[dict]:
         """
@@ -200,44 +211,42 @@ class Client:
         """
 
         try:
-            response = self._connection.get(
+            response = self._requests.get(
                 path="/.well-known/openid-configuration",
             )
-        except WeaviateConnectionError as conn_err:
-            raise WeaviateConnectionError(
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError(
                 'Could not get openid-configuration due to connection error.'
             ) from conn_err
         if response.status_code == 200:
             return ujson.loads(response.content)
         if response.status_code == 404:
             return None
-        raise UnsuccessfulStatusCodeError("Meta endpoint", response)
+        raise UnsuccessfulStatusCodeError(
+            "OpenID configuration endpoint",
+            status_code=response.status_code,
+            response_message=response.text,
+        )
 
     @property
-    def timeout_config(self) -> Tuple[Optional[Real], Optional[Real]]:
+    def timeout_config(self) -> ClientTimeout:
         """
         Getter/Setter for 'timeout_config'.
-
         Parameters
         ----------
-        timeout_config : tuple(Real or None, Real or None), Real or None
+        timeout_config : weaviate.ClientTimeout
             For Getter only: Set the timeout configuration for all requests to the Weaviate server.
-            It can be None, a real number or a tuple of two real numbers:
-                    (connect timeout, read timeout).
-            If only one real number is passed then both connect and read timeout will be set to
-            that value.
-            If None then the it will wait forever, until the server responds (NOT recommended).
 
         Returns
         -------
-        Tuple[Optional[Real], Optional[Real]]
-            For Getter only: Requests Timeout configuration as a tuple.
+        weaviate.ClientTimeout
+            For Getter only: Timeout configuration used for both 'requests' and 'aiohttp' requests.
         """
 
         return self._connection.timeout_config
 
     @timeout_config.setter
-    def timeout_config(self, timeout_config: Union[tuple, Real, None]):
+    def timeout_config(self, timeout_config: ClientTimeout):
         """
         Setter for `timeout_config`. (docstring should be only in the Getter)
         """

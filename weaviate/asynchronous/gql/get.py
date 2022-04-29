@@ -13,21 +13,21 @@ class GetBuilder(BaseGetBuilder, SendRequest):
     """
 
     def __init__(self,
+            requests: Requests,
             class_name: str,
             properties: Union[List[str], str, None],
-            requests: Requests,
         ):
         """
         Initialize a GetBuilder class instance.
 
         Parameters
         ----------
+        requests : weaviate.asynchronous.Requests
+            Requests object to an active and running Weaviate instance.
         class_name : str
             Class name of the objects to interact with.
         properties : list of str, str or None
             Properties of the objects to interact with.
-        requests : weaviate.synchronous.Requests
-            Requests object to an active and running Weaviate instance.
 
         Raises
         ------
