@@ -44,12 +44,12 @@ def pre_create(schema_class_name: str, schema_property: dict) -> str:
 
     if not isinstance(schema_class_name, str):
         raise TypeError(
-            f"'schema_class_name' must be of type 'str'. Given type: {type(schema_class_name)}"
+            f"'schema_class_name' must be of type str. Given type: {type(schema_class_name)}."
         )
 
     if not isinstance(schema_property, str):
         raise TypeError(
-            f"'schema_property' must be of type 'dict'. Given type: {type(schema_property)}"
+            f"'schema_property' must be of type dict. Given type: {type(schema_property)}."
         )
 
     check_property(

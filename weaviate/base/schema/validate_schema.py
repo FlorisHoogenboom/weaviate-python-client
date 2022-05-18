@@ -47,9 +47,14 @@ def validate_schema(schema: dict) -> None:
         If the schema could not be validated against the standard format.
     """
 
+    if not isinstance(schema, dict):
+        raise TypeError(
+            f"'schema' must be of type dict. Given type: {type(schema)}."
+        )
+
     if "classes" not in schema:
         raise SchemaValidationError(
-            "Schema must have 'classes' key at the first level of the 'dict'/JSON object."
+            "Schema must have 'classes' key at the first level of the dict."
         )
 
     _check_dict_value_type("classes", schema["classes"], list)

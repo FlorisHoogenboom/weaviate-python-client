@@ -588,6 +588,6 @@ def _get_proxy_aiohttp(proxy: Union[dict, str, None]) -> Optional[str]:
 
     if proxy is None:
         raise ValueError(
-            "Could not find 'http' or 'https' key in 'proxy'!"
+            "Could not find 'http' or 'https' key in 'proxy'."
         )
     return proxy

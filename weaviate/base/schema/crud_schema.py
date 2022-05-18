@@ -178,7 +178,7 @@ def pre_create_class(schema_class: dict) -> None:
 
     if not isinstance(schema_class, dict):
         raise TypeError(
-            f"'schema_class' must be of type 'dict'. Given type: {type(schema_class)}."
+            f"'schema_class' must be of type dict. Given type: {type(schema_class)}."
         )
     check_class(schema_class)
 
@@ -200,7 +200,7 @@ def pre_delete_class(class_name: str) -> str:
 
     if not isinstance(class_name, str):
         raise TypeError(
-            f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+            f"'class_name' must be of type str. Given type: {type(class_name)}."
         )
 
     path = f"/schema/{capitalize_first_letter(class_name)}"

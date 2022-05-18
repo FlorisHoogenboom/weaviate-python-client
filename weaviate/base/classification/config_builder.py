@@ -210,7 +210,7 @@ class BaseConfigBuilder(ABC):
 
         if not isinstance(settings, dict):
             raise TypeError(
-                f"'settings' must be of type 'dict'. Given type: {type(settings)}."
+                f"'settings' must be of type dict. Given type: {type(settings)}."
             )
 
         if 'settings' not in self._config:
@@ -234,13 +234,13 @@ class BaseConfigBuilder(ABC):
         for field in required_fields:
             if field not in self._config:
                 raise ValueError(
-                    f"'{field}' is not set for this classification."
+                    f"'{field}' is not set for this classification. "
                 )
 
         if self._config['type'] == 'knn':
             if 'k' not in self._config.get('settings', []):
                 raise ValueError(
-                    "'k' is not set for this classification."
+                    "'k' is not set for this classification. Use the '.with_k()' method."
                 )
 
     @abstractmethod

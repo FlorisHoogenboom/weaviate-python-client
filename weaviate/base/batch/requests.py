@@ -116,7 +116,9 @@ class ReferenceBatchRequest(BatchRequest):
             or not isinstance(from_property_name, str)
             or not isinstance(to_object_uuid, str)
         ):
-            raise TypeError('All arguments must be of type `str`')
+            raise TypeError(
+                'All arguments must be of type str.'
+            )
 
         from_object_uuid = get_valid_uuid(from_object_uuid)
         to_object_uuid = get_valid_uuid(to_object_uuid)
@@ -174,7 +176,7 @@ class ObjectBatchRequest(BatchRequest):
             UUID of the object as a string, by default None
         vector: Sequence, optional
             The embedding of the object that should be created. Used only class objects that do not
-            have a vectorization module. Supported types are `list`, 'numpy.ndarray`,
+            have a vectorization module. Supported types are `list`, `numpy.ndarray`,
             `torch.Tensor` and `tf.Tensor`,
             by default None.
 
@@ -186,10 +188,14 @@ class ObjectBatchRequest(BatchRequest):
             If 'uuid' is not of a propper form.
         """
 
-        if not isinstance(data_object, dict):
-            raise TypeError("Object must be of type dict")
         if not isinstance(class_name, str):
-            raise TypeError("Class name must be of type str")
+            raise TypeError(
+                f"'class_name' must be of type str. Given type: {type(class_name)}."
+            )
+        if not isinstance(data_object, dict):
+            raise TypeError(
+                f"'data_object' must be of type dict. Given type: {type(data_object)}."
+            )
 
         batch_item = {
             "class": class_name,

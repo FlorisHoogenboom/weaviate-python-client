@@ -1,12 +1,73 @@
 """
-GraphQL filters for 'Get' and 'Aggregate' commands.
+GraphQL filters for `Get` and `Aggregate` commands.
 GraphQL abstract class for GraphQL commands to inherit from.
 """
 from json import dumps
 from copy import deepcopy
-from typing import Any
+from typing import Any, Union
 from abc import ABC, abstractmethod
+from weaviate.connect import Connection
+from weaviate.exceptions import UnexpectedStatusCodeException, RequestsConnectionError
 from weaviate.util import get_vector
+
+class GraphQL(ABC):
+    """
+    A base abstract class for GraphQL commands, such as Get, Aggregate.
+    """
+
+    def __init__(self, connection: Connection):
+        """
+        Initialize a GraphQL abstract class instance.
+
+        Parameters
+        ----------
+        connection : weaviate.connect.Connection
+            Connection object to an active and running weaviate instance.
+        """
+
+        self._connection = connection
+
+    @abstractmethod
+    def build(self) -> str:
+        """
+        Build method to be overloaded by the child classes. It should return the
+        GraphQL query as a str.
+
+        Returns
+        -------
+        str
+            The query.
+        """
+
+    def do(self) -> dict:
+        """
+        Builds and runs the query.
+
+        Returns
+        -------
+        dict
+            The response of the query.
+
+        Raises
+        ------
+        requests.ConnectionError
+            If the network connection to weaviate fails.
+        weaviate.UnexpectedStatusCodeException
+            If weaviate reports a none OK status.
+        """
+
+        query = self.build()
+
+        try:
+            response = self._connection.post(
+                path="/graphql",
+                weaviate_object={"query": query}
+            )
+        except RequestsConnectionError as conn_err:
+            raise RequestsConnectionError('Query was not successful.') from conn_err
+        if response.status_code == 200:
+            return response.json()  # success
+        raise UnexpectedStatusCodeException("Query was not successful", response)
 
 
 class Filter(ABC):
@@ -21,15 +82,13 @@ class Filter(ABC):
         Parameters
         ----------
         content : dict
-            The content of the 'Filter' clause.
+            The content of the `Filter` clause.
         """
 
 
         if not isinstance(content, dict):
-            raise TypeError(
-                f"{self.__class__.__name__} filter 'content' must be of type dict. "
-                f"Given type: {type(content)}."
-            )
+            raise TypeError(f"{self.__class__.__name__} filter is expected to "
+                f"be type dict but is {type(content)}")
         self._content = deepcopy(content)
 
     @abstractmethod
@@ -41,7 +100,7 @@ class Filter(ABC):
 
 class NearText(Filter):
     """
-    NearText class used to filter Weaviate objects. Can be used with text models only (text2vec).
+    NearText class used to filter weaviate objects. Can be used with text models only (text2vec).
     E.g.: text2vec-contextionary, text2vec-transformers.
     """
 
@@ -52,7 +111,7 @@ class NearText(Filter):
         Parameters
         ----------
         content : dict
-            The content of the 'nearText' clause.
+            The content of the `nearText` clause.
 
         Raises
         ------
@@ -64,7 +123,7 @@ class NearText(Filter):
 
         super().__init__(content)
 
-        _check_concept(self, self._content)
+        _check_concept(self._content)
 
         if "certainty" in self._content:
             _check_type(
@@ -74,17 +133,16 @@ class NearText(Filter):
             )
 
         if "moveTo" in self._content:
-            _check_direction_clause(self, self._content["moveTo"])
+            _check_direction_clause(self._content["moveTo"])
 
         if "moveAwayFrom" in self._content:
-            _check_direction_clause(self, self._content["moveAwayFrom"])
+            _check_direction_clause(self._content["moveAwayFrom"])
 
         if "autocorrect" in self._content:
             _check_type(
-                self=self,
                 var_name='autocorrect',
                 value=self._content["autocorrect"],
-                dtype=bool,
+                dtype=bool
             )
 
     def __str__(self):
@@ -108,7 +166,7 @@ class NearText(Filter):
 
 class NearVector(Filter):
     """
-    NearVector class used to filter Weaviate objects.
+    NearVector class used to filter weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -118,7 +176,7 @@ class NearVector(Filter):
         Parameters
         ----------
         content : list
-            The content of the 'nearVector' clause.
+            The content of the `nearVector` clause.
 
         Raises
         ------
@@ -137,15 +195,11 @@ class NearVector(Filter):
         super().__init__(content)
 
         if "vector" not in self._content:
-            raise KeyError(
-                f"{self.__class__.__name__}: "
-                f"'vector' required key is missing from 'content' argument. Given: {content}."
-            )
+            raise KeyError("No 'vector' key in `content` argument.")
 
         # Check optional fields
         if "certainty" in self._content:
             _check_type(
-                self, self,
                 var_name='certainty',
                 value=self._content["certainty"],
                 dtype=float
@@ -162,7 +216,7 @@ class NearVector(Filter):
 
 class NearObject(Filter):
     """
-    NearObject class used to filter Weaviate objects.
+    NearObject class used to filter weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -172,7 +226,7 @@ class NearObject(Filter):
         Parameters
         ----------
         content : list
-            The content of the 'nearVector' clause.
+            The content of the `nearVector` clause.
 
         Raises
         ------
@@ -181,17 +235,13 @@ class NearObject(Filter):
         ValueError
             If 'content'  has key "certainty" but the value is not float.
         TypeError
-            If 'id'/'beacon' key does not have a value of type str.
+            If 'id'/'beacon' key does not have a value of type str!
         """
 
         super().__init__(content)
 
         if ('id' in self._content) and ('beacon' in self._content):
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                "'content' argument should contain EITHER 'id' OR 'beacon', not both. "
-                f"Given: {content}."
-            )
+            raise ValueError("The 'content' argument should contain EITHER `id` OR `beacon`!")
 
         if 'id' in self._content:
             self.obj_id = 'id'
@@ -199,7 +249,6 @@ class NearObject(Filter):
             self.obj_id = 'beacon'
 
         _check_type(
-            self=self,
             var_name=self.obj_id,
             value=self._content[self.obj_id],
             dtype=str
@@ -207,7 +256,6 @@ class NearObject(Filter):
 
         if "certainty" in self._content:
             _check_type(
-                self=self,
                 var_name='certainty',
                 value=self._content["certainty"],
                 dtype=float
@@ -223,7 +271,7 @@ class NearObject(Filter):
 
 class Ask(Filter):
     """
-    Ask class used to filter Weaviate objects by asking a question.
+    Ask class used to filter weaviate objects by asking a question.
     """
 
     def __init__(self, content: dict):
@@ -233,7 +281,7 @@ class Ask(Filter):
         Parameters
         ----------
         content : list
-            The content of the 'ask' clause.
+            The content of the `ask` clause.
 
         Raises
         ------
@@ -248,20 +296,15 @@ class Ask(Filter):
         super().__init__(content)
 
         if 'question' not in self._content:
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                f"'question' required key is missing from 'content' argument. Given: {content}."
-            )
+            raise ValueError('Mandatory "question" key not present in the "content"!')
 
         _check_type(
-            self=self,
             var_name='question',
             value=self._content["question"],
             dtype=str
         )
         if 'certainty' in self._content:
             _check_type(
-                self=self,
                 var_name='certainty',
                 value=self._content["certainty"],
                 dtype=float
@@ -269,23 +312,13 @@ class Ask(Filter):
 
         if "autocorrect" in self._content:
             _check_type(
-                self=self,
                 var_name='autocorrect',
                 value=self._content["autocorrect"],
                 dtype=bool
             )
 
-        if "rerank" in self._content:
-            _check_type(
-                self=self,
-                var_name='rerank',
-                value=self._content["rerank"],
-                dtype=bool
-            )
-
         if 'properties' in self._content:
             _check_type(
-                self=self,
                 var_name='properties',
                 value=self._content["properties"],
                 dtype=(list, str)
@@ -294,31 +327,29 @@ class Ask(Filter):
                 self._content['properties'] = [self._content['properties']]
 
     def __str__(self):
-        ask = f'ask: {{question: {dumps(self._content["question"])}'
+        ask = f'ask: {{question: \"{self._content["question"]}\"'
         if 'certainty' in self._content:
             ask += f' certainty: {self._content["certainty"]}'
         if 'properties' in self._content:
             ask += f' properties: {dumps(self._content["properties"])}'
         if 'autocorrect' in self._content:
             ask += f' autocorrect: {_bool_to_str(self._content["autocorrect"])}'
-        if 'rerank' in self._content:
-            ask += f' rerank: {_bool_to_str(self._content["rerank"])}'
         return ask + '} '
 
 
 class NearImage(Filter):
     """
-    NearObject class used to filter Weaviate objects.
+    NearObject class used to filter weaviate objects.
     """
 
-    def __init__(self, content: dict):
+    def __init__(self, content: dict, ):
         """
         Initialize a NearImage class instance.
 
         Parameters
         ----------
         content : list
-            The content of the 'nearImage' clause.
+            The content of the `nearImage` clause.
 
         Raises
         ------
@@ -333,45 +364,41 @@ class NearImage(Filter):
         super().__init__(content)
 
         if 'image' not in self._content:
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                f"'image' required key is missing from 'content' argument.  Given: {content}."
-            )
+            raise ValueError('"content" is missing the mandatory key "image"!')
 
         _check_type(
-            self=self,
             var_name='image',
             value=self._content["image"],
             dtype=str
         )
         if "certainty" in self._content:
             _check_type(
-                self=self,
                 var_name='certainty',
                 value=self._content["certainty"],
-                dtype=float,
+                dtype=float
             )
 
     def __str__(self):
-        near_image = f'nearImage: "{{image: {self._content["image"]}"'
+        near_image = f'nearImage: {{image: "{self._content["image"]}"'
         if 'certainty' in self._content:
             near_image += f' certainty: {self._content["certainty"]}'
         return near_image + '} '
 
 
-class Group(Filter):
+
+class Sort(Filter):
     """
-    Group filter class used to group Weaviate objects.
+    Sort filter class used to sort weaviate objects.
     """
 
-    def __init__(self, content: dict):
+    def __init__(self, content: Union[dict, list]):
         """
-        Initialize a Group filter class instance.
+        Initialize a Where filter class instance.
 
         Parameters
         ----------
-        content : dict
-            The content of the 'where' filter clause.
+        content : list or dict
+            The content of the `sort` filter clause or a single clause.
 
         Raises
         ------
@@ -381,42 +408,81 @@ class Group(Filter):
             If a mandatory key is missing in the filter content.
         """
 
-        super().__init__(content)
+        # content is a empty list because it is going to the the list with sort clauses.
 
-        if 'type' not in self._content:
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                f"'type' required key is missing from 'content' argument.  Given: {content}."
+        super().__init__(content={'sort': []})
+
+        self.add(content=content)
+
+    def add(self, content: Union[dict, list]) -> None:
+        """
+        Add more sort clauses to the already existing sort clauses.
+
+        Parameters
+        ----------
+        content : list or dict
+            The content of the `sort` filter clause or a single clause to be added to the already
+            existing ones.
+
+        Raises
+        ------
+        TypeError
+            If 'content' is not of type dict.
+        ValueError
+            If a mandatory key is missing in the filter content.
+        """
+
+        if isinstance(content, dict):
+            content = [content]
+
+        if not isinstance(content, list):
+            raise TypeError(
+                f"'content' must be of type dict or list. Given type: {type(content)}."
             )
 
-        if 'force' not in self._content:
+        if len(content) == 0:
             raise ValueError(
-                f"{self.__class__.__name__}: "
-                f"'force' required key is missing from 'content' argument.  Given: {content}."
+                "'content' cannot be an empty list."
             )
 
-        _check_type(
-            self=self,
-            var_name='type',
-            value=self._content["type"],
-            dtype=str,
-        )
+        for clause in content:
+            if 'path' not in clause or 'order' not in clause:
+                raise ValueError(
+                    "One of the sort clause is missing required fields: 'path' and/or 'order'."
+                )
 
-        _check_type(
-            self=self,
-            var_name='force',
-            value=self._content["force"],
-            dtype=float,
-        )
+            _check_type(
+                var_name='path',
+                value=clause["path"],
+                dtype=list,
+            )
+            _check_type(
+                var_name='order',
+                value=clause["order"],
+                dtype=str,
+            )
+            
+            self._content['sort'].append(
+                {
+                    'path': clause['path'],
+                    'order': clause['order'],
+                }
+            )
+
 
     def __str__(self) -> str:
-        group = f'group: {{type: {self._content["type"]}, force: {self._content["force"]}}} '
-        return group
+        
+        sort = f'sort: ['
+        for clause in self._content['sort']:
+            sort += f"{{ path: {dumps(clause['path'])} order: {clause['order']} }} "
+        
+        sort += ']'
+        return sort
 
 
 class Where(Filter):
     """
-    Where filter class used to filter Weaviate objects.
+    Where filter class used to filter weaviate objects.
     """
 
     def __init__(self, content: dict):
@@ -426,7 +492,7 @@ class Where(Filter):
         Parameters
         ----------
         content : dict
-            The content of the 'where' filter clause.
+            The content of the `where` filter clause.
 
         Raises
         ------
@@ -445,11 +511,8 @@ class Where(Filter):
             self.is_filter = False
             self._parse_operator(self._content)
         else:
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                "'path' or 'operands' required key is missing from 'content' argument. "
-                f"Given: {self._content}."
-            )
+            raise ValueError("Filter is missing required fields `path` or `operands`."
+                f" Given: {self._content}")
 
     def _parse_filter(self, content: dict) -> None:
         """
@@ -458,7 +521,7 @@ class Where(Filter):
         Parameters
         ----------
         content : dict
-            The content of the 'where' filter clause.
+            The content of the `where` filter clause.
 
         Raises
         ------
@@ -467,10 +530,8 @@ class Where(Filter):
         """
 
         if "operator" not in content:
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                f"'operator' required key is missing from 'content' argument. Given: {content}."
-            )
+            raise ValueError("Filter is missing required field `operator`. "
+                f"Given: {content}")
 
         self.path = dumps(content["path"])
         self.operator = content["operator"]
@@ -484,7 +545,7 @@ class Where(Filter):
         Parameters
         ----------
         content : dict
-            The content of the 'where' filter clause.
+            The content of the `where` filter clause.
 
         Raises
         ------
@@ -493,10 +554,8 @@ class Where(Filter):
         """
 
         if "operator" not in content:
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                f"'operator' required key is missing from 'content' argument. Given: {content}."
-            )
+            raise ValueError("Filter is missing required field `operator`."
+                f" Given: {content}")
         _content = deepcopy(content)
         self.operator = _content["operator"]
         self.operands = []
@@ -510,13 +569,15 @@ class Where(Filter):
                 gql += f'{self.value}}}'
             elif self.value_type == "valueBoolean":
                 gql += f'{_bool_to_str(self.value)}}}'
-            else:
+            elif self.value_type == "valueGeoRange":
                 gql += f'{dumps(self.value)}}}'
+            else:
+                gql += f'"{self.value}"}}'
             return gql + ' '
 
         operands_str = []
         for operand in self.operands:
-            # remove the 'where: ' from the operands and the last space
+            # remove the `where: ` from the operands and the last space
             operands_str.append(str(operand)[7:-1])
         operands = ", ".join(operands_str)
         return f'where: {{operator: {self.operator} operands: [{operands}]}} '
@@ -524,7 +585,7 @@ class Where(Filter):
 
 def _bool_to_str(value: bool) -> str:
     """
-    Convert a bool value to string (lowercased) to match JSON formatting.
+    Convert a bool value to string (lowercased) to match `json` formatting.
 
     Parameters
     ----------
@@ -534,7 +595,7 @@ def _bool_to_str(value: bool) -> str:
     Returns
     -------
     str
-        The string interpretation of the value in JSON format.
+        The string interpretation of the value in `json` format.
     """
 
     if value is True:
@@ -542,17 +603,14 @@ def _bool_to_str(value: bool) -> str:
     return 'false'
 
 
-def _check_direction_clause(self: Filter, direction: dict) -> dict:
+def _check_direction_clause(direction: dict) -> dict:
     """
     Validate the direction sub clause.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
-        messages. 
     direction : dict
-        A sub clause of the 'nearText' filter.
+        A sub clause of the Explore filter.
 
     Raises
     ------
@@ -571,38 +629,29 @@ def _check_direction_clause(self: Filter, direction: dict) -> dict:
     )
 
     if ('concepts' not in direction) and ('objects' not in direction):
-        raise ValueError(
-            f"{self.__class__.__name__}: "
-            "The 'move' clause should contain 'concepts' OR/AND 'objects'."
-        )
+        raise ValueError("The 'move' clause should contain `concepts` OR/AND `objects`!")
 
     if 'concepts' in direction:
         _check_concept(direction)
     if 'objects' in direction:
         _check_objects(direction)
     if not "force" in direction:
-        raise ValueError(
-            f"{self.__class__.__name__}: "
-            "'move' clause needs to state a 'force'."
-        )
+        raise ValueError("'move' clause needs to state a 'force'")
     _check_type(
         var_name='force',
         value=direction["force"],
-        dtype=float,
+        dtype=float
     )
 
 
-def _check_concept(self: Filter, content: dict) -> None:
+def _check_concept(content: dict) -> None:
     """
     Validate the concept sub clause.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
-        messages. 
     content : dict
-        A (sub) clause to check for 'concepts'.
+        An Explore (sub) clause to check for 'concepts'.
 
     Raises
     ------
@@ -613,10 +662,7 @@ def _check_concept(self: Filter, content: dict) -> None:
     """
 
     if "concepts" not in content:
-        raise ValueError(
-            f"{self.__class__.__name__}: "
-            "No concepts in content."
-        )
+        raise ValueError("No concepts in content")
 
     _check_type(
         var_name='concepts',
@@ -627,17 +673,14 @@ def _check_concept(self: Filter, content: dict) -> None:
         content["concepts"] = [content["concepts"]]
 
 
-def _check_objects(self: Filter, content: dict) -> None:
+def _check_objects(content: dict) -> None:
     """
-    Validate the 'objects' sub clause of the 'move' clause.
+    Validate the `objects` sub clause of the `move` clause.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
-        messages. 
     content : dict
-        A (sub) clause to check for 'objects'.
+        An Explore (sub) clause to check for 'objects'.
 
     Raises
     ------
@@ -657,50 +700,41 @@ def _check_objects(self: Filter, content: dict) -> None:
 
     for obj in content["objects"]:
         if len(obj) != 1 or ('id' not in obj and 'beacon' not in obj):
-            raise ValueError(
-                f"{self.__class__.__name__}: "
-                "Each object from the 'move' clause should have ONLY 'id' OR 'beacon'."
-            )
+            raise ValueError('Each object from the `move` clause should have ONLY `id` OR '
+                '`beacon`!')
 
 
-def _check_type(self: Filter, var_name: str, value: Any, dtype: type) -> None:
+def _check_type(var_name: str, value: Any, dtype: type) -> None:
     """
     Check 'certainty
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
-        messages. 
     var_name : str
-        The variable name for which to check the type (used for error message).
+        The variable name for which to check the type (used for error message)!
     value : Any
         The value for which to check the type.
     dtype : type
-        The expected data type of the 'value'.
+        The expected data type of the `value`.
 
     Raises
     ------
     TypeError
-        If the 'value' type does not match the expected 'dtype'.
+        If the `value` type does not match the expected `dtype`.
     """
 
     if not isinstance(value, dtype):
         raise TypeError(
-            f"{self.__class__.__name__}: "
-            f"'{var_name}' key-value must be of type {dtype}. Given type: {type(value)}."
+            f"'{var_name}' key-value is expected to be of type {dtype} but is {type(value)}!"
         )
 
 
-def _find_value_type(self: Filter, content: dict) -> str:
+def _find_value_type(content: dict) -> str:
     """
     Find the correct type of the content.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
-        messages. 
     content : dict
         The content for which to find the appropriate data type.
 
@@ -730,9 +764,5 @@ def _find_value_type(self: Filter, content: dict) -> str:
     elif "valueGeoRange" in content:
         to_return = "valueGeoRange"
     else:
-        raise ValueError(
-            f"{self.__class__.__name__}: "
-            "'value<Type>' required key is missing from one clause of the 'content' argument: "
-            f"{content}."
-        )
+        raise ValueError(f"Filter is missing required fields: {content}")
     return to_return

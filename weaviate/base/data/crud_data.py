@@ -221,12 +221,12 @@ def pre_create(
 
     if not isinstance(class_name, str):
         raise TypeError(
-            f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+            f"'class_name' must be of type str. Given type: {type(class_name)}."
         )
 
     if not isinstance(data_object, dict):
         raise TypeError(
-            f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            f"'data_object' must be of type dict. Given type: {type(data_object)}."
         )
 
     weaviate_obj = {
@@ -275,12 +275,12 @@ def pre_update(
 
     if not isinstance(class_name, str):
         raise TypeError(
-            f"'class_name' must be of type 'str'. Given type: {type(class_name)}"
+            f"'class_name' must be of type str. Given type: {type(class_name)}"
         )
 
     if not isinstance(data_object, dict):
         raise TypeError(
-            f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            f"'data_object' must be of type dict. Given type: {type(data_object)}."
         )
 
     weaviate_obj = {
@@ -327,12 +327,12 @@ def pre_replace(
 
     if not isinstance(class_name, str):
         raise TypeError(
-            f"'class_name' must be of type 'str'. Given type: {type(class_name)}"
+            f"'class_name' must be of type str. Given type: {type(class_name)}"
         )
 
     if not isinstance(data_object, dict):
         raise TypeError(
-            f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            f"'data_object' must be of type dict. Given type: {type(data_object)}."
         )
 
     weaviate_obj = {
@@ -379,12 +379,12 @@ def pre_validate(
 
     if not isinstance(class_name, str):
         raise TypeError(
-            f"'class_name' must be of type 'str'. Given type: {type(class_name)}."
+            f"'class_name' must be of type str. Given type: {type(class_name)}."
         )
 
     if not isinstance(data_object, dict):
         raise TypeError(
-            f"'data_object' must be of type 'dict'. Given type: {type(data_object)}."
+            f"'data_object' must be of type dict. Given type: {type(data_object)}."
         )
 
     weaviate_obj = {
@@ -393,9 +393,7 @@ def pre_validate(
     }
 
     if uuid is not None:
-        if not isinstance(uuid, str):
-            raise TypeError("UUID must be of type 'str'.")
-        weaviate_obj['id'] = uuid
+        weaviate_obj['id'] = get_valid_uuid(uuid)
 
     if vector is not None:
         weaviate_obj['vector'] = get_vector(vector)

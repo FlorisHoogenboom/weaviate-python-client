@@ -124,12 +124,12 @@ class BaseExploreBuilder(ABC):
         Raises
         ------
         AttributeError
-            If another 'near' filter was already set.
+            If another 'near<Media>' filter was already set.
         """
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple 'near' filters."
+                "Cannot use multiple 'near<Media>' filters."
             )
         self._near = NearText(content)
         self._contains_near = True
@@ -189,12 +189,12 @@ class BaseExploreBuilder(ABC):
         Raises
         ------
         AttributeError
-            If another 'near' filter was already set.
+            If another 'near<Media>' filter was already set.
         """
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple 'near' filters."
+                "Cannot use multiple 'near<Media>' filters."
             )
         self._near = NearVector(content)
         self._contains_near = True
@@ -231,12 +231,12 @@ class BaseExploreBuilder(ABC):
         Raises
         ------
         AttributeError
-            If another 'near' filter was already set.
+            If another 'near<Media>' filter was already set.
         """
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple 'near' filters."
+                "Cannot use multiple 'near<Media>' filters."
             )
         self._near = NearObject(content)
         self._contains_near = True
@@ -329,12 +329,12 @@ class BaseExploreBuilder(ABC):
         Raises
         ------
         AttributeError
-            If another 'near' filter was already set.
+            If another 'near<Media>' filter was already set.
         """
 
         if not self._near:
             raise AttributeError(
-                "Cannot use multiple 'near' filters."
+                "Cannot use multiple 'near<Media>' filters."
             )
         if encode:
             content['image'] = image_encoder_b64(content['image'])
@@ -363,7 +363,9 @@ class BaseExploreBuilder(ABC):
         """
 
         if limit < 1:
-            raise ValueError('limit cannot be non-positive (limit >=1).')
+            raise ValueError(
+                f"'limit' must be a positive integer (limit >=1). Given value: {limit}."
+            )
 
         self._limit = f'limit: {limit} '
         return self
@@ -390,7 +392,9 @@ class BaseExploreBuilder(ABC):
         """
 
         if offset < 1:
-            raise ValueError('offset cannot be non-positive (offset >=1).')
+            raise ValueError(
+                f"'offset' must be a positive integer (offset >=1). Given value: {offset}."
+            )
 
         self._offset = f'offset: {offset} '
         return self
@@ -407,7 +411,8 @@ class BaseExploreBuilder(ABC):
 
         if not self._contains_near:
             raise AttributeError(
-                "No 'near' filter provided. Cannot perform Explore without 'near' filter."
+                "No 'near<Media>' filter provided. Cannot perform Explore without 'near<Media>' "
+                "filter."
             )
 
         properties = " ".join(self._properties)

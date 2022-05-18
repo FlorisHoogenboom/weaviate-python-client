@@ -3,7 +3,7 @@ Batch class definitions.
 """
 from numbers import Real
 from abc import ABC, abstractmethod
-from typing import Tuple, Optional, Sequence
+from typing import Any, Tuple, Optional, Sequence
 from weaviate.util import capitalize_first_letter
 from .requests import BatchRequest, ObjectBatchRequest, ReferenceBatchRequest
 from .batch_config import BatchType, BatchConfig
@@ -296,6 +296,17 @@ class BaseBatch(ABC):
         """
 
     @abstractmethod
+    def delete_objects(self,
+            class_name: str,
+            where: dict,
+            output: str='minimal',
+            dry_run: bool=False,
+        ):
+        """
+        Delete objects that match the 'where' filter in batch.
+        """
+
+    @abstractmethod
     def _auto_create(self):
         """
         Auto create both objects and references in the batch. This protected method works with a
@@ -511,13 +522,13 @@ class BaseBatch(ABC):
         return self._batch_config.timeout_retries
 
 
-def _check_positive_num(value: Real, arg_name: str, data_type: type) -> None:
+def _check_positive_num(value: Any, arg_name: str, data_type: type) -> None:
     """
     Check if the 'value' of the 'arg_name' is a positive number.
 
     Parameters
     ----------
-    value : Union[int, float]
+    value : Any
         The value to check.
     arg_name : str
         The name of the variable from the original function call. Used for error message.
@@ -533,18 +544,23 @@ def _check_positive_num(value: Real, arg_name: str, data_type: type) -> None:
     """
 
     if not isinstance(value, data_type) or isinstance(value, bool):
-        raise TypeError(f"'{arg_name}' must be of type {data_type}.")
+        raise TypeError(
+            f"'{arg_name}' must be of type {data_type}. Given type: {type(value)}."
+        )
     if value <= 0:
-        raise ValueError(f"'{arg_name}' must be positive, i.e. greater that zero (>0).")
+        raise ValueError(
+            f"'{arg_name}' must be a positive number, i.e. greater that zero (>0). "
+            f"Given value: {value}."
+        )
 
 
-def _check_bool(value: bool, arg_name: str) -> None:
+def _check_bool(value: Any, arg_name: str) -> None:
     """
     Check if bool.
 
     Parameters
     ----------
-    value : bool
+    value : Any
         The value to check.
     arg_name : str
         The name of the variable from the original function call. Used for error message.
@@ -556,7 +572,9 @@ def _check_bool(value: bool, arg_name: str) -> None:
     """
 
     if not isinstance(value, bool):
-        raise TypeError(f"'{arg_name}' must be of type bool.")
+        raise TypeError(
+            f"'{arg_name}' must be of type bool. Given type: {type(value)}."
+        )
 
 
 def check_batch_result(results: dict) -> bool:
@@ -580,3 +598,61 @@ def check_batch_result(results: dict) -> bool:
                 if 'error' in result['result']['errors']:
                     return True
     return False
+
+
+def pre_delete_objects(
+        class_name: str,
+        where: dict,
+        output: str='minimal',
+        dry_run: bool=False,
+    ) -> dict:
+    """
+    Pre-process before making a call to Weaviate.
+
+    Parameters
+    ----------
+    class_name : str
+        The class name for which to delete objects.
+    where : dict
+        The content of the `where` filter used to match objects that should be deleted.
+    output : str, optional
+        The control of the verbosity of the output, possible values:
+        - "minimal" : The result only includes counts. Information about objects is omitted if
+        the deletes were successful. Only if an error occurred will the object be described.
+        - "verbose" : The result lists all affected objects with their ID and deletion status,
+        including both successful and unsuccessful deletes.
+        By default "minimal"
+    dry_run : bool, optional
+        If True, objects will not be deleted yet, but merely listed, by default False
+
+    Returns
+    -------
+    Tuple[str, dict]
+        The path to the Weaviate resource and the payload.
+    """
+
+    if not isinstance(class_name, str):
+        raise TypeError(
+            f"'class_name' must be of type str. Given type: {type(class_name)}."
+        )
+    if not isinstance(where, dict):
+        raise TypeError(
+            f"'where' must be of type dict. Given type: {type(class_name)}."
+        )
+    if not isinstance(output, str):
+        raise TypeError(
+            f"'output' must be of type str. Given type: {type(class_name)}."
+        )
+    _check_bool(value=dry_run, arg_name='dry_run')
+
+    payload = {
+        "match": {
+            "class": class_name,
+            "where": where,
+        },
+        "output": output,
+        "dryRun": dry_run,
+    }
+    path = '/batch/objects'
+    
+    return path, payload

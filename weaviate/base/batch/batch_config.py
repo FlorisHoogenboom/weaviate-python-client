@@ -100,7 +100,7 @@ class BatchConfig:
 
         if rolling_frame_size < 1:
             raise ValueError(
-                "'rolling_frame_size' must be a positive integer, given: "
+                "'rolling_frame_size' must be a positive integer. Given value: "
                 f"{rolling_frame_size}"
             )
 
@@ -200,11 +200,13 @@ class BatchConfig:
 
         if not isinstance(timeout_retries, Real) or isinstance(timeout_retries, bool):
             raise TypeError(
-                f"'timeout_retries' must be of type float/int Given type: {type(timeout_retries)}."
+                f"'timeout_retries' must be of type float/int. "
+                f"Given type: {type(timeout_retries)}."
             )
         if timeout_retries < 0:
             raise ValueError(
-                "'timeout_retries' must be positive, i.e. greater or equal that zero (>=0)."
+                "'timeout_retries' must be positive, i.e. greater or equal that zero (>=0). "
+                f"Given value: {timeout_retries}."
             )
         self._timeout_retries = timeout_retries
 
