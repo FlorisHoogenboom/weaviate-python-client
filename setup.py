@@ -10,7 +10,6 @@ with open(path.join(this_directory, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 
-
 class egg_info_ex(egg_info):
     """Includes license file into `.egg-info` folder."""
 
@@ -42,5 +41,5 @@ setup(
     "ujson>=5.1.0,<5.3.0",
   ],
   license_files = ('LICENSE.md',),
-  # cmdclass = {'egg_info': egg_info_ex},
+  cmdclass = {'egg_info': egg_info_ex},
 )

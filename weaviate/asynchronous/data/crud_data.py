@@ -50,7 +50,7 @@ class DataObject(BaseDataObject):
             class_name: str,
             uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None,
-        ) -> str:
+        ):
         """
         Create a new object in Weaviate.
 
@@ -141,7 +141,7 @@ class DataObject(BaseDataObject):
             class_name: str,
             uuid: Union[str, uuid_lib.UUID],
             vector: Optional[Sequence[Real]]=None,
-        ) -> None:
+        ):
         """
         Update the given object's property/ies. Only the specified property/ies are updated, the
         unspecified ones remain unchanged.
@@ -240,7 +240,7 @@ class DataObject(BaseDataObject):
             class_name: str,
             uuid: Union[str, uuid_lib.UUID],
             vector: Optional[Sequence[Real]]=None,
-        ) -> None:
+        ):
         """
         Replace an already existing object with a new one. This method replaces the whole object.
 
@@ -333,7 +333,7 @@ class DataObject(BaseDataObject):
             uuid: Union[str, uuid_lib.UUID],
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
-        ) -> Optional[dict]:
+        ):
         """
         Get an object as dict.
 
@@ -362,11 +362,6 @@ class DataObject(BaseDataObject):
             "vectorWeights": null
         }
 
-        Returns
-        -------
-        dict or None
-            The object as a 'dict' if it exists exists. None in case the object does not exist.
-
         Raises
         ------
         aiohttp.ClientConnectionError
@@ -387,7 +382,7 @@ class DataObject(BaseDataObject):
             with_vector: bool=False,
             limit: Optional[int]=None,
             offset: Optional[int]=None,
-        ) -> Optional[Union[List[dict], dict]]:
+        ):
         """
         Gets objects from Weaviate, the default maximum number of objects depends of Weaviate
         server's 'QUERY_DEFAULTS_LIMIT'. If 'uuid' is None a maximum of 'QUERY_DEFAULTS_LIMIT'
@@ -410,12 +405,6 @@ class DataObject(BaseDataObject):
             The maximum number of objects to be returned.
         offset : int or None
             The starting index for object retrival.
-
-        Returns
-        -------
-        List[dict], dict or None
-            A list of all objects (in case NO 'uuid' was provided), or empty list if no object were
-            found. A 'dict' if an 'uuid' was provided, or None if object was not found.
 
         Raises
         ------
@@ -453,7 +442,7 @@ class DataObject(BaseDataObject):
             response_message=await response.text(),
         )
 
-    async def delete(self, uuid: Union[str, uuid_lib.UUID]) -> None:
+    async def delete(self, uuid: Union[str, uuid_lib.UUID]):
         """
         Delete an existing object from Weaviate.
 
@@ -512,7 +501,7 @@ class DataObject(BaseDataObject):
             response_message=await response.text(),
         )
 
-    async def exists(self, uuid: Union[str, uuid_lib.UUID]) -> bool:
+    async def exists(self, uuid: Union[str, uuid_lib.UUID]):
         """
         Check if the object exist in Weaviate.
 
@@ -532,11 +521,6 @@ class DataObject(BaseDataObject):
         ... )
         >>> await async_client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
         True
-
-        Returns
-        -------
-        bool
-            True if object exists, False otherwise.
 
         Raises
         ------
@@ -577,7 +561,7 @@ class DataObject(BaseDataObject):
             class_name: str,
             uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None
-        ) -> dict:
+        ):
         """
         Validate an object against Weaviate.
 
@@ -617,11 +601,6 @@ class DataObject(BaseDataObject):
             ],
             "valid": False
         }
-
-        Returns
-        -------
-        dict
-            Validation result. E.g. {"valid": bool, "error": None or list}
 
         Raises
         ------

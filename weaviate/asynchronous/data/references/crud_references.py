@@ -34,7 +34,7 @@ class Reference(BaseReference):
             from_uuid: Union[str, uuid.UUID],
             from_property_name: str,
             to_uuid: Union[str, uuid.UUID],
-        ) -> None:
+        ):
         """
         Remove a reference to another object. Equal to removing one direction of an edge from the
         graph.
@@ -150,7 +150,7 @@ class Reference(BaseReference):
             from_uuid: Union[str, uuid.UUID],
             from_property_name: str,
             to_uuids: Union[list, str, uuid.UUID],
-        ) -> None:
+        ):
         """
         Allows to replace ALL references in that property with a new set of references.
         NOTE: All old references will be deleted.
@@ -267,7 +267,7 @@ class Reference(BaseReference):
             from_uuid: Union[str, uuid.UUID],
             from_property_name: str,
             to_uuid: Union[str, uuid.UUID],
-        ) -> None:
+        ):
         """
         Allows to link an object to an object unidirectionally.
 

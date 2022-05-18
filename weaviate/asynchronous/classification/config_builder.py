@@ -28,7 +28,7 @@ class ConfigBuilder(BaseConfigBuilder):
         self._requests = requests
         self._classification = classification
 
-    async def _start(self) -> dict:
+    async def _start(self):
         """
         Start the classification based on the configuration set.
 
@@ -62,7 +62,7 @@ class ConfigBuilder(BaseConfigBuilder):
             response_message=await response.text(),
         )
 
-    async def do(self) -> dict:
+    async def do(self):
         """
         Start the classification.
 

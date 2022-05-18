@@ -496,7 +496,7 @@ class Schema(BaseSchema):
             class_name: str,
             status: str,
             shard_name: Optional[str]=None,
-        ) -> list:
+        ):
         """
         Get the status of all shards in an index.
 

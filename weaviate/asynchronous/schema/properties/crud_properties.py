@@ -23,7 +23,7 @@ class Property(BaseProperty):
 
         self._requests = requests
 
-    async def create(self, schema_class_name: str, schema_property: dict) -> None:
+    async def create(self, schema_class_name: str, schema_property: dict):
         """
         Create a class property.
 

@@ -4,7 +4,7 @@ BaseReference class definition.
 import uuid
 from typing import Union, Tuple
 from abc import ABC, abstractmethod
-from weaviate.util import get_valid_uuid
+from weaviate.util import get_valid_uuid, generate_local_beacon
 
 
 class BaseReference(ABC):
@@ -76,31 +76,11 @@ class BaseReference(ABC):
         from_uuid = get_valid_uuid(from_uuid)
         to_uuid = get_valid_uuid(to_uuid)
         _validate_property_name(from_property_name)
-        beacons = _get_beacon(to_uuid)
+        beacons = generate_local_beacon(to_uuid)
 
         path = f"/objects/{from_uuid}/references/{from_property_name}"
 
         return path, beacons
-
-
-def _get_beacon(to_uuid: Union[str, uuid.UUID]) -> dict:
-    """
-    Get a Weaviate-style beacon.
-
-    Parameters
-    ----------
-    to_uuid : str or uuid.UUID
-        The UUID to create beacon for.
-
-    Returns
-    -------
-    dict
-        Weaviate-style beacon as a dict.
-    """
-
-    return {
-        "beacon": f"weaviate://localhost/{to_uuid}"
-    }
 
 
 def _validate_property_name(property_name: str) -> None:
@@ -151,7 +131,7 @@ def pre_delete(
     from_uuid = get_valid_uuid(from_uuid)
     to_uuid = get_valid_uuid(to_uuid)
     _validate_property_name(from_property_name)
-    beacon = _get_beacon(to_uuid)
+    beacon = generate_local_beacon(to_uuid)
 
     path = f"/objects/{from_uuid}/references/{from_property_name}"
 
@@ -191,7 +171,7 @@ def pre_replace(
     beacons = []
     for to_uuid in to_uuids:
         to_uuid = get_valid_uuid(to_uuid)
-        beacons.append(_get_beacon(to_uuid))
+        beacons.append(generate_local_beacon(to_uuid))
 
     path = f"/objects/{from_uuid}/references/{from_property_name}"
 
@@ -225,7 +205,7 @@ def pre_add(
     from_uuid = get_valid_uuid(from_uuid)
     to_uuid = get_valid_uuid(to_uuid)
     _validate_property_name(from_property_name)
-    beacons = _get_beacon(to_uuid)
+    beacons = generate_local_beacon(to_uuid)
 
     path = f"/objects/{from_uuid}/references/{from_property_name}"
 

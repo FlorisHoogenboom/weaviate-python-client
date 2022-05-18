@@ -42,7 +42,7 @@ class Classification(BaseClassification):
 
         return ConfigBuilder(self._requests, self)
 
-    async def get(self, classification_uuid: Union[str, uuid.UUID]) -> dict:
+    async def get(self, classification_uuid: Union[str, uuid.UUID]):
         """
         Polls the current state of the given classification.
 
@@ -82,7 +82,7 @@ class Classification(BaseClassification):
             response_message=await response.text(),
         )
 
-    async def is_complete(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
+    async def is_complete(self, classification_uuid: Union[str, uuid.UUID]):
         """
         Checks if a started classification job has completed.
 
@@ -99,7 +99,7 @@ class Classification(BaseClassification):
 
         return await self._check_status(classification_uuid, 'completed')
 
-    async def is_failed(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
+    async def is_failed(self, classification_uuid: Union[str, uuid.UUID]):
         """
         Checks if a started classification job has failed.
 
@@ -116,7 +116,7 @@ class Classification(BaseClassification):
 
         return await self._check_status(classification_uuid, "failed")
 
-    async def is_running(self, classification_uuid: Union[str, uuid.UUID]) -> bool:
+    async def is_running(self, classification_uuid: Union[str, uuid.UUID]):
         """
         Checks if a started classification job is running.
 
@@ -133,7 +133,7 @@ class Classification(BaseClassification):
 
         return await self._check_status(classification_uuid, "running")
 
-    async def _check_status(self, classification_uuid: Union[str, uuid.UUID], status: str) -> bool:
+    async def _check_status(self, classification_uuid: Union[str, uuid.UUID], status: str):
         """
         Check for a status of a classification.
 

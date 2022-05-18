@@ -9,6 +9,7 @@ from weaviate.exceptions import (
     AiohttpConnectionError,
     BatchUnsuccessfulStatusCodeError,
     BatchObjectCreationError,
+    UnsuccessfulStatusCodeError,
 )
 from weaviate.base.batch import (
     BaseBatch,
@@ -17,6 +18,7 @@ from weaviate.base.batch import (
     ObjectBatchRequest,
     ReferenceBatchRequest,
     check_batch_result,
+    pre_delete_objects
 )
 from ..requests import Requests
 
@@ -234,7 +236,7 @@ class Batch(BaseBatch):
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence]=None
-        ) -> None:
+        ):
         """
         Add one object to this batch.
         NOTE: If the UUID of one of the objects already exists then the existing object will be
@@ -277,7 +279,7 @@ class Batch(BaseBatch):
             from_object_class_name: str,
             from_property_name: str,
             to_object_uuid: str
-        ) -> None:
+        ):
         """
         Add one reference to this batch.
 
@@ -381,7 +383,7 @@ class Batch(BaseBatch):
             batch_items=batch_request.get_request_body(),
         )
 
-    async def create_objects(self) -> list:
+    async def create_objects(self):
         """
         Creates multiple Objects at once in Weaviate.
         NOTE: If the UUID of one of the objects already exists then the existing object will be
@@ -468,7 +470,7 @@ class Batch(BaseBatch):
             return results
         return []
 
-    async def create_references(self) -> list:
+    async def create_references(self):
         """
         Creates multiple References at once in Weaviate.
         Adding References in batch is faster but it ignors validations like class name
@@ -565,7 +567,7 @@ class Batch(BaseBatch):
             return results
         return []
 
-    async def _auto_create(self) -> None:
+    async def _auto_create(self):
         """
         Auto create both objects and references in the batch. This protected method works with a
         fixed batch size (BatchType.AUTO) and with dynamic batching (BatchType.DYNAMIC). For a
@@ -588,6 +590,103 @@ class Batch(BaseBatch):
             return
         # just in case
         raise ValueError(f"Unsupported batching type '{self._batch_config.type}'.")
+
+    async def delete_objects(self,
+            class_name: str,
+            where: dict,
+            output: str='minimal',
+            dry_run: bool=False,
+        ):
+        """
+        Delete objects that match the 'match' in batch.
+
+        Parameters
+        ----------
+        class_name : str
+            The class name for which to delete objects.
+        where : dict
+            The content of the `where` filter used to match objects that should be deleted.
+        output : str, optional
+            The control of the verbosity of the output, possible values:
+            - "minimal" : The result only includes counts. Information about objects is omitted if
+            the deletes were successful. Only if an error occurred will the object be described.
+            - "verbose" : The result lists all affected objects with their ID and deletion status,
+            including both successful and unsuccessful deletes.
+            By default "minimal"
+        dry_run : bool, optional
+            If True, objects will not be deleted yet, but merely listed, by default False
+
+        Examples
+        --------
+
+        If we want to delete all the data objects that contain the word 'weather' we can do it like
+        this:
+
+        >>> result = await client.batch.delete_objects(
+        ...     class_name='Dataset',
+        ...     output='verbose',
+        ...     dry_run=False,
+        ...     where={
+        ...         'operator': 'Equal',
+        ...         'path': ['description'],
+        ...         'valueText': 'weather'
+        ...     }
+        ... )
+        >>> print(json.dumps(result, indent=4))
+        {
+            "dryRun": false,
+            "match": {
+                "class": "Dataset",
+                "where": {
+                    "operands": null,
+                    "operator": "Equal",
+                    "path": [
+                        "description"
+                    ],
+                    "valueText": "weather"
+                }
+            },
+            "output": "verbose",
+            "results": {
+                "failed": 0,
+                "limit": 10000,
+                "matches": 2,
+                "objects": [
+                    {
+                        "id": "1eb28f69-c66e-5411-bad4-4e14412b65cd",
+                        "status": "SUCCESS"
+                    },
+                    {
+                        "id": "da217bdd-4c7c-5568-9576-ebefe17688ba",
+                        "status": "SUCCESS"
+                    }
+                ],
+                "successful": 2
+            }
+        }
+        """
+
+        path, payload = pre_delete_objects(
+            class_name=class_name,
+            where=where,
+            output=output,
+            dry_run=dry_run,
+        )
+        
+        try:
+            response = await self._requests.delete(
+                path=path,
+                data_json=payload,
+            )
+        except AiohttpConnectionError as conn_err:
+            raise AiohttpConnectionError('Batch delete was not successful.') from conn_err
+        if response.status == 200:
+            return await response.json()
+        raise UnsuccessfulStatusCodeError(
+            "Delete in batch.",
+            status_code=response.status,
+            response_message=await response.text(),
+        )
 
     async def flush(self) -> None:
         """
