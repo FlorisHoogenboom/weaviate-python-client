@@ -537,7 +537,7 @@ class BaseGetBuilder(ABC):
 
     def with_ask(self, content: dict) -> 'BaseGetBuilder':
         """
-        Ask a question for which weaviate will retreive the answer from your data.
+        Ask a question for which weaviate will retrieve the answer from your data.
         This filter can be used only with QnA module: qna-transformers.
         NOTE: The 'autocorrect' field is enabled only with the 'text-spellcheck' Weaviate module.
 

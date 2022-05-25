@@ -328,7 +328,7 @@ class Connection:
         weaviate.exceptions.AuthenticationError
             If status not OK in connection to the third party authentication service.
         weaviate.exceptions.AuthenticationError
-            If the grant_types supported by the thirdparty authentication service are insufficient.
+            If the grant_types supported by the third-party authentication service are insufficient.
         weaviate.exceptions.AuthenticationError
             If authentication access denied.
         """
@@ -358,7 +358,7 @@ class Connection:
         # Validate third part auth info
         if 'client_credentials' not in response_third_part_json['grant_types_supported']:
             raise AuthenticationError(
-                "The grant_types supported by the thirdparty authentication service are "
+                "The grant_types supported by the third-party authentication service are "
                 "insufficient. Please add 'client_credentials'."
             )
 
@@ -379,7 +379,7 @@ class Connection:
 
         response_json = ujson.loads(response.content)
         self._auth_bearer = response_json['access_token']
-        # -2 for some lagtime
+        # -2 for some lag time
         self._auth_expires = int(_get_epoch_time() + response_json['expires_in'] - 2)
 
     def get_request_header(self) -> dict:

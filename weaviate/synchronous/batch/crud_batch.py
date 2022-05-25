@@ -1,7 +1,6 @@
 """
 Batch class definitions.
 """
-import sys
 import time
 from typing import Optional, Sequence
 import ujson

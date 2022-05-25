@@ -106,7 +106,7 @@ def get_valid_uuid(uuid: Union[str, uuid_lib.UUID]) -> str:
     ----------
     uuid : str or uuid.UUID
         The UUID to be validated and extracted. Should be either as a string (with or without
-        hypthens) or an instance of uuid.UUID.
+        hyphens) or an instance of uuid.UUID.
 
     Returns
     -------
@@ -163,7 +163,7 @@ def get_vector(vector: Sequence[Real]) -> List[Real]:
         # if vector is already a list
         return vector
     try:
-        # if vetcor is numpy.ndarray or torch.Tensor
+        # if vector is numpy.ndarray or torch.Tensor
         return vector.squeeze().tolist()
     except AttributeError:
         try:
@@ -171,7 +171,7 @@ def get_vector(vector: Sequence[Real]) -> List[Real]:
             return vector.numpy().squeeze().tolist()
         except AttributeError:
             raise TypeError(
-                "The type of the 'vector' argument is not supported! "
+                "The type of the 'vector' argument is not supported. "
                 "Supported types are 'list', 'numpy.ndarray', 'torch.Tensor' and 'tf.Tensor'."
             ) from None
 

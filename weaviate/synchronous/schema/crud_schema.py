@@ -149,7 +149,7 @@ class Schema(BaseSchema):
             schema_class=schema_class,
         )
 
-        self._create_class_with_premitives(
+        self._create_class_with_primitives(
             schema_class=schema_class,
         )
         self._create_complex_properties_from_class(
@@ -624,7 +624,7 @@ class Schema(BaseSchema):
 
     def _create_complex_properties_from_classes(self, schema_classes_list: list) -> None:
         """
-        Add crossreferences to already existing classes.
+        Add cross-references to already existing classes.
 
         Parameters
         ----------
@@ -635,14 +635,14 @@ class Schema(BaseSchema):
         for schema_class in schema_classes_list:
             self._create_complex_properties_from_class(schema_class)
 
-    def _create_class_with_premitives(self, schema_class: dict) -> None:
+    def _create_class_with_primitives(self, schema_class: dict) -> None:
         """
         Create class with only primitives.
 
         Parameters
         ----------
         schema_class : dict
-            A single Weaviate formated class
+            A single Weaviate-format class
 
         Raises
         ------
@@ -685,4 +685,4 @@ class Schema(BaseSchema):
         """
 
         for weaviate_class in schema_classes_list:
-            self._create_class_with_premitives(weaviate_class)
+            self._create_class_with_primitives(weaviate_class)

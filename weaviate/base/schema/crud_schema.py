@@ -455,7 +455,7 @@ def _get_primitive_properties(properties_list: list) -> list:
     Parameters
     ----------
     properties_list : list
-        A list of properties to exctract the primitive properties.
+        A list of properties to extract the primitive properties.
 
     Returns
     -------

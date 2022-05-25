@@ -107,7 +107,7 @@ class BatchObjectCreationError(WeaviateBaseError):
 
         error_message = (
             message +
-            ' The batch creation result is displayed here as well in case error wasnot caught: '
+            ' The batch creation result is displayed here as well in case error was not caught: '
             + ujson.dumps(batch_results)
         )
         super().__init__(message=error_message)

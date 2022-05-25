@@ -261,7 +261,7 @@ class Reference(BaseReference):
             to_uuid: Union[str, uuid.UUID],
         ) -> None:
         """
-        Allows to link an object to an object unidirectionally.
+        Allows to link an object to an object uni-directionally.
 
         Parameters
         ----------

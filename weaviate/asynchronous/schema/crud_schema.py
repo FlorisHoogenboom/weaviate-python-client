@@ -149,7 +149,7 @@ class Schema(BaseSchema):
             schema_class=schema_class,
         )
 
-        await self._create_class_with_premitives(
+        await self._create_class_with_primitives(
             schema_class=schema_class,
         )
         await self._create_complex_properties_from_class(
@@ -620,7 +620,7 @@ class Schema(BaseSchema):
 
     async def _create_complex_properties_from_classes(self, schema_classes_list: list):
         """
-        Add crossreferences to already existing classes.
+        Add cross-references to already existing classes.
 
         Parameters
         ----------
@@ -635,14 +635,14 @@ class Schema(BaseSchema):
             )
         asyncio.gather(*tasks, return_exceptions=False)
 
-    async def _create_class_with_premitives(self, schema_class: dict):
+    async def _create_class_with_primitives(self, schema_class: dict):
         """
         Create class with only primitives.
 
         Parameters
         ----------
         schema_class : dict
-            A single Weaviate formated class
+            A single Weaviate-format class
 
         Raises
         ------
@@ -687,5 +687,5 @@ class Schema(BaseSchema):
         tasks = []
         for weaviate_class in schema_classes_list:
             tasks.append(
-                asyncio.create_task(self._create_class_with_premitives(weaviate_class))
+                asyncio.create_task(self._create_class_with_primitives(weaviate_class))
             )
