@@ -9,14 +9,14 @@ from numbers import Real
 from io import BufferedReader
 
 
-def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
+def image_encoder_b64(image_file_or_path: Union[str, BufferedReader]) -> str:
     """
     Encode an image in a Weaviate understandable format from a binary read file or by providing
     the image path.
 
     Parameters
     ----------
-    image_or_image_path : str, io.BufferedReader
+    image_file_or_path : str, io.BufferedReader
         The binary read file or the path to the file.
 
     Returns
@@ -33,16 +33,16 @@ def image_encoder_b64(image_or_image_path: Union[str, BufferedReader]) -> str:
     """
 
 
-    if isinstance(image_or_image_path, str):
-        if not os.path.isfile(image_or_image_path):
+    if isinstance(image_file_or_path, str):
+        if not os.path.isfile(image_file_or_path):
             raise ValueError(
-                f"No file found at location: {image_or_image_path}."
+                f"No file found at location: '{image_file_or_path}'."
             )
-        with open(image_or_image_path, 'br') as file:
+        with open(image_file_or_path, 'br') as file:
             content = file.read()
 
-    elif isinstance(image_or_image_path, BufferedReader):
-        content = image_or_image_path.read()
+    elif isinstance(image_file_or_path, BufferedReader):
+        content = image_file_or_path.read()
     else:
         raise TypeError(
             "'image_or_image_path' should be an image path or a binary-read file "
