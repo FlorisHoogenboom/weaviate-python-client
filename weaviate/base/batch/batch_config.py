@@ -50,7 +50,7 @@ class BatchConfig:
     @property
     def rolling_frame_size(self) -> int:
         """
-        Settter and Getter for 'rolling_frame_size'.
+        Setter and Getter for 'rolling_frame_size'.
 
         Parameters
         ----------
@@ -160,7 +160,7 @@ class BatchConfig:
         """
         Setter and Getter for 'timeout_retries'.
 
-        Propreties
+        Properties
         ----------
         value : int
             Setter ONLY: The new value for 'timeout_retries'.
@@ -185,7 +185,7 @@ class BatchConfig:
         """
         Set value for 'timeout_retries'.
 
-        Propreties
+        Properties
         ----------
         timeout_retries : int
             The new value for 'timeout_retries'.

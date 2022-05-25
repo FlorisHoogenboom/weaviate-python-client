@@ -124,7 +124,7 @@ class BaseDataObject(ABC):
         server's 'QUERY_DEFAULTS_LIMIT'. If 'uuid' is None a maximum of 'QUERY_DEFAULTS_LIMIT'
         objects are returned, use 'limit' argument to query more than 'QUERY_DEFAULTS_LIMIT'.
         If 'uuid' is specified the result is the same as for method '.get_by_uuid(...)'. One could
-        use the 'offset' argument to specify a starting index for object retrival.
+        use the 'offset' argument to specify a starting index for object retrieval.
         NOTE: If 'offset' is 10 and 'limit' is 100, then objects 11-100 are returned (if there are
         that many). If 'offset' is larger than number of objects in Weaviate, then en empty list is
         returned.
@@ -140,7 +140,7 @@ class BaseDataObject(ABC):
         limit : int or None, optional
             The maximum number of objects to be returned.
         offset : int or None
-            The starting index for object retrival.
+            The starting index for object retrieval.
         """
 
     @abstractmethod
@@ -424,7 +424,7 @@ def pre_get(
     limit : int or None
         The maximum number of objects to be returned.
     offset : int or None
-        The starting index for object retrival.
+        The starting index for object retrieval.
 
     Returns
     -------
@@ -485,7 +485,7 @@ def _get_params(
     limit : int or None
         The maximum number of objects to be returned.
     offset : int or None
-        The starting index for object retrival.
+        The starting index for object retrieval.
 
     Returns
     -------

@@ -185,7 +185,7 @@ class ObjectBatchRequest(BatchRequest):
         TypeError
             If an argument passed is not of an appropriate type.
         ValueError
-            If 'uuid' is not of a propper form.
+            If 'uuid' is not of a proper form.
         """
 
         if not isinstance(class_name, str):

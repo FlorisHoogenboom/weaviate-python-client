@@ -1,7 +1,6 @@
 """
 Batch class definitions.
 """
-import sys
 import time
 from typing import Optional, Sequence
 from aiohttp import ServerTimeoutError, ClientResponse
@@ -57,7 +56,7 @@ class Batch(BaseBatch):
         method 'configure'/'__call__' for more details).
         The 'batch_size' in this case corresponds to the sum of added objects and references.
         This case does NOT require the user to create the batch/s, but it can be done. Also to
-        create non-full batches (last batche/s) that do not meet the requirement to be auto-created
+        create non-full batches (last batch/es) that do not meet the requirement to be auto-created
         use the 'flush' method, or in a context manager, see examples below.
 
     Case III - DYNAMIC:
@@ -261,7 +260,7 @@ class Batch(BaseBatch):
         TypeError
             If an argument passed is not of an appropriate type.
         ValueError
-            If 'uuid' is not of a propper form.
+            If 'uuid' is not of a proper form.
         """
 
         super().add_data_object(
@@ -318,8 +317,8 @@ class Batch(BaseBatch):
         ) -> ClientResponse:
         """
         Create data in batches, either Objects or References. This does NOT guarantee
-        that each batch item (only Objects) is added/created. This can lead to a successfull
-        batch creation but unsuccessfull per batch item creation. See the Examples below.
+        that each batch item (only Objects) is added/created. This can lead to a successful
+        batch creation but unsuccessful per batch item creation. See the Examples below.
 
         Parameters
         ----------
@@ -355,9 +354,9 @@ class Batch(BaseBatch):
                     if i == self._batch_config.timeout_retries:
                         raise
                     print(
-                        f'[ERROR] Batch ReadTimeout Exception occurred! Retring in {2 * (i + 1)}s. '
+                        f'Batch ReadTimeout Exception occurred! Retrying in {2 * (i + 1)}s. '
                         f'[{i+1}/{self._batch_config.timeout_retries}]',
-                        file=sys.stderr)
+                    )
                     time.sleep(2 * (i + 1))
                 else:
                     break
@@ -473,7 +472,7 @@ class Batch(BaseBatch):
     async def create_references(self):
         """
         Creates multiple References at once in Weaviate.
-        Adding References in batch is faster but it ignors validations like class name
+        Adding References in batch is faster but it ignores validations like class name
         and property name, resulting in a SUCCESSFUL reference creation of a nonexistent object
         types and/or a nonexistent properties. If the consistency of the References is wanted
         use 'client.data_object.reference.add' to have additional validation against the
@@ -499,7 +498,7 @@ class Batch(BaseBatch):
         ...     .batch.add_reference(object_3, 'ExistingClass', 'existsWith', object_4)
 
         Both references were added to the batch request without error because they meet the
-        required citeria (See the documentation of the 'weaviate.Batch.add_reference' method
+        required criteria (See the documentation of the 'weaviate.Batch.add_reference' method
         for more information).
 
         >>> result = await async_client.batch.create_references()

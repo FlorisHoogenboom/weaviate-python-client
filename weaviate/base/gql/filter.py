@@ -4,7 +4,7 @@ GraphQL abstract class for GraphQL commands to inherit from.
 """
 from json import dumps
 from copy import deepcopy
-from typing import Any, Union
+from typing import Any, Union, List
 from abc import ABC, abstractmethod
 from weaviate.util import get_vector
 
@@ -370,18 +370,18 @@ class NearImage(Filter):
         return near_image + '} '
 
 
-class Sort(Filter):
+class Sort:
     """
     Sort filter class used to sort weaviate objects.
     """
 
-    def __init__(self, content: Union[dict, list]):
+    def __init__(self, content: Union[dict, List[dict]]):
         """
         Initialize a Where filter class instance.
 
         Parameters
         ----------
-        content : list or dict
+        content : dict or list of dict
             The content of the 'sort' filter clause or a single clause.
 
         Raises
@@ -392,7 +392,7 @@ class Sort(Filter):
             If a mandatory key is missing in the filter content.
         """
 
-        super().__init__(content={'sort': []})
+        self._content = []
         self.add(content=content)
 
     def add(self, content: Union[dict, list]) -> None:
@@ -443,7 +443,7 @@ class Sort(Filter):
                 dtype=str,
             )
             
-            self._content['sort'].append(
+            self._content.append(
                 {
                     'path': clause['path'],
                     'order': clause['order'],
@@ -453,26 +453,26 @@ class Sort(Filter):
     def __str__(self) -> str:
         
         sort = f'sort: ['
-        for clause in self._content['sort']:
+        for clause in self._content:
             sort += f"{{ path: {dumps(clause['path'])} order: {clause['order']} }} "
         sort += '] '
 
         return sort
 
 
-class Group(Filter):
+class GetGroup(Filter):
     """
-    Group filter class used to group Weaviate objects.
+    GetGroup filter class used to group Weaviate objects.
     """
 
     def __init__(self, content: dict):
         """
-        Initialize a Group filter class instance.
+        Initialize a GetGroup filter class instance.
 
         Parameters
         ----------
         content : dict
-            The content of the 'where' filter clause.
+            The content of the 'sort' filter clause (only for Get).
 
         Raises
         ------
@@ -512,6 +512,52 @@ class Group(Filter):
 
     def __str__(self) -> str:
         group = f'group: {{type: {self._content["type"]}, force: {self._content["force"]}}} '
+        return group
+
+
+class AggregateGroupBy:
+    """
+    AggregateGroupBy filter class used to group Weaviate objects.
+    """
+
+    def __init__(self, content: Union[str, List[str]]):
+        """
+        Initialize a AggregateGroupBy filter class instance.
+
+        Parameters
+        ----------
+        content : str or list of str
+            The content of the 'groupBy' filter clause (only for Aggregate).
+
+        Raises
+        ------
+        TypeError
+            If 'content' is not of type str or list.
+        ValueError
+            If a mandatory key is missing in the filter content.
+        """
+
+        if not isinstance(content, (str, list)):
+            raise TypeError(
+                f"{self.__class__.__name__}: "
+                f"'content' key-value must be of type str or list. Given type: {type(content)}."
+            )
+
+        if isinstance(content, str):
+            self._content = [content]
+        else:
+            self._content = content.copy()
+        
+            for property in self._content:
+                if not isinstance(property, str):
+                    raise TypeError(
+                        f"{self.__class__.__name__}: "
+                        "If 'content' is of type list all elements must be of type str. "
+                        f"Found type: {type(property)}."
+                    )
+
+    def __str__(self) -> str:
+        group = f'groupBy: {dumps(self._content)} '
         return group
 
 

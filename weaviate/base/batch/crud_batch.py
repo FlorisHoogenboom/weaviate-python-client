@@ -209,7 +209,7 @@ class BaseBatch(ABC):
         TypeError
             If an argument passed is not of an appropriate type.
         ValueError
-            If 'uuid' is not of a propper form.
+            If 'uuid' is not of a proper form.
         """
 
         self._objects_batch.add(
@@ -262,8 +262,8 @@ class BaseBatch(ABC):
         ):
         """
         Create data in batches, either Objects or References. This does NOT guarantee
-        that each batch item (only Objects) is added/created. This can lead to a successfull
-        batch creation but unsuccessfull per batch item creation. See the Examples below.
+        that each batch item (only Objects) is added/created. This can lead to a successful
+        batch creation but unsuccessful per batch item creation. See the Examples below.
 
         Parameters
         ----------
@@ -288,7 +288,7 @@ class BaseBatch(ABC):
     def create_references(self):
         """
         Creates multiple References at once in Weaviate.
-        Adding References in batch is faster but it ignors validations like class name
+        Adding References in batch is faster but it ignores validations like class name
         and property name, resulting in a SUCCESSFUL reference creation of a nonexistent object
         types and/or a nonexistent properties. If the consistency of the References is wanted
         use 'client.data_object.reference.add' to have additional validation against the

@@ -13,7 +13,7 @@ from .filter import (
     Filter,
     Ask,
     NearImage,
-    Group,
+    GetGroup,
     Sort,
 )
 
@@ -45,7 +45,7 @@ class BaseGetBuilder(ABC):
 
         if not isinstance(class_name, str):
             raise TypeError(
-                f"'class_name' must be of type str. Given type: {type(class_name)}."
+                f"'class_name' must be of type str. Given type: {type(class_name).__name__}."
             )
 
         if properties is None:
@@ -53,7 +53,7 @@ class BaseGetBuilder(ABC):
         if not isinstance(properties, (list, str)):
             raise TypeError(
                 "'properties' must be of type str or list of str. "
-                f"Given type: {type(properties)}."
+                f"Given type: {type(properties).__name__}."
             )
         if isinstance(properties, str):
             properties = [properties]
@@ -73,7 +73,7 @@ class BaseGetBuilder(ABC):
         self._offset: str = ''
         self._near_ask: Union[Filter, str] = '' # To store the 'near<Media>'/'ask' clause if it is added
         self._contains_filter = False  # true if any filter is added
-        self._group: Union[Group, str] = ''
+        self._group: Union[GetGroup, str] = ''
         self._sort: Union[Sort, str] = ''
 
     def with_group(self, content: dict) -> 'BaseGetBuilder':
@@ -107,7 +107,7 @@ class BaseGetBuilder(ABC):
             The updated BaseGetBuilder.
         """
 
-        self._group = Group(content)
+        self._group = GetGroup(content)
         self._contains_filter = True
         return self
 
@@ -783,7 +783,7 @@ class BaseGetBuilder(ABC):
         if not isinstance(properties, dict):
             raise TypeError(
                 "'properties' argument must be of type str, list, dict or "
-                f"tuple. Given: {type(properties)}."
+                f"tuple. Given: {type(properties).__name__}."
             )
 
         # only 'dict' type here
@@ -799,7 +799,7 @@ class BaseGetBuilder(ABC):
             if not isinstance(values, list):
                 raise TypeError(
                     "If type of 'properties' is dict then all the values must be of type "
-                    f"str or list of str. Given: {type(values)}."
+                    f"str or list of str. Given: {type(values).__name__}."
                 )
             if len(values) == 0:
                 raise ValueError(
@@ -1014,7 +1014,7 @@ class BaseGetBuilder(ABC):
         if not isinstance(values, list):
             raise TypeError(
                 "If type of 'properties' is tuple then first element's dict values must be "
-                f"either of type str or list of str. Given type: {type(values)}."
+                f"either of type str or list of str. Given type: {type(values).__name__}."
             )
         if len(values) == 0:
             raise ValueError(

@@ -60,7 +60,7 @@ class BaseReference(ABC):
             to_uuid: Union[str, uuid.UUID],
         ):
         """
-        Allows to link an object to an object unidirectionally.
+        Allows to link an object to an object uni-directionally.
 
         Parameters
         ----------
