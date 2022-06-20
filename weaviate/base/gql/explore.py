@@ -391,9 +391,9 @@ class BaseExploreBuilder(ABC):
             If 'offset' is non-positive.
         """
 
-        if offset < 1:
+        if offset < 0:
             raise ValueError(
-                f"'offset' must be a positive integer (offset >=1). Given value: {offset}."
+                f"'offset' must be a non-negative integer (offset >=0). Given value: {offset}."
             )
 
         self._offset = f'offset: {offset} '

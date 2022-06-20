@@ -528,8 +528,10 @@ class BaseGetBuilder(ABC):
             If 'offset' is non-positive.
         """
 
-        if offset < 1:
-            raise ValueError('offset cannot be non-positive (offset >=1).')
+        if offset < 0:
+            raise ValueError(
+                f"'offset' must be a non-negative integer (offset >=0). Given value: {offset}."
+            )
 
         self._offset = f'offset: {offset} '
         self._contains_filter = True
