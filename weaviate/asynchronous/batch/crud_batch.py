@@ -492,9 +492,9 @@ class Batch(BaseBatch):
         >>> object_3 = '254cbccd-89f4-4b29-9c1b-001a3339d89a'
         >>> object_4 = '254cbccd-89f4-4b29-9c1b-001a3339d89b'
 
-        >>> await async_client\
+        >>> await async_client\\
         ...     .batch.add_reference(object_1, 'NonExistingClass', 'existsWith', object_2)
-        >>> await async_client\
+        >>> await async_client\\
         ...     .batch.add_reference(object_3, 'ExistingClass', 'existsWith', object_4)
 
         Both references were added to the batch request without error because they meet the

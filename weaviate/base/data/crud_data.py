@@ -497,14 +497,13 @@ def _get_params(
     params = {}
 
     if additional_properties:
-        if isinstance(additional_properties, list):
-            params['include'] = additional_properties
-        else:
-            params['include'] = [additional_properties]
+        if not isinstance(additional_properties, list):
+            additional_properties = [additional_properties]
+        params['include'] = ",".join(additional_properties)
 
     if with_vector:
         if 'include' in params:
-            params['include'].append('vector')
+            params['include'] = params['include'] + ',vector'
         else:
             params['include'] = 'vector'
 

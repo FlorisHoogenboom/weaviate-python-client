@@ -272,7 +272,7 @@ class BaseExploreBuilder(ABC):
         ...     'image': "my_image_path.png",
         ...     'certainty': 0.7 # Optional
         ... }
-        >>> query = client.query.explore()\
+        >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
 
         OR
@@ -282,7 +282,7 @@ class BaseExploreBuilder(ABC):
         ...     'image': my_image_file,
         ...     'certainty': 0.7 # Optional
         ... }
-        >>> query = client.query.explore()\
+        >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
         >>> my_image_file.close()
 
@@ -294,7 +294,7 @@ class BaseExploreBuilder(ABC):
         ...     'image': encoded_image,
         ...     'certainty': 0.7 # Optional
         ... }
-        >>> query = client.query.explore()\
+        >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
 
         OR
@@ -306,7 +306,7 @@ class BaseExploreBuilder(ABC):
         ...     'image': encoded_image,
         ...     'certainty': 0.7 # Optional
         ... }
-        >>> query = client.query.explore()\
+        >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
 
         Encode Image yourself:
@@ -318,7 +318,7 @@ class BaseExploreBuilder(ABC):
         ...     'image': encoded_image,
         ...     'certainty': 0.7 # Optional
         ... }
-        >>> query = client.query.explore()\
+        >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
 
         Returns
