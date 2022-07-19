@@ -442,7 +442,7 @@ class Sort:
                 value=clause["order"],
                 dtype=str,
             )
-            
+
             self._content.append(
                 {
                     'path': clause['path'],
@@ -451,7 +451,7 @@ class Sort:
             )
 
     def __str__(self) -> str:
-        
+
         sort = f'sort: ['
         for clause in self._content:
             sort += f"{{ path: {dumps(clause['path'])} order: {clause['order']} }} "
@@ -547,7 +547,7 @@ class AggregateGroupBy:
             self._content = [content]
         else:
             self._content = content.copy()
-        
+
             for property in self._content:
                 if not isinstance(property, str):
                     raise TypeError(
@@ -697,7 +697,7 @@ def _check_direction_clause(self: Filter, direction: dict) -> dict:
     ----------
     self : Filter
         The filter object from which we call this function. Used to print the class name in error
-        messages. 
+        messages.
     direction : dict
         A sub clause of the 'nearText' filter.
 
@@ -747,7 +747,7 @@ def _check_concept(self: Filter, content: dict) -> None:
     ----------
     self : Filter
         The filter object from which we call this function. Used to print the class name in error
-        messages. 
+        messages.
     content : dict
         A (sub) clause to check for 'concepts'.
 
@@ -782,7 +782,7 @@ def _check_objects(self: Filter, content: dict) -> None:
     ----------
     self : Filter
         The filter object from which we call this function. Used to print the class name in error
-        messages. 
+        messages.
     content : dict
         A (sub) clause to check for 'objects'.
 
@@ -823,7 +823,7 @@ def _check_type(self: Filter, var_name: str, value: Any, dtype: type) -> None:
     ----------
     self : Filter
         The filter object from which we call this function. Used to print the class name in error
-        messages. 
+        messages.
     var_name : str
         The variable name for which to check the type (used for error message).
     value : Any
@@ -852,7 +852,7 @@ def _find_value_type(self: Filter, content: dict) -> str:
     ----------
     self : Filter
         The filter object from which we call this function. Used to print the class name in error
-        messages. 
+        messages.
     content : dict
         The content for which to find the appropriate data type.
 

@@ -82,10 +82,11 @@ class ReferenceBatchRequest(BatchRequest):
     """
 
     def add(self,
-            from_object_class_name: str,
-            from_object_uuid: str,
+            from_class_name: str,
+            from_uuid: str,
             from_property_name: str,
-            to_object_uuid: str
+            to_uuid: str,
+            to_class_name: str,
         ) -> None:
         """
         Add one Weaviate-object reference to this batch. Does NOT validate the consistency of the
@@ -93,14 +94,16 @@ class ReferenceBatchRequest(BatchRequest):
 
         Parameters
         ----------
-        from_object_class_name : str
+        from_class_name : str
             The name of the class that should reference another object.
-        from_object_uuid : str
+        from_uuid : str
             The UUID or URL of the object that should reference another object.
         from_property_name : str
             The name of the property that contains the reference.
-        to_object_uuid : str
+        to_uuid : str
             The UUID or URL of the object that is actually referenced.
+        to_class_name : str
+            The name of the class that should be referenced
 
         Raises
         ------
@@ -111,28 +114,31 @@ class ReferenceBatchRequest(BatchRequest):
         """
 
         if (
-            not isinstance(from_object_class_name, str)
-            or not isinstance(from_object_uuid, str)
+            not isinstance(from_class_name, str)
+            or not isinstance(from_uuid, str)
             or not isinstance(from_property_name, str)
-            or not isinstance(to_object_uuid, str)
+            or not isinstance(to_uuid, str)
+            or not isinstance(to_class_name, str)
         ):
             raise TypeError(
                 'All arguments must be of type str.'
             )
 
-        from_object_uuid = get_valid_uuid(from_object_uuid)
-        to_object_uuid = get_valid_uuid(to_object_uuid)
+        from_uuid = get_valid_uuid(from_uuid)
+        to_uuid = get_valid_uuid(to_uuid)
 
         self._items.append(
             {
             'from': 'weaviate://localhost/'
-                + from_object_class_name
+                + from_class_name
                 + '/'
-                + from_object_uuid
+                + from_uuid
                 + '/'
                 + from_property_name,
             'to': 'weaviate://localhost/'
-                + to_object_uuid,
+                + to_class_name
+                + '/'
+                + to_uuid,
             }
         )
 
@@ -160,7 +166,7 @@ class ObjectBatchRequest(BatchRequest):
             data_object: dict,
             class_name: str,
             uuid: str=None,
-            vector: Sequence=None
+            vector: Sequence=None,
         ) -> None:
         """
         Add one object to this batch. Does NOT validate the consistency of the object against

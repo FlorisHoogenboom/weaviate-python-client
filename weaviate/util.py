@@ -69,7 +69,7 @@ def image_decoder_b64(encoded_image: str) -> bytes:
     return base64.b64decode(encoded_image.encode('utf-8'))
 
 
-def generate_local_beacon(uuid: Union[str, uuid_lib.UUID]) -> dict:
+def generate_local_beacon(uuid: Union[str, uuid_lib.UUID], class_name: str) -> dict:
     """
     Generates a beacon with the given UUID.
 
@@ -77,6 +77,8 @@ def generate_local_beacon(uuid: Union[str, uuid_lib.UUID]) -> dict:
     ----------
     uuid : str or uuid.UUID
         The UUID for which to create a local beacon.
+    class_name : str
+        The class name of the object for which to generate beacon.
 
     Returns
     -------
@@ -91,10 +93,15 @@ def generate_local_beacon(uuid: Union[str, uuid_lib.UUID]) -> dict:
         If the 'uuid' is not valid.
     """
 
+    if not isinstance(class_name, str):
+        raise TypeError(
+            f"'class_name' must be of type str. Given type: {type(class_name)}."
+        )
+
     _uuid = get_valid_uuid(uuid=uuid)
 
     return {
-        "beacon": "weaviate://localhost/" + _uuid
+        "beacon": f"weaviate://localhost/{capitalize_first_letter(class_name)}/{_uuid}"
     }
 
 
@@ -176,7 +183,7 @@ def get_vector(vector: Sequence[Real]) -> List[Real]:
             ) from None
 
 
-def uuid5(identifier: Any, namespace: Any = "") -> str:
+def generate_uuid5(identifier: Any, namespace: Any = "") -> str:
     """
     Generate an UUIDv5, may be used to consistently generate the same UUID for a specific
     identifier and namespace.

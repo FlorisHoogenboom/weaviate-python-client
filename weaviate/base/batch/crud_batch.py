@@ -89,7 +89,7 @@ class BaseBatch(ABC):
 
     @abstractmethod
     def __call__(self,
-            **kwargs
+            **kwargs,
         ):
         """
         Configure the instance to your needs. ('__call__' and 'configure' methods are the same).
@@ -183,7 +183,7 @@ class BaseBatch(ABC):
             data_object: dict,
             class_name: str,
             uuid: Optional[str]=None,
-            vector: Optional[Sequence]=None
+            vector: Optional[Sequence]=None,
         ):
         """
         Add one object to this batch.
@@ -221,24 +221,27 @@ class BaseBatch(ABC):
 
     @abstractmethod
     def add_reference(self,
-            from_object_uuid: str,
-            from_object_class_name: str,
+            from_uuid: str,
+            from_class_name: str,
             from_property_name: str,
-            to_object_uuid: str
+            to_uuid: str,
+            to_class_name: str,
         ):
         """
         Add one reference to this batch.
 
         Parameters
         ----------
-        from_object_uuid : str
+        from_uuid : str
             The UUID or URL of the object that should reference another object.
-        from_object_class_name : str
+        from_class_name : str
             The name of the class that should reference another object.
         from_property_name : str
             The name of the property that contains the reference.
-        to_object_uuid : str
+        to_uuid : str
             The UUID or URL of the object that is actually referenced.
+        to_class_name : str
+            The name of the class that should be referenced.
 
         Raises
         ------
@@ -249,10 +252,11 @@ class BaseBatch(ABC):
         """
 
         self._reference_batch.add(
-            from_object_class_name=capitalize_first_letter(from_object_class_name),
-            from_object_uuid=from_object_uuid,
+            from_class_name=capitalize_first_letter(from_class_name),
+            from_uuid=from_uuid,
             from_property_name=from_property_name,
-            to_object_uuid=to_object_uuid,
+            to_uuid=to_uuid,
+            to_class_name=capitalize_first_letter(to_class_name),
         )
 
     @abstractmethod
@@ -654,5 +658,5 @@ def pre_delete_objects(
         "dryRun": dry_run,
     }
     path = '/batch/objects'
-    
+
     return path, payload

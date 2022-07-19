@@ -84,9 +84,9 @@ class Batch(BaseBatch):
 
     >>> client.batch.shape
     (0, 0)
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_reference(object_1, 'MyClass', 'myProp', object_2)
+    >>> client.batch.add_data_object({}, 'MyClass1', object_1)
+    >>> client.batch.add_data_object({}, 'MyClass2', object_2)
+    >>> client.batch.add_reference(object_1, 'MyClass1', 'myProp', object_2, 'MyClass2')
     >>> client.batch.shape
     (2, 1)
     >>> client.batch.create_objects()
@@ -95,8 +95,8 @@ class Batch(BaseBatch):
     >>> client.batch.create_references()
     >>> client.batch.shape
     (0, 0)
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
+    >>> client.batch.add_data_object({}, 'MyClass2', object_3)
+    >>> client.batch.add_reference(object_1, 'MyClass1', 'myProp', object_3, 'MyClass2')
     >>> client.batch.shape
     (1, 1)
     >>> client.batch.flush()
@@ -106,8 +106,8 @@ class Batch(BaseBatch):
     Or with a context manager:
 
     >>> with client.batch as batch:
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
+    ...     batch.add_data_object({}, 'MyClass2', object_4)
+    ...     batch.add_reference(object_1, 'MyClass1', 'myProp', object_4, 'MyClass2')
     >>> # flush was called
     >>> client.batch.shape
     (0, 0)
@@ -117,21 +117,21 @@ class Batch(BaseBatch):
     >>> client.batch(batch_size=3)
     >>> client.batch.shape
     (0, 0)
-    >>> client.batch.add_data_object({}, 'MyClass')
-    >>> client.batch.add_reference(object_1, 'MyClass', 'myProp', object_2)
+    >>> client.batch.add_data_object({}, 'MyClass1')
+    >>> client.batch.add_reference(object_1, 'MyClass1', 'myProp', object_2, 'MyClass2')
     >>> client.batch.shape
     (1, 1)
-    >>> client.batch.add_data_object({}, 'MyClass') # sum of data_objects and references reached
+    >>> client.batch.add_data_object({}, 'MyClass1') # sum of data_objects and references reached
     >>> client.batch.shape
     (0, 0)
 
     Or with a context manager and '__call__' method:
 
     >>> with client.batch(batch_size=3) as batch:
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_1, 'MyClass', 'myProp', object_4)
+    ...     batch.add_data_object({}, 'MyClass1')
+    ...     batch.add_reference(object_1, 'MyClass1', 'myProp', object_3, 'MyClass2')
+    ...     batch.add_data_object({}, 'MyClass1')
+    ...     batch.add_reference(object_1, 'MyClass1', 'myProp', object_4, 'MyClass2')
     >>> # flush was called
     >>> client.batch.shape
     (0, 0)
@@ -140,10 +140,10 @@ class Batch(BaseBatch):
 
     >>> client.batch.batch_size = 3
     >>> with client.batch as batch:
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_3, 'MyClass', 'myProp', object_4)
-    ...     batch.add_data_object({}, 'MyClass')
-    ...     batch.add_reference(object_1, 'MyClass', 'myProp', object_4)
+    ...     batch.add_data_object({}, 'MyClass1')
+    ...     batch.add_reference(object_1, 'MyClass1', 'myProp', object_3, 'MyClass2')
+    ...     batch.add_data_object({}, 'MyClass2')
+    ...     batch.add_reference(object_1, 'MyClass1', 'myProp', object_4, 'MyClass2')
     >>> # flush was called
     >>> client.batch.shape
     (0, 0)
@@ -241,7 +241,7 @@ class Batch(BaseBatch):
             data_object: dict,
             class_name: str,
             uuid: Optional[str]=None,
-            vector: Optional[Sequence]=None
+            vector: Optional[Sequence]=None,
         ) -> None:
         """
         Add one object to this batch.
@@ -281,24 +281,27 @@ class Batch(BaseBatch):
             self._auto_create()
 
     def add_reference(self,
-            from_object_uuid: str,
-            from_object_class_name: str,
+            from_uuid: str,
+            from_class_name: str,
             from_property_name: str,
-            to_object_uuid: str
+            to_uuid: str,
+            to_class_name: str,
         ) -> None:
         """
         Add one reference to this batch.
 
         Parameters
         ----------
-        from_object_uuid : str
+        from_uuid : str
             The UUID or URL of the object that should reference another object.
-        from_object_class_name : str
+        from_class_name : str
             The name of the class that should reference another object.
         from_property_name : str
             The name of the property that contains the reference.
-        to_object_uuid : str
+        to_uuid : str
             The UUID or URL of the object that is actually referenced.
+        to_class_name : str
+            The name of the class that should be referenced.
 
         Raises
         ------
@@ -309,10 +312,11 @@ class Batch(BaseBatch):
         """
 
         super().add_reference(
-            from_object_class_name=from_object_class_name,
-            from_object_uuid=from_object_uuid,
+            from_class_name=from_class_name,
+            from_uuid=from_uuid,
             from_property_name=from_property_name,
-            to_object_uuid=to_object_uuid,
+            to_uuid=to_uuid,
+            to_class_name=to_class_name,
         )
 
         if self._batch_config.type != BatchType.MANUAL:
@@ -361,8 +365,8 @@ class Batch(BaseBatch):
                     if i == self._batch_config.timeout_retries:
                         raise
                     print(
-                        f'[ERROR] Batch ReadTimeout Exception occurred! Retrying in {2 * (i + 1)}s. '
-                        f'[{i+1}/{self._batch_config.timeout_retries}]',
+                        '[ERROR] Batch ReadTimeout Exception occurred! '
+                        f'Retrying in {2 * (i + 1)}s [{i+1}/{self._batch_config.timeout_retries}]',
                     )
                     time.sleep(2 * (i + 1))
                 else:
@@ -482,7 +486,7 @@ class Batch(BaseBatch):
         --------
         Here 'client' is an instance of the 'weaviate.Client'.
 
-        Object that does not exist in Weaviate.
+        Object that does NOT exist in Weaviate.
 
         >>> object_1 = '154cbccd-89f4-4b29-9c1b-001a3339d89d'
 
@@ -492,8 +496,12 @@ class Batch(BaseBatch):
         >>> object_3 = '254cbccd-89f4-4b29-9c1b-001a3339d89a'
         >>> object_4 = '254cbccd-89f4-4b29-9c1b-001a3339d89b'
 
-        >>> client.batch.add_reference(object_1, 'NonExistingClass', 'existsWith', object_2)
-        >>> client.batch.add_reference(object_3, 'ExistingClass', 'existsWith', object_4)
+        >>> client.batch.add_reference(
+        ...     object_1, 'NonExistingClass', 'existsWith', object_2, 'ExistingClass',
+        ... )
+        >>> client.batch.add_reference(
+        ...     object_3, 'ExistingClass', 'existsWith', object_4, 'ExistingClass',
+        ... )
 
         Both references were added to the batch request without error because they meet the
         required criteria (See the documentation of the 'weaviate.Batch.add_reference' method
@@ -510,7 +518,7 @@ class Batch(BaseBatch):
             {
                 "from": "weaviate://localhost/NonExistingClass/
                                                 154cbccd-89f4-4b29-9c1b-001a3339d89a/existsWith",
-                "to": "weaviate://localhost/154cbccd-89f4-4b29-9c1b-001a3339d89b",
+                "to": "weaviate://localhost/ExistingClass/154cbccd-89f4-4b29-9c1b-001a3339d89b",
                 "result": {
                     "status": "SUCCESS"
                 }
@@ -518,7 +526,7 @@ class Batch(BaseBatch):
             {
                 "from": "weaviate://localhost/ExistingClass/
                                                 254cbccd-89f4-4b29-9c1b-001a3339d89a/existsWith",
-                "to": "weaviate://localhost/254cbccd-89f4-4b29-9c1b-001a3339d89b",
+                "to": "weaviate://localhost/ExistingClass/254cbccd-89f4-4b29-9c1b-001a3339d89b",
                 "result": {
                     "status": "SUCCESS"
                 }
@@ -667,7 +675,7 @@ class Batch(BaseBatch):
             output=output,
             dry_run=dry_run,
         )
-        
+
         try:
             response = self._requests.delete(
                 path=path,

@@ -234,7 +234,7 @@ class Batch(BaseBatch):
             data_object: dict,
             class_name: str,
             uuid: Optional[str]=None,
-            vector: Optional[Sequence]=None
+            vector: Optional[Sequence]=None,
         ):
         """
         Add one object to this batch.
@@ -274,24 +274,27 @@ class Batch(BaseBatch):
             await self._auto_create()
 
     async def add_reference(self,
-            from_object_uuid: str,
-            from_object_class_name: str,
+            from_uuid: str,
+            from_class_name: str,
             from_property_name: str,
-            to_object_uuid: str
+            to_uuid: str,
+            to_class_name: str,
         ):
         """
         Add one reference to this batch.
 
         Parameters
         ----------
-        from_object_uuid : str
+        from_uuid : str
             The UUID or URL of the object that should reference another object.
-        from_object_class_name : str
+        from_class_name : str
             The name of the class that should reference another object.
         from_property_name : str
             The name of the property that contains the reference.
-        to_object_uuid : str
+        to_uuid : str
             The UUID or URL of the object that is actually referenced.
+        to_class_name : str
+            The name of the class that should be referenced.
 
         Raises
         ------
@@ -302,10 +305,11 @@ class Batch(BaseBatch):
         """
 
         super().add_reference(
-            from_object_class_name=from_object_class_name,
-            from_object_uuid=from_object_uuid,
+            from_class_name=from_class_name,
+            from_uuid=from_uuid,
             from_property_name=from_property_name,
-            to_object_uuid=to_object_uuid,
+            to_uuid=to_uuid,
+            to_class_name=to_class_name,
         )
 
         if self._batch_config.type != BatchType.MANUAL:
@@ -482,7 +486,7 @@ class Batch(BaseBatch):
         --------
         Here 'async_client' is an instance of the 'weaviate.AsyncClient'.
 
-        Object that does not exist in Weaviate.
+        Object that does NOT exist in Weaviate.
 
         >>> object_1 = '154cbccd-89f4-4b29-9c1b-001a3339d89d'
 
@@ -492,10 +496,12 @@ class Batch(BaseBatch):
         >>> object_3 = '254cbccd-89f4-4b29-9c1b-001a3339d89a'
         >>> object_4 = '254cbccd-89f4-4b29-9c1b-001a3339d89b'
 
-        >>> await async_client\\
-        ...     .batch.add_reference(object_1, 'NonExistingClass', 'existsWith', object_2)
-        >>> await async_client\\
-        ...     .batch.add_reference(object_3, 'ExistingClass', 'existsWith', object_4)
+        >>> await async_client.batch.add_reference(
+        ...     object_1, 'NonExistingClass', 'existsWith', object_2, 'ExistingClass',
+        ... )
+        >>> await async_client.batch.add_reference(
+        ...     object_3, 'ExistingClass', 'existsWith', object_4, 'ExistingClass',
+        ... )
 
         Both references were added to the batch request without error because they meet the
         required criteria (See the documentation of the 'weaviate.Batch.add_reference' method
@@ -512,7 +518,7 @@ class Batch(BaseBatch):
             {
                 "from": "weaviate://localhost/NonExistingClass/
                                                 154cbccd-89f4-4b29-9c1b-001a3339d89a/existsWith",
-                "to": "weaviate://localhost/154cbccd-89f4-4b29-9c1b-001a3339d89b",
+                "to": "weaviate://localhost/ExistingClass/154cbccd-89f4-4b29-9c1b-001a3339d89b",
                 "result": {
                     "status": "SUCCESS"
                 }
@@ -520,7 +526,7 @@ class Batch(BaseBatch):
             {
                 "from": "weaviate://localhost/ExistingClass/
                                                 254cbccd-89f4-4b29-9c1b-001a3339d89a/existsWith",
-                "to": "weaviate://localhost/254cbccd-89f4-4b29-9c1b-001a3339d89b",
+                "to": "weaviate://localhost/ExistingClass/254cbccd-89f4-4b29-9c1b-001a3339d89b",
                 "result": {
                     "status": "SUCCESS"
                 }
@@ -671,7 +677,7 @@ class Batch(BaseBatch):
             output=output,
             dry_run=dry_run,
         )
-        
+
         try:
             response = await self._requests.delete(
                 path=path,

@@ -95,6 +95,7 @@ class BaseDataObject(ABC):
     @abstractmethod
     def get_by_id(self,
             uuid: Union[str, uuid_lib.UUID],
+            class_name: str,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
         ):
@@ -105,6 +106,8 @@ class BaseDataObject(ABC):
         ----------
         uuid : str or uuid.UUID
             The UUID of the object that should be retrieved.
+        class_name : str
+            The class name of the object to be returned.
         additional_properties : list of str, str or None, optional
             Additional property/ies that should be included in the request, by default None.
         with_vector: bool
@@ -114,6 +117,7 @@ class BaseDataObject(ABC):
     @abstractmethod
     def get(self,
             uuid: Union[str, uuid_lib.UUID, None]=None,
+            class_name: Optional[str]=None,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
             limit: Optional[int]=None,
@@ -133,6 +137,9 @@ class BaseDataObject(ABC):
         ----------
         uuid : str, uuid.UUID or None, optional
             The identifier of the object that should be retrieved.
+        class_name : str or None
+            The class name of the object/s to be returned. If 'uuid' is NOT None then 'class_name'
+            MUST be specified.
         additional_properties : list of str, str or None, optional
             Additional properties that should be included in the request, by default None
         with_vector: bool, optional
@@ -144,7 +151,7 @@ class BaseDataObject(ABC):
         """
 
     @abstractmethod
-    def delete(self, uuid: Union[str, uuid_lib.UUID]):
+    def delete(self, uuid: Union[str, uuid_lib.UUID], class_name: str):
         """
         Delete an existing object from Weaviate.
 
@@ -152,10 +159,12 @@ class BaseDataObject(ABC):
         ----------
         uuid : str or uuid.UUID
             The UUID of the object that should be deleted.
+        class_name : str
+            The class name of the object to be deleted.
         """
 
     @abstractmethod
-    def exists(self, uuid: Union[str, uuid_lib.UUID]):
+    def exists(self, uuid: Union[str, uuid_lib.UUID], class_name: str):
         """
         Check if the object exist in Weaviate.
 
@@ -163,6 +172,8 @@ class BaseDataObject(ABC):
         ----------
         uuid : str or uuid.UUID
             The UUID of the object that may or may not exist within Weaviate.
+        class_name : str
+            The class name of the object to be checked if exists.
         """
 
     @abstractmethod
@@ -285,14 +296,13 @@ def pre_update(
 
     weaviate_obj = {
         "id": get_valid_uuid(uuid),
-        "class": capitalize_first_letter(class_name),
         "properties": data_object,
     }
 
     if vector is not None:
         weaviate_obj['vector'] = get_vector(vector)
 
-    path = f"/objects/{uuid}"
+    path = f"/objects/{capitalize_first_letter(class_name)}/{uuid}"
 
     return path, weaviate_obj
 
@@ -337,14 +347,13 @@ def pre_replace(
 
     weaviate_obj = {
         "id": get_valid_uuid(uuid),
-        "class": capitalize_first_letter(class_name),
         "properties": data_object,
     }
 
     if vector is not None:
         weaviate_obj['vector'] = get_vector(vector)
 
-    path = f"/objects/{uuid}"
+    path = f"/objects/{capitalize_first_letter(class_name)}/{uuid}"
 
     return path, weaviate_obj
 
@@ -405,6 +414,7 @@ def pre_validate(
 
 def pre_get(
         uuid: Union[str, uuid_lib.UUID, None],
+        class_name: Optional[str],
         additional_properties: Optional[Union[List[str], str]],
         with_vector: bool,
         limit: Optional[int],
@@ -432,22 +442,34 @@ def pre_get(
         The path to the Weaviate resource and the request parameters.
     """
 
+    if uuid is not None and class_name is None:
+        raise ValueError(
+            "If 'uuid' is not None then 'class_name' MUST be specified."
+        )
+
+    path = "/objects"
+    if class_name is not None:
+        if not isinstance(class_name, str):
+            raise TypeError(
+                f"'class_name' must be of type str or None. Given type: {type(class_name)}."
+            )
+        class_name = capitalize_first_letter(class_name)
+        if uuid is not None:
+            path = f"/objects/{class_name}/{get_valid_uuid(uuid)}"
+
+
     params = _get_params(
+        class_name=class_name,
         additional_properties=additional_properties,
         with_vector=with_vector,
         limit=limit,
         offset=offset,
     )
 
-    if uuid is not None:
-        path = "/objects/" + get_valid_uuid(uuid)
-    else:
-        path = "/objects"
-
     return path, params
 
 
-def pre_delete_exists(uuid: Union[str, uuid_lib.UUID]) -> str:
+def pre_delete_and_exists(uuid: Union[str, uuid_lib.UUID], class_name: str) -> str:
     """
     Pre-process before making a call to Weaviate.
 
@@ -455,19 +477,26 @@ def pre_delete_exists(uuid: Union[str, uuid_lib.UUID]) -> str:
     ----------
     uuid : str or uuid.UUID
         The UUID of the object that should be deleted or check if exists.
+    class_name : str
+        The class name of the object to be manipulated.
 
     Returns
     -------
     str
         The path to the Weaviate resource.
     """
+    if not isinstance(class_name, str):
+        raise TypeError(
+            f"'class_name' must be of type str. Given type: {type(class_name)}."
+        )
 
-    path = f"/objects/{get_valid_uuid(uuid)}"
+    path = f"/objects/{capitalize_first_letter(class_name)}/{get_valid_uuid(uuid)}"
 
     return path
 
 
 def _get_params(
+        class_name: Optional[str],
         additional_properties: Optional[Union[List[str], str]],
         with_vector: bool,
         limit: Optional[int],
@@ -478,6 +507,8 @@ def _get_params(
 
     Parameters
     ----------
+    class_name : str or None
+        The class name for which to get the objects only.
     additional_properties : list of str, str or None
         Additional property/ies to include in object description.
     with_vector: bool
@@ -495,6 +526,9 @@ def _get_params(
     """
 
     params = {}
+
+    if class_name:
+        params['class'] = class_name
 
     if additional_properties:
         if not isinstance(additional_properties, list):

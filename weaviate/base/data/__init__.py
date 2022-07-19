@@ -6,7 +6,7 @@ from .crud_data import (
     BaseDataObject,
     pre_replace,
     pre_create,
-    pre_delete_exists,
+    pre_delete_and_exists,
     pre_get,
     pre_update,
     pre_validate

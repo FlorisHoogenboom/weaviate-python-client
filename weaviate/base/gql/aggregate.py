@@ -1,9 +1,8 @@
 """
 BaseAggregateBuilder abstract class definition.
 """
-import json
 from abc import ABC
-from typing import List, Optional, Union
+from typing import List, Union
 from weaviate.util import capitalize_first_letter
 from .filter import (
     Where,

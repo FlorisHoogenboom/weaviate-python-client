@@ -9,7 +9,7 @@ from weaviate.base.data import (
     BaseDataObject,
     pre_replace,
     pre_create,
-    pre_delete_exists,
+    pre_delete_and_exists,
     pre_get,
     pre_update,
     pre_validate,
@@ -167,7 +167,7 @@ class DataObject(BaseDataObject):
         ...     data_object = {'name': 'Philip Pullman', 'age': 64},
         ...     class_name = 'Author'
         ... )
-        >>> client.data_object.get(author_id)
+        >>> client.data_object.get(author_id, 'Author')
         {
             "additional": {},
             "class": "Author",
@@ -185,7 +185,7 @@ class DataObject(BaseDataObject):
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
-        >>> client.data_object.get(author_id)
+        >>> client.data_object.get(author_id, 'Author')
         {
             "additional": {},
             "class": "Author",
@@ -264,7 +264,7 @@ class DataObject(BaseDataObject):
         ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
-        >>> client.data_object.get(author_id)
+        >>> client.data_object.get(author_id, 'Author')
         {
             "additional": {},
             "class": "Author",
@@ -282,7 +282,7 @@ class DataObject(BaseDataObject):
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
-        >>> client.data_object.get(author_id)
+        >>> client.data_object.get(author_id, 'Author')
         {
             "additional": {},
             "class": "Author",
@@ -332,6 +332,7 @@ class DataObject(BaseDataObject):
 
     def get_by_id(self,
             uuid: Union[str, uuid_lib.UUID],
+            class_name: str,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
         ) -> Optional[dict]:
@@ -340,8 +341,10 @@ class DataObject(BaseDataObject):
 
         Parameters
         ----------
-        uuid : str
-            The identifier of the object that should be retrieved.
+        uuid : str or uuid.UUID
+            The UUID of the object that should be retrieved.
+        class_name : str
+            The class name of the object to be returned.
         additional_properties : list of str, str or None, optional
             Additional property/ies that should be included in the request, by default None.
         with_vector: bool
@@ -349,7 +352,7 @@ class DataObject(BaseDataObject):
 
         Examples
         --------
-        >>> client.data_object.get_by_id("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> client.data_object.get_by_id("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530", 'Author')
         {
             "additional": {},
             "class": "Author",
@@ -378,12 +381,14 @@ class DataObject(BaseDataObject):
 
         return self.get(
             uuid=uuid,
+            class_name=class_name,
             additional_properties=additional_properties,
             with_vector=with_vector,
         )
 
     def get(self,
             uuid: Union[str, uuid_lib.UUID, None]=None,
+            class_name: Optional[str]=None,
             additional_properties: Optional[Union[List[str], str]]=None,
             with_vector: bool=False,
             limit: Optional[int]=None,
@@ -403,6 +408,9 @@ class DataObject(BaseDataObject):
         ----------
         uuid : str, uuid.UUID or None, optional
             The identifier of the object that should be retrieved.
+        class_name : str or None
+            The class name of the object/s to be returned. If 'uuid' is NOT None then 'class_name'
+            MUST be specified.
         additional_properties : list of str, str or None, optional
             Additional properties that should be included in the request, by default None
         with_vector: bool, optional
@@ -411,7 +419,6 @@ class DataObject(BaseDataObject):
             The maximum number of objects to be returned.
         offset : int or None
             The starting index for object retrieval.
-
 
         Returns
         -------
@@ -429,6 +436,7 @@ class DataObject(BaseDataObject):
 
         path, params = pre_get(
             uuid=uuid,
+            class_name=class_name,
             additional_properties=additional_properties,
             with_vector=with_vector,
             limit=limit,
@@ -455,18 +463,20 @@ class DataObject(BaseDataObject):
             response_message=response.text,
         )
 
-    def delete(self, uuid: Union[str, uuid_lib.UUID]) -> None:
+    def delete(self, uuid: Union[str, uuid_lib.UUID], class_name: str) -> None:
         """
         Delete an existing object from Weaviate.
 
         Parameters
         ----------
         uuid : str or uuid.UUID
-            The ID of the object that should be deleted.
+            The UUID of the object that should be deleted.
+        class_name : str
+            The class name of the object to be deleted.
 
         Examples
         --------
-        >>> client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530", 'Author')
         {
             "additional": {},
             "class": "Author",
@@ -479,8 +489,8 @@ class DataObject(BaseDataObject):
             },
             "vectorWeights": null
         }
-        >>> client.data_object.delete("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
-        >>> client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530")
+        >>> client.data_object.delete("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530", 'Author')
+        >>> client.data_object.get("d842a0f4-ad8c-40eb-80b4-bfefc7b1b530", 'Author')
         None
 
         Raises
@@ -495,8 +505,9 @@ class DataObject(BaseDataObject):
             If Weaviate reports a none OK status.
         """
 
-        path = pre_delete_exists(
+        path = pre_delete_and_exists(
             uuid=uuid,
+            class_name=class_name,
         )
         try:
             response = self._requests.delete(
@@ -514,7 +525,7 @@ class DataObject(BaseDataObject):
             response_message=response.text,
         )
 
-    def exists(self, uuid: Union[str, uuid_lib.UUID]) -> bool:
+    def exists(self, uuid: Union[str, uuid_lib.UUID], class_name: str) -> bool:
         """
         Check if the object exist in Weaviate.
 
@@ -522,17 +533,19 @@ class DataObject(BaseDataObject):
         ----------
         uuid : str or uuid.UUID
             The UUID of the object that may or may not exist within Weaviate.
+        class_name : str
+            The class name of the object to be checked if exists.
 
         Examples
         --------
-        >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
+        >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab', 'Author')
         False
         >>> client.data_object.create(
         ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
-        >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab')
+        >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab', 'Author')
         True
 
         Returns
@@ -552,8 +565,9 @@ class DataObject(BaseDataObject):
             If Weaviate reports a none OK status.
         """
 
-        path = pre_delete_exists(
+        path = pre_delete_and_exists(
             uuid=uuid,
+            class_name=class_name,
         )
         try:
             response = self._requests.head(
