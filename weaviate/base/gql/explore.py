@@ -27,8 +27,9 @@ class BaseExploreBuilder(ABC):
         Parameters
         ----------
         properties : list of str or str
-            Property/ies of the Explore filter to be returned. Currently there are 3 choices:
-                'beacon', 'certainty', 'className'.
+            Property/ies of the Explore filter to be returned. Currently there are 4 choices:
+                'beacon', 'distance', 'className' and 'certainty' (ONLY with 'cosine' distance
+                used in schema).
 
         Raises
         ------
@@ -71,7 +72,9 @@ class BaseExploreBuilder(ABC):
 
         >>> content = {
         ...     'concepts': <list of str or str>,
-        ...     'certainty': <float>,                  # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ...     'moveAwayFrom': {                      # Optional
         ...         'concepts': <list of str or str>,
         ...         'force': <float>
@@ -87,7 +90,7 @@ class BaseExploreBuilder(ABC):
 
         >>> content = {
         ...     'concepts': ["fashion"],
-        ...     'certainty': 0.7,
+        ...     'distance': 0.7,
         ...     'moveAwayFrom': {
         ...         'concepts': ["finance"],
         ...         'force': 0.45
@@ -103,7 +106,7 @@ class BaseExploreBuilder(ABC):
 
         >>> content = {
         ...     'concepts': ["fashion"],
-        ...     'certainty': 0.7,
+        ...     'distance': 0.7,
         ...     'moveTo': {
         ...         'concepts': ["haute couture"],
         ...         'force': 0.85
@@ -150,7 +153,9 @@ class BaseExploreBuilder(ABC):
 
         >>> content = {
         ...     'vector' : <list of float>,
-        ...     'certainty': <float>          # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ... }
 
         NOTE: Supported types for 'vector' are 'list', 'numpy.ndarray', 'torch.Tensor'
@@ -160,7 +165,7 @@ class BaseExploreBuilder(ABC):
 
         >>> content = {
         ...     'vector' : [.1, .2, .3, .5],
-        ...     'certainty': 0.75
+        ...     'distance': 0.75
         ... }
 
         Minimal content:
@@ -215,12 +220,16 @@ class BaseExploreBuilder(ABC):
 
         >>> {
         ...     'id': "e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf",
-        ...     'certainty': 0.7                                # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ... }
         >>> # alternatively
         >>> {
-        ...     'beacon': "weaviate://localhost/e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf"
-        ...     'certainty': 0.7                                # Optional
+        ...     'beacon': "weaviate://localhost/Book/e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf"
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ... }
 
         Returns
@@ -262,15 +271,17 @@ class BaseExploreBuilder(ABC):
         Content prototype:
 
         >>> {
-        ...     'image': "e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf",
-        ...     'certainty': 0.7 # Optional
+        ...     'image': <image>,
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ... }
 
         With 'encoded' True:
 
         >>> content = {
         ...     'image': "my_image_path.png",
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
@@ -280,7 +291,7 @@ class BaseExploreBuilder(ABC):
         >>> my_image_file = open("my_image_path.png", "br")
         >>> content = {
         ...     'image': my_image_file,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
@@ -292,7 +303,7 @@ class BaseExploreBuilder(ABC):
         >>> encoded_image = image_encoder_b64("my_image_path.png")
         >>> content = {
         ...     'image': encoded_image,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
@@ -304,7 +315,7 @@ class BaseExploreBuilder(ABC):
         ...     encoded_image = image_encoder_b64(my_image_file)
         >>> content = {
         ...     'image': encoded_image,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
@@ -316,7 +327,7 @@ class BaseExploreBuilder(ABC):
         ...     encoded_image = base64.b64encode(my_image_file.read()).decode("utf-8")
         >>> content = {
         ...     'image': encoded_image,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.explore()\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False

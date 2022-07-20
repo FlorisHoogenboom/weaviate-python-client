@@ -70,8 +70,8 @@ class BaseGetBuilder(ABC):
         # thus '__one_level', only one level of complexity
         self._where: Union[Where, str] = ''
         self._limit: str = ''
-        self._: str = ''
-        self._near_ask: Union[Filter, str] = '' # To store the 'near<Media>'/'ask' clause if it is added
+        self._offset: str = ''
+        self._near_ask: Union[Filter, str] = '' # To store the 'near<Media>'/'ask' clause
         self._contains_filter = False  # true if any filter is added
         self._group: Union[GetGroup, str] = ''
         self._sort: Union[Sort, str] = ''
@@ -203,7 +203,9 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'concepts': <list of str or str>,
-        ...     'certainty': <float>,                  # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ...     'moveAwayFrom': {                      # Optional
         ...         'concepts': <list of str or str>,
         ...         'force': <float>
@@ -219,7 +221,7 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'concepts': ["fashion"],
-        ...     'certainty': 0.7,
+        ...     'distance': 0.7,
         ...     'moveAwayFrom': {
         ...         'concepts': ["finance"],
         ...         'force': 0.45
@@ -235,7 +237,7 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'concepts': ["fashion"],
-        ...     'certainty': 0.7,
+        ...     'distance': 0.7,
         ...     'moveTo': {
         ...         'concepts': ["haute couture"],
         ...         'force': 0.85
@@ -283,7 +285,9 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'vector' : <list of float>,
-        ...     'certainty': <float>          # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ... }
 
         NOTE: Supported types for 'vector' are list, 'numpy.ndarray', 'torch.Tensor'
@@ -293,7 +297,7 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'vector' : [.1, .2, .3, .5],
-        ...     'certainty': 0.75
+        ...     'distance': 0.75
         ... }
 
         Minimal content:
@@ -349,12 +353,16 @@ class BaseGetBuilder(ABC):
 
         >>> {
         ...     'id': "e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf",
-        ...     'certainty': 0.7                                # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': 0.7, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': 0.7, # Optional, either 'certainty' OR 'distance'
         ... }
         >>> # alternatively
         >>> {
-        ...     'beacon': "weaviate://localhost/e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf"
-        ...     'certainty': 0.7                                # Optional
+        ...     'beacon': "weaviate://localhost/Book/e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf"
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': 0.7, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': 0.7, # Optional, either 'certainty' OR 'distance'
         ... }
 
         Returns
@@ -397,15 +405,17 @@ class BaseGetBuilder(ABC):
         Content prototype:
 
         >>> {
-        ...     'image': "e5dc4a4c-ef0f-3aed-89a3-a73435c6bbcf",
-        ...     'certainty': 0.7 # Optional
+        ...     'image': <image>,
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ... }
 
         With 'encoded' True:
 
         >>> content = {
         ...     'image': "my_image_path.png",
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.get('Image', 'description')\\
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
@@ -415,7 +425,7 @@ class BaseGetBuilder(ABC):
         >>> my_image_file = open("my_image_path.png", "br")
         >>> content = {
         ...     'image': my_image_file,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.get('Image', 'description')\\
         ...     .with_near_image(content, encode=True) # <- encode MUST be set to True
@@ -427,7 +437,7 @@ class BaseGetBuilder(ABC):
         >>> encoded_image = image_encoder_b64("my_image_path.png")
         >>> content = {
         ...     'image': encoded_image,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.get('Image', 'description')\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
@@ -439,7 +449,7 @@ class BaseGetBuilder(ABC):
         ...     encoded_image = image_encoder_b64(my_image_file)
         >>> content = {
         ...     'image': encoded_image,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.get('Image', 'description')\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
@@ -451,7 +461,7 @@ class BaseGetBuilder(ABC):
         ...     encoded_image = base64.b64encode(my_image_file.read()).decode("utf-8")
         >>> content = {
         ...     'image': encoded_image,
-        ...     'certainty': 0.7 # Optional
+        ...     'distance': 0.7 # Optional
         ... }
         >>> query = client.query.get('Image', 'description')\\
         ...     .with_near_image(content, encode=False) # <- encode MUST be set to False
@@ -554,7 +564,9 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'question' : <str>,
-        ...     'certainty': <float>, # Optional
+        ...     # certainty ONLY with `cosine` distance specified in the schema
+        ...     'certainty': <float>, # Optional, either 'certainty' OR 'distance'
+        ...     'distance': <float>, # Optional, either 'certainty' OR 'distance'
         ...     'properties': <list of str or str> # Optional
         ...     'autocorrect': <bool>, # Optional
         ... }
@@ -563,7 +575,7 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'question' : "What is the NLP?",
-        ...     'certainty': 0.7,
+        ...     'distance': 0.7,
         ...     'properties': ['body'] # search the answer in these properties only.
         ...     'autocorrect': True
         ... }
@@ -641,7 +653,7 @@ class BaseGetBuilder(ABC):
         ...             author
         ...             _additional {
         ...                 id
-        ...                 certainty
+        ...                 distance
         ...             }
         ...         }
         ...     }
@@ -649,7 +661,7 @@ class BaseGetBuilder(ABC):
         ... '''
         >>> client.query\\
         ...     .get('Article', ['title', 'author'])\\
-        ...     .with_additional(['id', 'certainty']) # argument as 'List[str]'
+        ...     .with_additional(['id', 'distance']) # argument as 'List[str]'
 
         >>> # additional properties as clause with this GraphQL query
         >>> '''
@@ -713,7 +725,7 @@ class BaseGetBuilder(ABC):
         ...                 tokens (
         ...                     properties: ["content"]
         ...                     limit: 10
-        ...                     certainty: 0.8
+        ...                     distance: 0.8
         ...                 ) {
         ...                     certainty
         ...                     endPosition
@@ -742,7 +754,7 @@ class BaseGetBuilder(ABC):
         >>> settings = {
         ...     'properties': ["content"],  # is required
         ...     'limit': 10,                # optional, int
-        ...     'certainty': 0.8            # optional, float
+        ...     'distance': 0.8             # optional, float
         ... }
         >>> client.query\\
         ...     .get('Article', ['title', 'author'])\\
@@ -836,7 +848,7 @@ class BaseGetBuilder(ABC):
 
         >>> content = {
         ...     'path': ['name']       # Path to the property that should be used
-        ...     'order': 'asc'         # Sort order, possible values: asc, desc 
+        ...     'order': 'asc'         # Sort order, possible values: asc, desc
         ... }
         >>> client.query.get('Author', ['name', 'address'])\\
         ...     .with_sort(content)
@@ -846,10 +858,10 @@ class BaseGetBuilder(ABC):
         >>> content = [
         ...     {
         ...         'path': ['name']        # Path to the property that should be used
-        ...         'order': 'asc'          # Sort order, possible values: asc, desc 
+        ...         'order': 'asc'          # Sort order, possible values: asc, desc
         ...     },
         ...         'path': ['address']     # Path to the property that should be used
-        ...         'order': 'desc'         # Sort order, possible values: asc, desc 
+        ...         'order': 'desc'         # Sort order, possible values: asc, desc
         ...     }
         ... ]
 

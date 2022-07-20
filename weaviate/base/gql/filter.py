@@ -64,24 +64,46 @@ class NearText(Filter):
 
         super().__init__(content)
 
-        _check_concept(self, self._content)
+        _check_concept(
+            filter_name=self.__class__.__name__,
+            content=self._content,
+        )
 
         if "certainty" in self._content:
+            if "distance" in self._content:
+                raise ValueError(
+                    "Cannot have both 'certainty' and 'distance' at the same time. "
+                    "Only one is accepted."
+                )
             _check_type(
+                filter_name=self.__class__.__name__,
                 var_name='certainty',
                 value=self._content["certainty"],
                 dtype=float
             )
+        if "distance" in self._content:
+            _check_type(
+                filter_name=self.__class__.__name__,
+                var_name='distance',
+                value=self._content["distance"],
+                dtype=float
+            )
 
         if "moveTo" in self._content:
-            _check_direction_clause(self, self._content["moveTo"])
+            _check_direction_clause(
+                filter_name=self.__class__.__name__,
+                direction=self._content["moveTo"],
+            )
 
         if "moveAwayFrom" in self._content:
-            _check_direction_clause(self, self._content["moveAwayFrom"])
+            _check_direction_clause(
+                filter_name=self.__class__.__name__,
+                direction=self._content["moveAwayFrom"],
+            )
 
         if "autocorrect" in self._content:
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='autocorrect',
                 value=self._content["autocorrect"],
                 dtype=bool,
@@ -92,6 +114,9 @@ class NearText(Filter):
 
         if 'certainty' in self._content:
             near_text += f' certainty: {self._content["certainty"]}'
+
+        if 'distance' in self._content:
+            near_text += f' distance: {self._content["distance"]}'
 
         if 'moveTo' in self._content:
             move_to = self._content["moveTo"]
@@ -155,10 +180,22 @@ class NearVector(Filter):
 
         # Check optional fields
         if "certainty" in self._content:
+            if "distance" in self._content:
+                raise ValueError(
+                    "Cannot have both 'certainty' and 'distance' at the same time. "
+                    "Only one is accepted."
+                )
             _check_type(
-                self, self,
+                filter_name=self.__class__.__name__,
                 var_name='certainty',
                 value=self._content["certainty"],
+                dtype=float
+            )
+        if "distance" in self._content:
+            _check_type(
+                filter_name=self.__class__.__name__,
+                var_name='distance',
+                value=self._content["distance"],
                 dtype=float
             )
 
@@ -168,6 +205,8 @@ class NearVector(Filter):
         near_vector = f'nearVector: {{vector: {dumps(self._content["vector"])}'
         if 'certainty' in self._content:
             near_vector += f' certainty: {self._content["certainty"]}'
+        if 'distance' in self._content:
+            near_vector += f' distance: {self._content["distance"]}'
         return near_vector + '} '
 
 
@@ -210,17 +249,29 @@ class NearObject(Filter):
             self.obj_id = 'beacon'
 
         _check_type(
-            self=self,
+            filter_name=self.__class__.__name__,
             var_name=self.obj_id,
             value=self._content[self.obj_id],
             dtype=str
         )
 
         if "certainty" in self._content:
+            if "distance" in self._content:
+                raise ValueError(
+                    "Cannot have both 'certainty' and 'distance' at the same time. "
+                    "Only one is accepted."
+                )
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='certainty',
                 value=self._content["certainty"],
+                dtype=float
+            )
+        if "distance" in self._content:
+            _check_type(
+                filter_name=self.__class__.__name__,
+                var_name='distance',
+                value=self._content["distance"],
                 dtype=float
             )
 
@@ -229,6 +280,8 @@ class NearObject(Filter):
         near_object = f'nearObject: {{{self.obj_id}: "{self._content[self.obj_id]}"'
         if 'certainty' in self._content:
             near_object += f' certainty: {self._content["certainty"]}'
+        if 'distance' in self._content:
+            near_object += f' distance: {self._content["distance"]}'
         return near_object + '} '
 
 
@@ -265,22 +318,34 @@ class Ask(Filter):
             )
 
         _check_type(
-            self=self,
+            filter_name=self.__class__.__name__,
             var_name='question',
             value=self._content["question"],
             dtype=str
         )
-        if 'certainty' in self._content:
+        if "certainty" in self._content:
+            if "distance" in self._content:
+                raise ValueError(
+                    "Cannot have both 'certainty' and 'distance' at the same time. "
+                    "Only one is accepted."
+                )
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='certainty',
                 value=self._content["certainty"],
+                dtype=float
+            )
+        if "distance" in self._content:
+            _check_type(
+                filter_name=self.__class__.__name__,
+                var_name='distance',
+                value=self._content["distance"],
                 dtype=float
             )
 
         if "autocorrect" in self._content:
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='autocorrect',
                 value=self._content["autocorrect"],
                 dtype=bool
@@ -288,7 +353,7 @@ class Ask(Filter):
 
         if "rerank" in self._content:
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='rerank',
                 value=self._content["rerank"],
                 dtype=bool
@@ -296,7 +361,7 @@ class Ask(Filter):
 
         if 'properties' in self._content:
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='properties',
                 value=self._content["properties"],
                 dtype=(list, str)
@@ -308,6 +373,8 @@ class Ask(Filter):
         ask = f'ask: {{question: {dumps(self._content["question"])}'
         if 'certainty' in self._content:
             ask += f' certainty: {self._content["certainty"]}'
+        if 'distance' in self._content:
+            ask += f' distance: {self._content["distance"]}'
         if 'properties' in self._content:
             ask += f' properties: {dumps(self._content["properties"])}'
         if 'autocorrect' in self._content:
@@ -350,23 +417,37 @@ class NearImage(Filter):
             )
 
         _check_type(
-            self=self,
+            filter_name=self.__class__.__name__,
             var_name='image',
             value=self._content["image"],
             dtype=str
         )
         if "certainty" in self._content:
+            if "distance" in self._content:
+                raise ValueError(
+                    "Cannot have both 'certainty' and 'distance' at the same time. "
+                    "Only one is accepted."
+                )
             _check_type(
-                self=self,
+                filter_name=self.__class__.__name__,
                 var_name='certainty',
                 value=self._content["certainty"],
-                dtype=float,
+                dtype=float
+            )
+        if "distance" in self._content:
+            _check_type(
+                filter_name=self.__class__.__name__,
+                var_name='distance',
+                value=self._content["distance"],
+                dtype=float
             )
 
     def __str__(self):
         near_image = f'nearImage: "{{image: {self._content["image"]}"'
         if 'certainty' in self._content:
             near_image += f' certainty: {self._content["certainty"]}'
+        if 'distance' in self._content:
+            near_image += f' distance: {self._content["distance"]}'
         return near_image + '} '
 
 
@@ -433,11 +514,13 @@ class Sort:
                 )
 
             _check_type(
+                filter_name=self.__class__.__name__,
                 var_name='path',
                 value=clause["path"],
                 dtype=list,
             )
             _check_type(
+                filter_name=self.__class__.__name__,
                 var_name='order',
                 value=clause["order"],
                 dtype=str,
@@ -452,7 +535,7 @@ class Sort:
 
     def __str__(self) -> str:
 
-        sort = f'sort: ['
+        sort = 'sort: ['
         for clause in self._content:
             sort += f"{{ path: {dumps(clause['path'])} order: {clause['order']} }} "
         sort += '] '
@@ -497,14 +580,14 @@ class GetGroup(Filter):
             )
 
         _check_type(
-            self=self,
+            filter_name=self.__class__.__name__,
             var_name='type',
             value=self._content["type"],
             dtype=str,
         )
 
         _check_type(
-            self=self,
+            filter_name=self.__class__.__name__,
             var_name='force',
             value=self._content["force"],
             dtype=float,
@@ -548,12 +631,12 @@ class AggregateGroupBy:
         else:
             self._content = content.copy()
 
-            for property in self._content:
-                if not isinstance(property, str):
+            for prop in self._content:
+                if not isinstance(prop, str):
                     raise TypeError(
                         f"{self.__class__.__name__}: "
                         "If 'content' is of type list all elements must be of type str. "
-                        f"Found type: {type(property)}."
+                        f"Found type: {type(prop)}."
                     )
 
     def __str__(self) -> str:
@@ -621,7 +704,10 @@ class Where(Filter):
 
         self.path = dumps(content["path"])
         self.operator = content["operator"]
-        self.value_type = _find_value_type(content)
+        self.value_type = _find_value_type(
+            filter_name=self.__class__.__name__,
+            content=content,
+        )
         self.value = content[self.value_type]
 
     def _parse_operator(self, content: dict) -> None:
@@ -689,14 +775,14 @@ def _bool_to_str(value: bool) -> str:
     return 'false'
 
 
-def _check_direction_clause(self: Filter, direction: dict) -> dict:
+def _check_direction_clause(filter_name: str, direction: dict) -> dict:
     """
     Validate the direction sub clause.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
+    filter_name : str
+        The filter name from which we call this function. Used to print the class name in error
         messages.
     direction : dict
         A sub clause of the 'nearText' filter.
@@ -712,6 +798,7 @@ def _check_direction_clause(self: Filter, direction: dict) -> dict:
     """
 
     _check_type(
+        filter_name=filter_name,
         var_name='moveXXX',
         value=direction,
         dtype=dict
@@ -719,34 +806,39 @@ def _check_direction_clause(self: Filter, direction: dict) -> dict:
 
     if ('concepts' not in direction) and ('objects' not in direction):
         raise ValueError(
-            f"{self.__class__.__name__}: "
-            "The 'move' clause should contain 'concepts' OR/AND 'objects'."
+            f"{filter_name}: The 'move' clause should contain 'concepts' OR/AND 'objects'."
         )
 
     if 'concepts' in direction:
-        _check_concept(direction)
+        _check_concept(
+            filter_name=filter_name,
+            content=direction,
+        )
     if 'objects' in direction:
-        _check_objects(direction)
+        _check_objects(
+            filter_name=filter_name,
+            content=direction,
+        )
     if not "force" in direction:
         raise ValueError(
-            f"{self.__class__.__name__}: "
-            "'move' clause needs to state a 'force'."
+            f"{filter_name}: 'move' clause needs to state a 'force'."
         )
     _check_type(
+        filter_name=filter_name,
         var_name='force',
         value=direction["force"],
         dtype=float,
     )
 
 
-def _check_concept(self: Filter, content: dict) -> None:
+def _check_concept(filter_name: str, content: dict) -> None:
     """
     Validate the concept sub clause.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
+    filter_name : str
+        The filter name from which we call this function. Used to print the class name in error
         messages.
     content : dict
         A (sub) clause to check for 'concepts'.
@@ -761,11 +853,11 @@ def _check_concept(self: Filter, content: dict) -> None:
 
     if "concepts" not in content:
         raise ValueError(
-            f"{self.__class__.__name__}: "
-            "No concepts in content."
+            f"{filter_name}: No concepts in content."
         )
 
     _check_type(
+        filter_name=filter_name,
         var_name='concepts',
         value=content["concepts"],
         dtype=(list, str),
@@ -774,14 +866,14 @@ def _check_concept(self: Filter, content: dict) -> None:
         content["concepts"] = [content["concepts"]]
 
 
-def _check_objects(self: Filter, content: dict) -> None:
+def _check_objects(filter_name: str, content: dict) -> None:
     """
     Validate the 'objects' sub clause of the 'move' clause.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
+    filter_name : str
+        The filter name from which we call this function. Used to print the class name in error
         messages.
     content : dict
         A (sub) clause to check for 'objects'.
@@ -795,6 +887,7 @@ def _check_objects(self: Filter, content: dict) -> None:
     """
 
     _check_type(
+        filter_name=filter_name,
         var_name='objects',
         value=content["objects"],
         dtype=(list, dict)
@@ -810,19 +903,19 @@ def _check_objects(self: Filter, content: dict) -> None:
     for obj in content["objects"]:
         if len(obj) != 1 or ('id' not in obj and 'beacon' not in obj):
             raise ValueError(
-                f"{self.__class__.__name__}: "
+                f"{filter_name}: "
                 "Each object from the 'move' clause should have ONLY 'id' OR 'beacon'."
             )
 
 
-def _check_type(self: Filter, var_name: str, value: Any, dtype: type) -> None:
+def _check_type(filter_name: str, var_name: str, value: Any, dtype: type) -> None:
     """
-    Check 'certainty
+    Check variable type.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
+    filter_name : str
+        The filter from where this message should be printed. Used to print the class name in error
         messages.
     var_name : str
         The variable name for which to check the type (used for error message).
@@ -839,19 +932,19 @@ def _check_type(self: Filter, var_name: str, value: Any, dtype: type) -> None:
 
     if not isinstance(value, dtype):
         raise TypeError(
-            f"{self.__class__.__name__}: "
+            f"{filter_name}: "
             f"'{var_name}' key-value must be of type {dtype}. Given type: {type(value)}."
         )
 
 
-def _find_value_type(self: Filter, content: dict) -> str:
+def _find_value_type(filter_name: str, content: dict) -> str:
     """
     Find the correct type of the content.
 
     Parameters
     ----------
-    self : Filter
-        The filter object from which we call this function. Used to print the class name in error
+    filter_name : str
+        The filter name from which we call this function. Used to print the class name in error
         messages.
     content : dict
         The content for which to find the appropriate data type.
@@ -883,7 +976,7 @@ def _find_value_type(self: Filter, content: dict) -> str:
         to_return = "valueGeoRange"
     else:
         raise ValueError(
-            f"{self.__class__.__name__}: "
+            f"{filter_name}: "
             "'value<Type>' required key is missing from one clause of the 'content' argument: "
             f"{content}."
         )
