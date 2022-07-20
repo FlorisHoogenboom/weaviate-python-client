@@ -62,6 +62,7 @@ class WCSConnection(Connection):
             proxies=proxies,
             trust_env=trust_env,
             include_aiohttp=False,
+            additional_headers=None,
         )
         self._is_authentication_required = True
 

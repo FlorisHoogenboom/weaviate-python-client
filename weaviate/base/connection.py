@@ -169,7 +169,8 @@ class Connection:
             timeout_config: ClientTimeout,
             proxies: Union[dict, str, None],
             trust_env: bool,
-            include_aiohttp: bool=False,
+            include_aiohttp: bool,
+            additional_headers: Optional[dict],
         ):
         """
         Initialize a Connection class instance.
@@ -194,8 +195,11 @@ class Connection:
             NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
             'trust_env' is ignored.
         include_aiohttp : bool
-            Whether to create proxy compatible with 'aiohttp' library, by default False.
+            Whether to create proxy compatible with 'aiohttp' library.
             (This should be true only for the AsyncClient).
+        additional_headers : dict or None
+            Additional headers to include in the requests, used to set OpenAI key. OpenAI key looks
+            like this: {'X-OpenAI-Api-Key': 'KEY'}
 
         Raises
         ------
@@ -222,6 +226,16 @@ class Connection:
             trust_env=trust_env,
             include_aiohttp=include_aiohttp,
         )
+        if additional_headers is None:
+            self._headers = {"content-type": "application/json"}
+        elif not isinstance(additional_headers, dict):
+            raise TypeError(
+                "'additional_headers' must be of type dict or None. "
+                f"Given type: {type(additional_headers)}."
+            )
+        else:
+            self._headers = additional_headers.copy()
+            self._headers["content-type"] = "application/json"
 
         self.log_in()
 
@@ -392,13 +406,11 @@ class Connection:
             Request header as a dict.
         """
 
-        header = {"content-type": "application/json"}
-
         if self._is_authentication_required:
             self.refresh_authentication()
-            header["Authorization"] = "Bearer " + self._auth_bearer
+            self._headers["Authorization"] = "Bearer " + self._auth_bearer
 
-        return header
+        return self._headers
 
     def get_url(self, path: str) -> str:
         """

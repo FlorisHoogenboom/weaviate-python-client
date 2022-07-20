@@ -46,6 +46,7 @@ class AsyncClient:
             timeout_config: ClientTimeout=ClientTimeout(20),
             proxies: Union[dict, str, None]=None,
             trust_env: bool=False,
+            additional_headers: Optional[dict]=None,
         ):
         """
         Initialize an AsyncClient class instance.
@@ -71,23 +72,23 @@ class AsyncClient:
             or https_proxy). By default False.
             NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
             'trust_env' is ignored.
+        additional_headers : dict or None
+            Additional headers to include in the requests, used to set OpenAI key. OpenAI key looks
+            like this: {'X-OpenAI-Api-Key': 'KEY'}
+
 
         Examples
         --------
         Without Auth.
 
-        >>> client = Client(
+        >>> client = AsyncClient(
         ...     url = 'http://localhost:8080'
-        ... )
-        >>> client = Client(
-        ...     url = 'http://localhost:8080',
-        ...     timeout_config = (5, 15)
         ... )
 
         With Auth.
 
         >>> my_credentials = weaviate.auth.AuthClientPassword(USER_NAME, MY_PASSWORD)
-        >>> client = Client(
+        >>> client = AsyncClient(
         ...     url = 'http://localhost:8080',
         ...     auth_client_secret = my_credentials
         ... )
@@ -103,14 +104,14 @@ class AsyncClient:
                 f"'url' must be of type 'str'. Given type: {type(url)}"
             )
 
-        self.url = url.strip('/')
         self._connection = Connection(
-            url=self.url,
+            url=url.strip('/'),
             auth_client_secret=auth_client_secret,
             timeout_config=timeout_config,
             proxies=proxies,
             trust_env=trust_env,
             include_aiohttp=True,
+            additional_headers=additional_headers,
         )
         self._requests = Requests(self._connection)
         self.classification = Classification(self._requests)
@@ -250,3 +251,7 @@ class AsyncClient:
         """
 
         self._connection.timeout_config = timeout_config
+
+    def __repr__(self) -> str:
+
+        return f'Client(url={self._connection.base_url})'
