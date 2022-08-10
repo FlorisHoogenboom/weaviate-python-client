@@ -10,13 +10,14 @@ class TestAuthentication(unittest.TestCase):
         """
 
         token = "testtoken4711"
-        credentials = weaviate.AuthClientCredentials(token)
+        credentials = weaviate.auth.AuthClientCredentials(token)
         request_body = credentials.get_credentials()
         self.assertTrue("grant_type" in request_body)
         self.assertTrue("client_secret" in request_body)
 
         self.assertEqual(request_body["client_secret"], token)
         self.assertEqual(request_body["grant_type"], "client_credentials")
+        self.assertIsInstance(credentials, weaviate.auth.AuthCredentials)
 
     def test_user_password(self):
         """
@@ -25,9 +26,10 @@ class TestAuthentication(unittest.TestCase):
 
         user = "@greenstalone"
         password = "testtoken4711"
-        credentials = weaviate.AuthClientPassword(user, password)
+        credentials = weaviate.auth.AuthClientPassword(user, password)
         request_body = credentials.get_credentials()
 
         self.assertEqual(request_body["username"], user)
         self.assertEqual(request_body["password"], password)
         self.assertEqual(request_body["grant_type"], "password")
+        self.assertIsInstance(credentials, weaviate.auth.AuthCredentials)

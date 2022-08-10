@@ -38,9 +38,9 @@ class AuthClientCredentials(AuthCredentials):
         self._credentials_body["grant_type"] = "client_credentials"
         self.client_secret_encoded = (
             base64.b64encode(
-                client_secret.encode('ascii')
+                client_secret.encode('utf-8')
             )
-            .decode('ascii')
+            .decode('utf-8')
         )
 
     def get_credentials(self) -> dict:
