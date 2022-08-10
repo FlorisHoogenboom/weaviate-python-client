@@ -202,7 +202,8 @@ class Batch(BaseBatch):
             calling the 'callback' function. Set 'raise_object_error' to False if 'callback' is
             needed to be called and handle the errors in there.
         dynamic : bool, optional
-            Whether to use dynamic batching or not, initial value False
+            Whether to use dynamic batching or not (only if 'batch_size' != None),
+            initial value False
         rolling_frame_size : int
             The size of the rolling frame for the object/reference creation time. It is used for a
             better estimation of the recommended number of objects/references to be created in the
@@ -255,6 +256,11 @@ class Batch(BaseBatch):
             'torch.Tensor' and 'tf.Tensor',
             by default None.
 
+        Returns
+        -------
+        str
+            The UUID of the added object as string.
+
         Raises
         ------
         TypeError
@@ -263,7 +269,7 @@ class Batch(BaseBatch):
             If 'uuid' is not of a proper form.
         """
 
-        super().add_data_object(
+        uuid = super().add_data_object(
             data_object=data_object,
             class_name=class_name,
             uuid=uuid,
@@ -272,6 +278,8 @@ class Batch(BaseBatch):
 
         if self._batch_config.type != BatchType.MANUAL:
             await self._auto_create()
+
+        return uuid
 
     async def add_reference(self,
             from_uuid: str,

@@ -918,7 +918,7 @@ class BaseGetBuilder(ABC):
 
         additional_props = self._additional_to_str()
 
-        if not (additional_props and self._properties):
+        if not (additional_props or self._properties):
             raise AttributeError(
                 "No 'properties' or 'additional properties' specified to be returned. "
                 "At least one should be included."

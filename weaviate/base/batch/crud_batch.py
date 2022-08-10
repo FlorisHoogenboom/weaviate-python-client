@@ -63,7 +63,8 @@ class BaseBatch(ABC):
             calling the 'callback' function. Set 'raise_object_error' to False if 'callback' is
             needed to be called and handle the errors in there.
         dynamic : bool, optional
-            Whether to use dynamic batching or not, initial value False
+            Whether to use dynamic batching or not (only if 'batch_size' != None),
+            initial value False
         rolling_frame_size : int
             The size of the rolling frame for the object/reference creation time. It is used for a
             better estimation of the recommended number of objects/references to be created in the
@@ -119,7 +120,8 @@ class BaseBatch(ABC):
             calling the 'callback' function. Set 'raise_object_error' to False if 'callback' is
             needed to be called and handle the errors in there.
         dynamic : bool, optional
-            Whether to use dynamic batching or not, initial value False
+            Whether to use dynamic batching or not (only if 'batch_size' != None),
+            initial value False
         rolling_frame_size : int
             The size of the rolling frame for the object/reference creation time. It is used for a
             better estimation of the recommended number of objects/references to be created in the
@@ -184,7 +186,7 @@ class BaseBatch(ABC):
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence]=None,
-        ):
+        ) -> str:
         """
         Add one object to this batch.
         NOTE: If the UUID of one of the objects already exists then the existing object will be
@@ -196,13 +198,18 @@ class BaseBatch(ABC):
             Object to be added as a dict datatype.
         class_name : str
             The name of the class this object belongs to.
-        uuid : str, optional
+        uuid : Optional[str], optional
             UUID of the object as a string, by default None
-        vector: Sequence, optional
+        vector: Optional[Sequence], optional
             The embedding of the object that should be created. Used only class objects that do not
             have a vectorization module. Supported types are 'list', 'numpy.ndarray',
             'torch.Tensor' and 'tf.Tensor',
             by default None.
+
+        Returns
+        -------
+        str
+            The UUID of the added object as string.
 
         Raises
         ------
@@ -212,7 +219,7 @@ class BaseBatch(ABC):
             If 'uuid' is not of a proper form.
         """
 
-        self._objects_batch.add(
+        return self._objects_batch.add(
             class_name=capitalize_first_letter(class_name),
             data_object=data_object,
             uuid=uuid,

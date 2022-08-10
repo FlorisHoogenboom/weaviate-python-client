@@ -5,8 +5,9 @@ functionality that is shared between batch requests must be defined in the Batch
 either as an abstract method or be implemented directly.
 """
 import copy
+from uuid import uuid4
 from abc import ABC, abstractmethod
-from typing import List, Sequence
+from typing import List, Sequence, Optional
 from weaviate.util import get_valid_uuid, get_vector
 
 
@@ -165,9 +166,9 @@ class ObjectBatchRequest(BatchRequest):
     def add(self,
             data_object: dict,
             class_name: str,
-            uuid: str=None,
-            vector: Sequence=None,
-        ) -> None:
+            uuid: Optional[str]=None,
+            vector: Optional[Sequence]=None,
+        ) -> str:
         """
         Add one object to this batch. Does NOT validate the consistency of the object against
         the client's schema. Checks the arguments' type and UUIDs' format.
@@ -178,13 +179,18 @@ class ObjectBatchRequest(BatchRequest):
             The name of the class this object belongs to.
         data_object : dict
             Object to be added as a dict datatype.
-        uuid : str, optional
+        uuid : Optional[str], optional
             UUID of the object as a string, by default None
-        vector: Sequence, optional
+        vector: Optional[Sequence], optional
             The embedding of the object that should be created. Used only class objects that do not
             have a vectorization module. Supported types are `list`, `numpy.ndarray`,
             `torch.Tensor` and `tf.Tensor`,
             by default None.
+        
+        Returns
+        -------
+        str
+            The UUID of the added object as string.
 
         Raises
         ------
@@ -209,11 +215,15 @@ class ObjectBatchRequest(BatchRequest):
         }
         if uuid is not None:
             batch_item["id"] = get_valid_uuid(uuid)
+        else:
+            batch_item["id"] = uuid4().hex
 
         if vector is not None:
             batch_item["vector"] = get_vector(vector)
 
         self._items.append(batch_item)
+
+        return batch_item["id"]
 
     def get_request_body(self) -> dict:
         """
