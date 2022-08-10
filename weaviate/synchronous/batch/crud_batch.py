@@ -7,7 +7,6 @@ import ujson
 from requests import ReadTimeout, Response
 from weaviate.exceptions import (
     RequestsConnectionError,
-    BatchUnsuccessfulStatusCodeError,
     BatchObjectCreationError,
     UnsuccessfulStatusCodeError,
 )
@@ -396,11 +395,10 @@ class Batch(BaseBatch):
             ) from conn_err
         if response.status_code == 200:
             return response
-        raise BatchUnsuccessfulStatusCodeError(
+        raise UnsuccessfulStatusCodeError(
             f"Create {data_type} in batch",
             status_code=response.status_code,
-            response_messages=ujson.loads(response.content),
-            batch_items=batch_request.get_request_body(),
+            response_messages=response.text,
         )
 
     def create_objects(self) -> list:

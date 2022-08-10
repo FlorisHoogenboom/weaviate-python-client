@@ -6,7 +6,6 @@ from typing import Optional, Sequence
 from aiohttp import ServerTimeoutError, ClientResponse
 from weaviate.exceptions import (
     AiohttpConnectionError,
-    BatchUnsuccessfulStatusCodeError,
     BatchObjectCreationError,
     UnsuccessfulStatusCodeError,
 )
@@ -387,11 +386,10 @@ class Batch(BaseBatch):
             ) from conn_err
         if response.status == 200:
             return response
-        raise BatchUnsuccessfulStatusCodeError(
+        raise UnsuccessfulStatusCodeError(
             f"Create {data_type} in batch",
             status_code=response.status,
-            response_messages=await response.json(),
-            batch_items=batch_request.get_request_body(),
+            response_messages=await response.text(),
         )
 
     async def create_objects(self):
