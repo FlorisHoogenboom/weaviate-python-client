@@ -164,11 +164,12 @@ class WCS:
         self._email = auth_client_secret.get_credentials()['username']
 
     def create(self,
-            cluster_name: str=None,
+            cluster_name: Optional[str]=None,
             cluster_type: str='sandbox',
+            weaviate_version: Optional[str]=None,
             with_auth: bool=False,
-            modules: Optional[Union[str, dict, list]]=None,
-            config: dict=None,
+            modules: Union[str, dict, list, None]=None,
+            config: Optional[dict]=None,
             wait_for_completion: bool=True
         ) -> str:
         """
@@ -182,6 +183,9 @@ class WCS:
             NOTE: Case insensitive. The created cluster's name is always lowercased.
         cluster_type : str, optional
             the cluster type/tier, by default 'sandbox'.
+        weaviate_version : str or None, optional
+            The Weaviate server version. If None, the default WCS is going to be used (not
+            guaranteed to be the latest), by default None
         with_auth : bool, optional
             Enable the authentication to the cluster about to be created, by default False.
         modules: str or dict or list, optional
@@ -292,7 +296,7 @@ class WCS:
                     'requiresAuthentication': with_auth
                 }
             }
-            config['configuration']['modules'] = _get_modules_config(modules)
+            config['configuration']['modules'] = get_modules_config(modules)
         else:
             if not isinstance(config, dict):
                 raise TypeError(
@@ -607,7 +611,7 @@ class WCS:
         )
 
 
-def _get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[str, str]]:
+def get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[str, str]]:
     """
     Get a WCS modules configuration format.
 
