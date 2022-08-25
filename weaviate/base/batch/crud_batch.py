@@ -182,7 +182,7 @@ class BaseBatch(ABC):
 
     @abstractmethod
     def add_data_object(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence]=None,
@@ -194,8 +194,8 @@ class BaseBatch(ABC):
 
         Parameters
         ----------
-        data_object : dict
-            Object to be added as a dict datatype.
+        properties : dict
+            Object properties to be added, as a dict datatype.
         class_name : str
             The name of the class this object belongs to.
         uuid : Optional[str], optional
@@ -220,8 +220,8 @@ class BaseBatch(ABC):
         """
 
         return self._objects_batch.add(
+            properties=properties,
             class_name=capitalize_first_letter(class_name),
-            data_object=data_object,
             uuid=uuid,
             vector=vector,
         )

@@ -231,7 +231,7 @@ class Batch(BaseBatch):
         return self
 
     async def add_data_object(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence]=None,
@@ -243,8 +243,8 @@ class Batch(BaseBatch):
 
         Parameters
         ----------
-        data_object : dict
-            Object to be added as a dict datatype.
+        properties : dict
+            Object properties to be added as a dict datatype.
         class_name : str
             The name of the class this object belongs to.
         uuid : str, optional
@@ -269,7 +269,7 @@ class Batch(BaseBatch):
         """
 
         uuid = super().add_data_object(
-            data_object=data_object,
+            properties=properties,
             class_name=class_name,
             uuid=uuid,
             vector=vector,

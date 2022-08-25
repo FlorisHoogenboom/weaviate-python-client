@@ -19,7 +19,7 @@ class BaseDataObject(ABC):
 
     @abstractmethod
     def create(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None,
@@ -29,8 +29,8 @@ class BaseDataObject(ABC):
 
         Parameters
         ----------
-        data_object : dict
-            The new object to add to Weaviate. It represents the class instance properties only.
+        properties : dict
+            The new object properties to add to Weaviate.
         class_name : str
             The class name associated with the object given.
         uuid : str, uuid.UUID or None, optional
@@ -44,7 +44,7 @@ class BaseDataObject(ABC):
 
     @abstractmethod
     def update(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID],
             vector: Optional[Sequence[Real]]=None,
@@ -55,9 +55,9 @@ class BaseDataObject(ABC):
 
         Parameters
         ----------
-        data_object : dict
+        properties : dict
             The object's property/ies that should be updated. Fields not specified by in the
-            'data_object' remain unchanged. Fields that are None will not be changed.
+            'properties' remain unchanged. Fields that are None will not be changed.
         class_name : str
             The class name of the object that should be updated.
         uuid : str or uuid.UUID
@@ -70,7 +70,7 @@ class BaseDataObject(ABC):
 
     @abstractmethod
     def replace(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID],
             vector: Optional[Sequence[Real]]=None,
@@ -80,8 +80,8 @@ class BaseDataObject(ABC):
 
         Parameters
         ----------
-        data_object : dict
-            The new object to be replaced with.
+        properties : dict
+            The new object's properties to be replaced with.
         class_name : str
             The class name of the object that should be replaced.
         uuid : str or uuid.UUID
@@ -178,7 +178,7 @@ class BaseDataObject(ABC):
 
     @abstractmethod
     def validate(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None
@@ -188,8 +188,8 @@ class BaseDataObject(ABC):
 
         Parameters
         ----------
-        data_object : dict
-            Object to be validated.
+        properties : dict
+            The object's properties to be validated.
         class_name : str
             Name of the class of the object that should be validated.
         uuid : str, uuid.UUID or None, optional
@@ -202,7 +202,7 @@ class BaseDataObject(ABC):
 
 
 def pre_create(
-        data_object: dict,
+        properties: dict,
         class_name: str,
         uuid: Union[str, uuid_lib.UUID, None],
         vector: Optional[Sequence[Real]],
@@ -212,8 +212,8 @@ def pre_create(
 
     Parameters
     ----------
-    data_object : dict
-        The new object to add to Weaviate. It represents the class instance properties only.
+    properties : dict
+        The new object' properties to add to Weaviate.
     class_name : str
         The class name associated with the object given.
     uuid : str, uuid.UUID or None
@@ -235,14 +235,14 @@ def pre_create(
             f"'class_name' must be of type str. Given type: {type(class_name)}."
         )
 
-    if not isinstance(data_object, dict):
+    if not isinstance(properties, dict):
         raise TypeError(
-            f"'data_object' must be of type dict. Given type: {type(data_object)}."
+            f"'properties' must be of type dict. Given type: {type(properties)}."
         )
 
     weaviate_obj = {
         "class": capitalize_first_letter(class_name),
-        "properties": data_object,
+        "properties": properties,
     }
     if uuid is not None:
         weaviate_obj["id"] = get_valid_uuid(uuid)
@@ -256,7 +256,7 @@ def pre_create(
 
 
 def pre_update(
-        data_object: dict,
+        properties: dict,
         class_name: str,
         uuid: Union[str, uuid_lib.UUID],
         vector: Optional[Sequence[Real]],
@@ -266,9 +266,9 @@ def pre_update(
 
     Parameters
     ----------
-    data_object : dict
+    properties : dict
         The object's property/ies that should be updated. Fields not specified by in the
-        'data_object' remain unchanged. Fields that are None will not be changed.
+        'properties' remain unchanged. Fields that are None will not be changed.
     class_name : str
         The class name of the object that should be updated.
     uuid : str or uuid.UUID
@@ -289,14 +289,14 @@ def pre_update(
             f"'class_name' must be of type str. Given type: {type(class_name)}"
         )
 
-    if not isinstance(data_object, dict):
+    if not isinstance(properties, dict):
         raise TypeError(
-            f"'data_object' must be of type dict. Given type: {type(data_object)}."
+            f"'properties' must be of type dict. Given type: {type(properties)}."
         )
 
     weaviate_obj = {
         "id": get_valid_uuid(uuid),
-        "properties": data_object,
+        "properties": properties,
     }
 
     if vector is not None:
@@ -308,7 +308,7 @@ def pre_update(
 
 
 def pre_replace(
-        data_object: dict,
+        properties: dict,
         class_name: str,
         uuid: Union[str, uuid_lib.UUID],
         vector: Optional[Sequence[Real]],
@@ -318,8 +318,8 @@ def pre_replace(
 
     Parameters
     ----------
-    data_object : dict
-        The new object to be replaced with.
+    properties : dict
+        The new object's properties to be replaced with.
     class_name : str
         The class name of the object that should be replaced.
     uuid : str or uuid.UUID
@@ -340,14 +340,14 @@ def pre_replace(
             f"'class_name' must be of type str. Given type: {type(class_name)}"
         )
 
-    if not isinstance(data_object, dict):
+    if not isinstance(properties, dict):
         raise TypeError(
-            f"'data_object' must be of type dict. Given type: {type(data_object)}."
+            f"'properties' must be of type dict. Given type: {type(properties)}."
         )
 
     weaviate_obj = {
         "id": get_valid_uuid(uuid),
-        "properties": data_object,
+        "properties": properties,
     }
 
     if vector is not None:
@@ -359,7 +359,7 @@ def pre_replace(
 
 
 def pre_validate(
-        data_object: dict,
+        properties: dict,
         class_name: str,
         uuid: Union[str, uuid_lib.UUID, None],
         vector: Optional[Sequence[Real]],
@@ -369,8 +369,8 @@ def pre_validate(
 
     Parameters
     ----------
-    data_object : dict
-        Object to be validated.
+    properties : dict
+        Object properties to be validated.
     class_name : str
         Name of the class of the object that should be validated.
     uuid : str, uuid.UUID or None
@@ -391,14 +391,14 @@ def pre_validate(
             f"'class_name' must be of type str. Given type: {type(class_name)}."
         )
 
-    if not isinstance(data_object, dict):
+    if not isinstance(properties, dict):
         raise TypeError(
-            f"'data_object' must be of type dict. Given type: {type(data_object)}."
+            f"'properties' must be of type dict. Given type: {type(properties)}."
         )
 
     weaviate_obj = {
         "class": capitalize_first_letter(class_name),
-        "properties": data_object,
+        "properties": properties,
     }
 
     if uuid is not None:

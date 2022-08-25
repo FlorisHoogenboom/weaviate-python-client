@@ -47,7 +47,7 @@ class DataObject(BaseDataObject):
         self.reference = Reference(self._requests)
 
     def create(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None,
@@ -58,7 +58,7 @@ class DataObject(BaseDataObject):
         Parameters
         ----------
         data_object : dict
-            The new object to add to Weaviate. It represents the class instance properties only.
+            The new object's properties to add to Weaviate.
         class_name : str
             The class name associated with the object given.
         uuid : str, uuid.UUID or None, optional
@@ -74,12 +74,12 @@ class DataObject(BaseDataObject):
         Schema contains a class Author with only 'name' and 'age' primitive property.
 
         >>> client.data_object.create(
-        ...     data_object = {'name': 'Neil Gaiman', 'age': 60},
+        ...     properties = {'name': 'Neil Gaiman', 'age': 60},
         ...     class_name = 'Author',
         ... )
         '46091506-e3a0-41a4-9597-10e3064d8e2d'
         >>> client.data_object.create(
-        ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
+        ...     properties = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
@@ -106,7 +106,7 @@ class DataObject(BaseDataObject):
         """
 
         path, weaviate_obj = pre_create(
-            data_object=data_object,
+            properties=properties,
             class_name=class_name,
             uuid=uuid,
             vector=vector,
@@ -138,7 +138,7 @@ class DataObject(BaseDataObject):
         )
 
     def update(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID],
             vector: Optional[Sequence[Real]]=None,
@@ -149,9 +149,9 @@ class DataObject(BaseDataObject):
 
         Parameters
         ----------
-        data_object : dict
+        properties : dict
             The object's property/ies that should be updated. Fields not specified by in the
-            'data_object' remain unchanged. Fields that are None will not be changed.
+            'properties' remain unchanged. Fields that are None will not be changed.
         class_name : str
             The class name of the object that should be updated.
         uuid : str or uuid.UUID
@@ -164,7 +164,7 @@ class DataObject(BaseDataObject):
         Examples
         --------
         >>> author_id = client.data_object.create(
-        ...     data_object = {'name': 'Philip Pullman', 'age': 64},
+        ...     properties = {'name': 'Philip Pullman', 'age': 64},
         ...     class_name = 'Author'
         ... )
         >>> client.data_object.get(author_id, 'Author')
@@ -181,7 +181,7 @@ class DataObject(BaseDataObject):
             "vectorWeights": null
         }
         >>> client.data_object.update(
-        ...     data_object = {'age': 74},
+        ...     properties = {'age': 74},
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
@@ -213,7 +213,7 @@ class DataObject(BaseDataObject):
         """
 
         path, weaviate_obj = pre_update(
-            data_object=data_object,
+            properties=properties,
             class_name=class_name,
             uuid=uuid,
             vector=vector,
@@ -237,7 +237,7 @@ class DataObject(BaseDataObject):
         )
 
     def replace(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID],
             vector: Optional[Sequence[Real]]=None,
@@ -247,8 +247,8 @@ class DataObject(BaseDataObject):
 
         Parameters
         ----------
-        data_object : dict
-            The new object to be replaced with.
+        properties : dict
+            The new object's properties to be replaced with.
         class_name : str
             The class name of the object that should be replaced.
         uuid : str or uuid.UUID
@@ -261,7 +261,7 @@ class DataObject(BaseDataObject):
         Examples
         --------
         >>> author_id = client.data_object.create(
-        ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
+        ...     properties = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
         >>> client.data_object.get(author_id, 'Author')
@@ -278,7 +278,7 @@ class DataObject(BaseDataObject):
             "vectorWeights": null
         }
         >>> client.data_object.replace(
-        ...     data_object = {'name': 'H.P. Lovecraft'},
+        ...     properties = {'name': 'H.P. Lovecraft'},
         ...     class_name = 'Author',
         ...     uuid = author_id
         ... )
@@ -308,7 +308,7 @@ class DataObject(BaseDataObject):
         """
 
         path, weaviate_obj = pre_replace(
-            data_object=data_object,
+            properties=properties,
             class_name=class_name,
             uuid=uuid,
             vector=vector,
@@ -541,7 +541,7 @@ class DataObject(BaseDataObject):
         >>> client.data_object.exists('e067f671-1202-42c6-848b-ff4d1eb804ab', 'Author')
         False
         >>> client.data_object.create(
-        ...     data_object = {'name': 'Andrzej Sapkowski', 'age': 72},
+        ...     properties = {'name': 'Andrzej Sapkowski', 'age': 72},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
@@ -589,7 +589,7 @@ class DataObject(BaseDataObject):
         )
 
     def validate(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Union[str, uuid_lib.UUID, None]=None,
             vector: Optional[Sequence[Real]]=None
@@ -599,8 +599,8 @@ class DataObject(BaseDataObject):
 
         Parameters
         ----------
-        data_object : dict
-            Object to be validated.
+        properties : dict
+            Object properties to be validated.
         class_name : str
             Name of the class of the object that should be validated.
         uuid : str, uuid.UUID or None, optional
@@ -615,12 +615,12 @@ class DataObject(BaseDataObject):
         Assume we have a Author class only 'name' property, NO 'age'.
 
         >>> client.data_object.validate(
-        ...     data_object = {'name': 'H. Lovecraft'},
+        ...     properties = {'name': 'H. Lovecraft'},
         ...     class_name = 'Author'
         ... )
         {'error': None, 'valid': True}
         >>> client.data_object.validate(
-        ...     data_object = {'name': 'H. Lovecraft', 'age': 46},
+        ...     properties = {'name': 'H. Lovecraft', 'age': 46},
         ...     class_name = 'Author'
         ... )
         {
@@ -652,7 +652,7 @@ class DataObject(BaseDataObject):
         """
 
         path, weaviate_obj = pre_validate(
-            data_object=data_object,
+            properties=properties,
             class_name=class_name,
             uuid=uuid,
             vector=vector,

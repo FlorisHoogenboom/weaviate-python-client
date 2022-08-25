@@ -164,7 +164,7 @@ class ObjectBatchRequest(BatchRequest):
     """
 
     def add(self,
-            data_object: dict,
+            properties: dict,
             class_name: str,
             uuid: Optional[str]=None,
             vector: Optional[Sequence]=None,
@@ -177,8 +177,8 @@ class ObjectBatchRequest(BatchRequest):
         ----------
         class_name : str
             The name of the class this object belongs to.
-        data_object : dict
-            Object to be added as a dict datatype.
+        properties : dict
+            Object properties to be added, as a dict datatype.
         uuid : Optional[str], optional
             UUID of the object as a string, by default None
         vector: Optional[Sequence], optional
@@ -204,14 +204,14 @@ class ObjectBatchRequest(BatchRequest):
             raise TypeError(
                 f"'class_name' must be of type str. Given type: {type(class_name)}."
             )
-        if not isinstance(data_object, dict):
+        if not isinstance(properties, dict):
             raise TypeError(
-                f"'data_object' must be of type dict. Given type: {type(data_object)}."
+                f"'properties' must be of type dict. Given type: {type(properties)}."
             )
 
         batch_item = {
             "class": class_name,
-            "properties": copy.deepcopy(data_object)
+            "properties": copy.deepcopy(properties)
         }
         if uuid is not None:
             batch_item["id"] = get_valid_uuid(uuid)

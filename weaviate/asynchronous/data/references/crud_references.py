@@ -59,12 +59,12 @@ class Reference(BaseReference):
 
         >>> # Create the objects first
         >>> author_uuid = await async_client.data_object.create(
-        ...     data_object = {'name': 'Ray Bradbury'},
+        ...     properties = {'name': 'Ray Bradbury'},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab',
         ... )
         >>> book_uuid = await async_client.data_object.create(
-        ...     data_object = {'title': 'The Martian Chronicles'},
+        ...     properties = {'title': 'The Martian Chronicles'},
         ...     class_name = 'Book',
         ...     uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d',
         ... )
@@ -308,12 +308,12 @@ class Reference(BaseReference):
 
         >>> # Create the objects first
         >>> author_uuid = await async_client.data_object.create(
-        ...     data_object = {'name': 'Ray Bradbury'},
+        ...     properties = {'name': 'Ray Bradbury'},
         ...     class_name = 'Author',
         ...     uuid = 'e067f671-1202-42c6-848b-ff4d1eb804ab'
         ... )
         >>> book_uuid = await async_client.data_object.create(
-        ...     data_object = {'title': 'The Martian Chronicles'},
+        ...     properties = {'title': 'The Martian Chronicles'},
         ...     class_name = 'Book',
         ...     uuid = 'a9c1b714-4f8a-4b01-a930-38b046d69d2d'
         ... )
