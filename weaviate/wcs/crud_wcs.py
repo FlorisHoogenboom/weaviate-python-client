@@ -22,8 +22,6 @@ class WCSConnection(Connection):
     """
 
     def __init__(self,
-            url: str,
-            auth_url: str,
             auth_client_secret: AuthClientPassword,
             timeout_config: ClientTimeout,
             proxies: Union[dict, str, None],
@@ -34,10 +32,6 @@ class WCSConnection(Connection):
 
         Parameters
         ----------
-        url : str
-            The URL to the WCS console.
-        auth_url : str
-            The URL to the Authentication service.
         auth_client_secret : weaviate.auth.AuthClientPassword
             User login credentials for the WCS.
         timeout_config : weaviate.ClientTimeout
@@ -54,7 +48,13 @@ class WCSConnection(Connection):
             'trust_env' is ignored.
         """
 
-        self._auth_url = auth_url
+        url = 'https://wcs.api.semi.technology'
+
+        self._auth_url = (
+            'https://auth.wcs.api.semi.technology/auth/realms/SeMI/'
+            '.well-known/openid-configuration'
+        )
+
         super().__init__(
             url=url,
             auth_client_secret=auth_client_secret,
@@ -99,12 +99,6 @@ class WCSConnection(Connection):
 class WCS:
     """
     WCS class used to create/delete WCS cluster instances.
-
-    Attributes
-    ----------
-    dev : bool
-        True if the WCS instance is for the development console, False if it is for the production
-        environment.
     """
 
     def __init__(self,
@@ -112,7 +106,6 @@ class WCS:
             timeout_config: ClientTimeout=ClientTimeout(20),
             proxies: Union[dict, str, None]=None,
             trust_env: bool=False,
-            dev: bool=False,
         ):
         """
         Initialize a WCS class instance.
@@ -134,27 +127,15 @@ class WCS:
             or https_proxy). By default False.
             NOTE: 'proxies' has priority over 'trust_env', i.e. if 'proxies' is NOT None,
             'trust_env' is ignored.
-        dev : bool, optional
-            Whether to use the development environment, i.e. https://dev.console.semi.technology/.
-            If False uses the production environment, i.e. https://console.semi.technology/.
-            By default False.
         """
 
-        self.dev = dev
-
-        if dev:
-            url = 'https://dev.wcs.api.semi.technology'
-        else:
-            url = 'https://wcs.api.semi.technology'
-
-        auth_url = (
-            url.replace('://', '://auth.') +
-            '/auth/realms/SeMI/.well-known/openid-configuration'
-        )
+        if not isinstance(auth_client_secret, AuthClientPassword):
+            raise AuthenticationError(
+                "No login credentials provided, or wrong type of credentials! "
+                "Accepted type of credentials: weaviate.auth.AuthClientPassword"
+            )
 
         connection = WCSConnection(
-            url=url,
-            auth_url=auth_url,
             auth_client_secret=auth_client_secret,
             timeout_config=timeout_config,
             proxies=proxies,
@@ -410,7 +391,7 @@ class WCS:
         if response.status_code == 200:
             return ujson.loads(response.content)['clusterIDs']
         raise UnsuccessfulStatusCodeError(
-            'Checking WCS instance.',
+            'Checking WCS instances.',
             status_code=response.status_code,
             response_message=response.text,
         )
@@ -668,13 +649,13 @@ def get_modules_config(modules: Optional[Union[str, dict, list]]) -> List[Dict[s
             ):
                 raise KeyError(
                     "A module should have a required key: 'name',  and optional keys: 'tag', "
-                    f"'repo' and/or 'inferenceUrl'! Given keys: {module.keys()}."
+                    f"'repo' and/or 'inferenceUrl'! Given keys: {module.keys()}"
                 )
             for key, value in module.items():
                 if not isinstance(value, str):
                     raise TypeError(
                         "The type of each value of the module's dict should be str. "
-                        f"The key '{key}' has type: {type(value)}."
+                        f"The key '{key}' has type: {type(value)}"
                         )
             return module
 

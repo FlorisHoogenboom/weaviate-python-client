@@ -1,7 +1,11 @@
 import unittest
 from unittest.mock import patch, Mock
 from weaviate import AuthClientPassword, AuthClientCredentials, ClientTimeout
-from weaviate.exceptions import UnsuccessfulStatusCodeError, AuthenticationError
+from weaviate.exceptions import (
+    UnsuccessfulStatusCodeError,
+    AuthenticationError,
+    RequestsConnectionError,
+)
 from weaviate.wcs.crud_wcs import WCS, WCSConnection
 from test.util import check_error_message, check_startswith_error_message
 
@@ -21,8 +25,6 @@ class TestWCSConnection(unittest.TestCase):
         )
         with self.assertRaises(AuthenticationError) as error:
             WCSConnection(
-                url='test_url',
-                auth_url='test_auth_url',
                 auth_client_secret=AuthClientCredentials('TEST'),
                 timeout_config=ClientTimeout(20),
                 proxies=None,
@@ -32,9 +34,12 @@ class TestWCSConnection(unittest.TestCase):
         mock_refresh_authentication.assert_not_called()
 
         # valid calls
+        auth_url = (
+            'https://auth.wcs.api.semi.technology/auth/realms/SeMI/'
+            '.well-known/openid-configuration'
+        )
+
         wcs_connection = WCSConnection(
-            url='test_url',
-            auth_url='test_auth_url',
             auth_client_secret=AuthClientPassword('test', 'TEST'),
             timeout_config=ClientTimeout(20),
             proxies=None,
@@ -42,7 +47,7 @@ class TestWCSConnection(unittest.TestCase):
         )
         
         self.assertTrue(wcs_connection._is_authentication_required)
-        self.assertEqual(wcs_connection._auth_url, 'test_auth_url')
+        self.assertEqual(wcs_connection._auth_url, auth_url)
         mock_refresh_authentication.assert_called()
 
     @patch('weaviate.wcs.crud_wcs.WCSConnection.log_in')
@@ -51,10 +56,13 @@ class TestWCSConnection(unittest.TestCase):
         Test the `_get_client_id_and_href` method.
         """
 
+        auth_url = (
+            'https://auth.wcs.api.semi.technology/auth/realms/SeMI/'
+            '.well-known/openid-configuration'
+        )
+
         # valid calls
         wcs_connection = WCSConnection(
-            url='test_url',
-            auth_url='test_auth_url',
             auth_client_secret=AuthClientPassword('test', 'TEST'),
             timeout_config=ClientTimeout(20),
             proxies=None,
@@ -62,11 +70,9 @@ class TestWCSConnection(unittest.TestCase):
         )
         
         result = wcs_connection._get_client_id_and_href()
-        self.assertEqual(result, ('wcs', 'test_auth_url'))
+        self.assertEqual(result, ('wcs', auth_url))
 
         wcs_connection = WCSConnection(
-            url='test_url2',
-            auth_url='something_else',
             auth_client_secret=AuthClientPassword('test1', 'TEST2'),
             timeout_config=ClientTimeout(20),
             proxies=None,
@@ -74,437 +80,593 @@ class TestWCSConnection(unittest.TestCase):
         )
         
         result = wcs_connection._get_client_id_and_href()
-        self.assertEqual(result, ('wcs', 'something_else'))
+        self.assertEqual(result, ('wcs', auth_url))
 
 
-# class TestWCS(unittest.TestCase):
+class TestWCS(unittest.TestCase):
 
-#     @patch('weaviate.wcs.crud_wcs.WCS._set_bearer')
-#     def test___init__(self, mock_set_bearer):
-#         """
-#         Test the `__init__` method.
-#         """
-#         # invalid calls
-#         ## error messages
-#         login_error_message = (
-#                 "No login credentials provided, or wrong type of credentials! "
-#                 "Accepted type of credentials: weaviate.auth.AuthClientPassword"
-#             )
+    @patch('weaviate.wcs.crud_wcs.Requests')
+    @patch('weaviate.wcs.crud_wcs.WCSConnection')
+    def test___init__(self, mock_wcs_connection, mock_requests):
+        """
+        Test the `__init__` method.
+        """
 
-#         with self.assertRaises(AuthenticationFailedException) as error:
-#             WCS(None)
-#         check_error_message(self, error, login_error_message)
-#         mock_set_bearer.assert_not_called()
+        # invalid calls
+        ## error messages
+        login_error_message = (
+                "No login credentials provided, or wrong type of credentials! "
+                "Accepted type of credentials: weaviate.auth.AuthClientPassword"
+            )
 
-#         # valid calls
-#         # without DEV
-#         auth = AuthClientPassword('test_user', 'test_pass')
-#         wcs = WCS(auth)
-#         self.assertTrue(wcs._is_authentication_required)
-#         self.assertEqual(wcs.timeout_config, (2, 20))
-#         self.assertEqual(wcs._auth_expires, 0)
-#         self.assertIsNone(wcs._auth_bearer)
-#         self.assertEqual(wcs._auth_client_secret, auth)
-#         self.assertEqual(wcs.url, 'https://wcs.api.semi.technology')
-#         mock_set_bearer.assert_called_with(
-#             'wcs',
-#             'https://auth.wcs.api.semi.technology/auth/realms/SeMI/.well-known/openid-configuration'
-#         )
+        with self.assertRaises(AuthenticationError) as error:
+            WCS(None)
+        check_error_message(self, error, login_error_message)
+        mock_wcs_connection.assert_not_called()
 
-#         # without DEV
-#         auth = AuthClientPassword('test_user', 'test_pass')
-#         wcs = WCS(auth, dev=True)
-#         self.assertTrue(wcs._is_authentication_required)
-#         self.assertEqual(wcs.timeout_config, (2, 20))
-#         self.assertEqual(wcs._auth_expires, 0)
-#         self.assertIsNone(wcs._auth_bearer)
-#         self.assertEqual(wcs._auth_client_secret, auth)
-#         self.assertEqual(wcs.url, 'https://dev.wcs.api.semi.technology')
-#         mock_set_bearer.assert_called_with(
-#             'wcs',
-#             'https://auth.dev.wcs.api.semi.technology/auth/realms/SeMI/.well-known/openid-configuration'
-#         )
+        # valid calls
+        auth = AuthClientPassword('test_user', 'test_pass')
+        timeout = ClientTimeout(20)
+        wcs = WCS(auth, timeout_config=timeout)
+        mock_wcs_connection.assert_called_with(
+            auth_client_secret=auth,
+            timeout_config=timeout,
+            proxies=None,
+            trust_env=False,
+        )
+        mock_requests.assert_called()
+        self.assertEqual(wcs._email, 'test_user')
 
-#     @patch('weaviate.wcs.crud_wcs.WCS._set_bearer', Mock())
-#     @patch('weaviate.wcs.crud_wcs.WCS.get_cluster_config')
-#     def test_is_ready(self, mock_get_cluster_config,):
-#         """
-#         Test the `is_ready` method.
-#         """
+        auth = AuthClientPassword('test@semi.technology', 'test_pass')
+        timeout = ClientTimeout(120)
+        wcs = WCS(auth, timeout_config=timeout, proxies={'http': 'test'}, trust_env=True)
+        mock_wcs_connection.assert_called_with(
+            auth_client_secret=auth,
+            timeout_config=timeout,
+            proxies={'http': 'test'},
+            trust_env=True,
+        )
+        mock_requests.assert_called()
+        self.assertEqual(wcs._email, 'test@semi.technology')
 
-#         wcs = WCS(AuthClientPassword('test_user', 'test_pass'))
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.WCS.get_cluster_config')
+    def test_is_ready(self, mock_get_cluster_config):
+        """
+        Test the `is_ready` method.
+        """
 
-#         # invalid calls
-#         ## error messages
-#         value_error_msg = "No cluster with name: 'test_name'. Check the name again!"
+        wcs = WCS(AuthClientPassword('test_user', 'test_pass'))
 
-#         mock_get_cluster_config.return_value = {}
-#         with self.assertRaises(ValueError) as error:
-#             wcs.is_ready('TEST_NAME')
-#         check_error_message(self, error, value_error_msg)
-#         mock_get_cluster_config.assert_called_with('test_name')
+        # invalid calls
+        ## error messages
+        value_error_msg = "No cluster with name: 'test_name'. Check the name again."
 
-#         # valid calls
-#         mock_get_cluster_config.return_value = {'status': {'state': {'percentage' : 99}}}
-#         self.assertEqual(wcs.is_ready('test_name'), False)
-#         mock_get_cluster_config.assert_called_with('test_name')
+        mock_get_cluster_config.return_value = {}
+        with self.assertRaises(ValueError) as error:
+            wcs.is_ready('TEST_NAME')
+        check_error_message(self, error, value_error_msg)
+        mock_get_cluster_config.assert_called_with('test_name')
 
-#         mock_get_cluster_config.return_value = {'status': {'state': {'percentage' : 100}}}
-#         self.assertEqual(wcs.is_ready('test_name2'), True)
-#         mock_get_cluster_config.assert_called_with('test_name2')
+        # valid calls
+        mock_get_cluster_config.return_value = {'status': {'state': {'percentage' : 99}}}
+        self.assertEqual(wcs.is_ready('test_name'), False)
+        mock_get_cluster_config.assert_called_with('test_name')
 
-#     @patch('weaviate.wcs.crud_wcs.WCS._set_bearer', Mock())
-#     @patch('weaviate.wcs.crud_wcs.WCS.post')
-#     @patch('weaviate.wcs.crud_wcs.WCS.get_cluster_config')
-#     def test_create(self, mock_get_cluster_config, mock_post):
-#         """
-#         Test the `create` method.
-#         """
+        mock_get_cluster_config.return_value = {'status': {'state': {'percentage' : 100}}}
+        self.assertEqual(wcs.is_ready('test_name2'), True)
+        mock_get_cluster_config.assert_called_with('test_name2')
 
-#         wcs = WCS(AuthClientPassword('test_user', 'test_pass'))
-#         wcs._auth_bearer = 'test_auth'
-#         progress = lambda name, prog = 99: {
-#             'meta': {'PublicURL': f'{name}.semi.network'},
-#             'status': {
-#                 'state': {'percentage': prog}
-#             }
-#         }
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.post')
+    @patch('weaviate.wcs.crud_wcs.WCS.get_cluster_config')
+    def test_create(self, mock_get_cluster_config, mock_post):
+        """
+        Test the `create` method.
+        """
 
-#         mock_get_cluster_config.side_effect = progress
-#         config = {
-#             'id': 'Test_name',
-#             'email': 'test@semi.technology',
-#             'configuration': {
-#                 'tier': 'sandbox', 
-#                 "requiresAuthentication": False
-#             }
-#         }
+        wcs = WCS(AuthClientPassword('test@semi.technology', 'test_pass'))
+        progress = lambda name, prog = 99: {
+            'meta': {'PublicURL': f'{name}.semi.network'},
+            'status': {
+                'state': {'percentage': prog}
+            }
+        }
 
-#         # invalid calls
+        mock_get_cluster_config.side_effect = progress
+        config = {
+            'id': 'Test_name',
+            'email': 'test@semi.technology',
+            'configuration': {
+                'tier': 'sandbox', 
+                "requiresAuthentication": False
+            }
+        }
 
-#         ## error messages
-#         connection_error_message = 'WCS cluster was not created.'
-#         unexpected_error_message = 'Creating WCS instance'
-#         key_error_message = lambda  m: (
-#             "A module should have a required key: 'name',  and optional keys: 'tag', 'repo' and/or 'inferenceUrl'!"
-#             f" Given keys: {m.keys()}"
-#         )
-#         type_error_message = lambda t: (
-#             "Wrong type for the `modules` argument. Accepted types are: NoneType, 'str', 'dict' or "
-#             f"`list` but given: {t}"
-#         )
+        # invalid calls
 
-#         key_type_error_msg = "The type of each value of the module's dict should be 'str'!"
-#         module_type_msg = "Wrong type for one of the modules. Should be either 'str' or 'dict' but given: "
-#         config_type_error_msg = "The `config` argument must be either None or of type 'dict', given:"
+        ## error messages
+        connection_error_message = 'WCS cluster was not created due to connection error.'
+        unexpected_error_message = 'Creating WCS instance.'
+        key_error_message = lambda  m: (
+            "A module should have a required key: 'name',  and optional keys: 'tag', 'repo' and/or 'inferenceUrl'!"
+            f" Given keys: {m.keys()}"
+        )
+        type_error_message = lambda t: (
+            "Wrong type for the 'modules' argument. Accepted types are: NoneType, str, dict or "
+            f"list but given: {t}"
+        )
 
-#         # config error
-#         with self.assertRaises(TypeError) as error:
-#             wcs.create(config=[{'name': 'TEST!'}])
-#         check_startswith_error_message(self, error, config_type_error_msg)
+        key_type_error_msg = "The type of each value of the module's dict should be str."
+        module_type_msg = "Wrong type for one of the modules. Should be either str or dict but given: "
+        config_type_error_msg = "'config' must be either None or of type dict. Given type:"
 
-#         # modules error
-#         ## no `name` key
-#         modules = {}
-#         with self.assertRaises(KeyError) as error:
-#             wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=modules)
-#         check_error_message(self, error, f'"{key_error_message(modules)}"') # KeyError adds extra quotes
+        # config error
+        with self.assertRaises(TypeError) as error:
+            wcs.create(config=[{'name': 'TEST!'}])
+        check_startswith_error_message(self, error, config_type_error_msg)
 
-#         ## extra key
-#         modules = {'name': 'Test Name', 'tag': 'Test Tag', 'invalid': 'Test'}
-#         with self.assertRaises(KeyError) as error:
-#             wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=modules)
-#         check_error_message(self, error, f'"{key_error_message(modules)}"')# KeyError adds extra quotes
+        # modules error
+        ## no `name` key
+        modules = {}
+        with self.assertRaises(KeyError) as error:
+            wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=modules)
+        check_error_message(self, error, f'"{key_error_message(modules)}"') # KeyError adds extra quotes
 
-#         ## module config type
-#         with self.assertRaises(TypeError) as error:
-#             wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=12234)
-#         check_error_message(self, error, type_error_message(int))
+        ## extra key
+        modules = {'name': 'Test Name', 'tag': 'Test Tag', 'invalid': 'Test'}
+        with self.assertRaises(KeyError) as error:
+            wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=modules)
+        check_error_message(self, error, f'"{key_error_message(modules)}"')# KeyError adds extra quotes
 
-#         ## module config type when list
-#         with self.assertRaises(TypeError) as error:
-#             wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=['test1', None])
-#         check_startswith_error_message(self, error, module_type_msg)
+        ## module config type
+        with self.assertRaises(TypeError) as error:
+            wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=12234)
+        check_error_message(self, error, type_error_message(int))
 
-#         ## wrong key value type
-#         with self.assertRaises(TypeError) as error:
-#             wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=[{'name': 123}])
-#         check_startswith_error_message(self, error, key_type_error_msg)
+        ## module config type when list
+        with self.assertRaises(TypeError) as error:
+            wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=['test1', None])
+        check_startswith_error_message(self, error, module_type_msg)
 
-#         # connection error
-#         mock_post.side_effect = WeaviateConnectionError('Test!')
-#         with self.assertRaises(WeaviateConnectionError) as error:
-#             wcs.create(cluster_name='Test_name', cluster_type='test_type')
-#         check_error_message(self, error, connection_error_message)
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object={
-#                 'id': 'test_name',
-#                 'configuration': {
-#                     'tier': 'test_type',
-#                     "requiresAuthentication": False,
-#                     'modules': []
-#                 }
-#             },
-#         )
+        ## wrong key value type
+        with self.assertRaises(TypeError) as error:
+            wcs.create(cluster_name='Test_name', cluster_type='test_type', modules=[{'name': 123}])
+        check_startswith_error_message(self, error, key_type_error_msg)
 
-#         mock_post.side_effect = None
-#         mock_post.return_value = Mock(status_code=404)
+        # connection error
+        mock_post.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.create(cluster_name='Test_name', cluster_type='test_type')
+        check_error_message(self, error, connection_error_message)
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json={
+                'email': 'test@semi.technology',
+                'id': 'test_name',
+                'configuration': {
+                    'tier': 'test_type',
+                    "requiresAuthentication": False,
+                    'modules': []
+                }
+            },
+        )
 
-#         # unexpected error
-#         with self.assertRaises(UnexpectedStatusCodeException) as error:
-#             wcs.create(config=config)
-#         check_startswith_error_message(self, error, unexpected_error_message)
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object=config,
-#         )
+        mock_post.side_effect = None
+        mock_post.return_value = Mock(status_code=404)
+
+        # unexpected error
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.create(config=config)
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json=config,
+        )
 
 
-#         # valid calls
-#         mock_post.return_value = Mock(status_code=400, text='Cluster already exists!')
-#         result = wcs.create(cluster_name='my-url')
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object={'id': 'my-url', 'configuration': {'tier': 'sandbox', "requiresAuthentication": False, 'modules': []}},
-#         )
-#         self.assertEqual(result, 'https://my-url.semi.network')
+        # valid calls
+        mock_post.return_value = Mock(status_code=202, content='{"id": "my-cluster"}')
+        result = wcs.create(
+            cluster_name='my-cluster',
+            modules='test',
+            wait_for_completion=False,
+        )
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json={
+                'id': 'my-cluster',
+                'email': 'test@semi.technology',
+                'configuration': {
+                    'tier': 'sandbox',
+                    "requiresAuthentication": False,
+                    'modules': [{'name': 'test'}]
+                }
+            },
+        )
+        self.assertEqual(result, 'https://my-cluster.semi.network')
 
-#         mock_post.return_value = Mock(status_code=400, text='Cluster already exists!')
-#         result = wcs.create(cluster_name='my-cluster', modules='test')
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object={'id': 'my-cluster', 'configuration': {'tier': 'sandbox', "requiresAuthentication": False, 'modules': [{'name': 'test'}]}},
-#         )
-#         self.assertEqual(result, 'https://my-cluster.semi.network')
+        mock_post.return_value = Mock(status_code=202, content='{"id": "my-url"}')
+        modules = ['test', {'name': 'test2', 'repo': 'test_repo', 'tag': 'TAG', 'inferenceUrl': 'URL'}]
+        result = wcs.create(
+            cluster_name='My-url',
+            weaviate_version='v1.14.1',
+            modules=modules,
+            with_auth=True,
+            wait_for_completion=False,
+        )
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json={
+                'id': 'my-url',
+                'email': 'test@semi.technology',
+                'configuration': {
+                    'tier': 'sandbox',
+                    "requiresAuthentication": True,
+                    'modules': [{'name': modules[0]}, modules[1]],
+                    'release': {'weaviate': '1.14.1'}
+                }
+            },
+        )
+        self.assertEqual(result, 'https://my-url.semi.network')
 
-#         mock_post.return_value = Mock(status_code=400, text='Cluster already exists!')
-#         modules = ['test', {'name': 'test2', 'repo': 'test_repo', 'tag': 'TAG', 'inferenceUrl': 'URL'}]
-#         result = wcs.create(cluster_name='My-url', modules=modules, with_auth=True)
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object={
-#                 'id': 'my-url',
-#                 'configuration': {
-#                     'tier': 'sandbox',
-#                     "requiresAuthentication": True,
-#                     'modules': [{'name': modules[0]}, modules[1]]
-#                 }
-#             },
-#         )
-#         self.assertEqual(result, 'https://my-url.semi.network')
+        mock_post.return_value = Mock(status_code=202, content='{"id": "my-url"}')
+        result = wcs.create(
+            cluster_name='my-url',
+            modules={'name': 'test', 'tag': 'test_tag'},
+            weaviate_version='1.14.1',
+            wait_for_completion=False,   
+        )
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json={
+                'id': 'my-url',
+                'email': 'test@semi.technology',
+                'configuration': {
+                    'tier': 'sandbox',
+                    "requiresAuthentication": False,
+                    'modules': [{'name': 'test', 'tag': 'test_tag'}],
+                    'release': {'weaviate': '1.14.1'}
+                }
+            },
+        )
+        self.assertEqual(result, 'https://my-url.semi.network')
 
-#         mock_post.return_value = Mock(status_code=400, text='Cluster already exists!')
-#         result = wcs.create(cluster_name='my-url', modules={'name': 'test', 'tag': 'test_tag'})
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object={
-#                 'id': 'my-url',
-#                 'configuration': {
-#                     'tier': 'sandbox',
-#                     "requiresAuthentication": False,
-#                     'modules': [{'name': 'test', 'tag': 'test_tag'}]
-#                 }
-#             },
-#         )
-#         self.assertEqual(result, 'https://my-url.semi.network')
+        post_return = Mock(status_code=202, content='{"id": "test_id"}')
+        mock_post.return_value = post_return
+        result = wcs.create(
+            config=config,
+            wait_for_completion=False,
+        )
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json=config,
+        )
+        self.assertEqual(result, 'https://test_id.semi.network')
 
-#         post_return = Mock(status_code=202)
-#         post_return.json.return_value = {'id': 'test_id'}
-#         mock_post.return_value = post_return
-#         result = wcs.create(config=config, wait_for_completion=False)
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object=config,
-#         )
-#         self.assertEqual(result, 'https://test_id.semi.network')
+        mock_get_cluster_config.reset_mock()
+        mock_get_cluster_config.side_effect = lambda x: progress('weaviate', 100) if mock_get_cluster_config.call_count == 2 else progress('weaviate')
+        mock_post.return_value = Mock(status_code=202, content='{"id": "weaviate"}')
+        result = wcs.create(cluster_name='weaviate', wait_for_completion=True)
+        mock_post.assert_called_with(
+            path='/clusters',
+            data_json={
+                'id': 'weaviate',
+                'email': 'test@semi.technology',
+                'configuration': {
+                    'tier': 'sandbox',
+                    "requiresAuthentication": False,
+                    'modules': []
+                }
+            },
+        )
+        self.assertEqual(result, 'https://weaviate.semi.network')
 
-#         mock_get_cluster_config.reset_mock()
-#         mock_get_cluster_config.side_effect = lambda x: progress('weaviate', 100) if mock_get_cluster_config.call_count == 2 else progress('weaviate')
-#         mock_post.return_value = Mock(status_code=202)
-#         mock_post.return_value.json.return_value = {'id': 'weaviate'}
-#         result = wcs.create(cluster_name='weaviate', wait_for_completion=True)
-#         mock_post.assert_called_with(
-#             path='/clusters',
-#             weaviate_object={
-#                 'id': 'weaviate',
-#                 'configuration': {
-#                     'tier': 'sandbox',
-#                     "requiresAuthentication": False,
-#                     'modules': []
-#                 }
-#             },
-#         )
-#         self.assertEqual(result, 'https://weaviate.semi.network')
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.get')
+    def test_get_clusters(self, mock_get):
+        """
+        Test the `get_clusters` method.
+        """
 
-#     @patch('weaviate.wcs.crud_wcs.WCS._set_bearer', Mock())
-#     @patch('weaviate.wcs.crud_wcs.WCS.get')
-#     def test_get_clusters(self, mock_get):
-#         """
-#         Test the `get_clusters` method.
-#         """
+        wcs = WCS(AuthClientPassword('test@semi.technology', 'testPassword'))
 
+        # invalid calls
+        ## error messages
+        connection_error_message = 'WCS clusters were not fetched due to connection error.'
+        unexpected_error_message = 'Checking WCS instances.'
 
-#         wcs = WCS(AuthClientPassword('test@semi.technology', 'testPassoword'))
-#         wcs._auth_bearer = 'test_bearer'
+        # connection error
+        mock_get.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.get_clusters()
+        check_error_message(self, error, connection_error_message)
+        mock_get.assert_called_with(
+            path='/clusters/list',
+            params={
+                'email': 'test@semi.technology'
+            }
+        )
 
-#         # invalid calls
+        # unexpected error
+        mock_get.side_effect = None
+        mock_get.return_value = Mock(status_code=400)
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.get_clusters()
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_get.assert_called_with(
+            path='/clusters/list',
+            params={
+                'email': 'test@semi.technology'
+            }
+        )
 
-#         ## error messages
-#         connection_error_message = 'WCS clusters were not fetched.'
-#         unexpected_error_message = 'Checking WCS instance'
+        # valid calls
+        return_mock = Mock(status_code=200, content='{"clusterIDs": ["test!"]}')
+        mock_get.return_value = return_mock
+        result = wcs.get_clusters()
+        self.assertEqual(result, ['test!'])
+        mock_get.assert_called_with(
+            path='/clusters/list',
+            params={
+                'email': 'test@semi.technology'
+            }
+        )
 
-#         # connection error
-#         mock_get.side_effect = WeaviateConnectionError('Test!')
-#         with self.assertRaises(WeaviateConnectionError) as error:
-#             wcs.get_clusters()
-#         check_error_message(self, error, connection_error_message)
-#         mock_get.assert_called_with(
-#             path='/clusters/list',
-#             params={
-#                 'email': 'test@semi.technology'
-#             }
-#         )
+        return_mock = Mock(status_code=200, content='{"clusterIDs": ["cluster_1", "cluster_2"]}')
+        mock_get.return_value = return_mock
+        result = wcs.get_clusters()
+        self.assertEqual(result, ["cluster_1", "cluster_2"])
+        mock_get.assert_called_with(
+            path='/clusters/list',
+            params={
+                'email': 'test@semi.technology'
+            }
+        )
 
-#         # unexpected error
-#         mock_get.side_effect = None
-#         mock_get.return_value = Mock(status_code=400)
-#         with self.assertRaises(UnexpectedStatusCodeException) as error:
-#             wcs.get_clusters()
-#         check_startswith_error_message(self, error, unexpected_error_message)
-#         mock_get.assert_called_with(
-#             path='/clusters/list',
-#             params={
-#                 'email': 'test@semi.technology'
-#             }
-#         )
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.get')
+    def test_get_cluster_config(self, mock_get):
+        """
+        Test the `get_cluster_config` method.
+        """
 
-#         # valid calls
-#         return_mock = Mock(status_code=200)
-#         return_mock.json.return_value = {'clusterIDs': 'test!'}
-#         mock_get.return_value = return_mock
-#         result = wcs.get_clusters()
-#         self.assertEqual(result, 'test!')
-#         mock_get.assert_called_with(
-#             path='/clusters/list',
-#             params={
-#                 'email': 'test@semi.technology'
-#             }
-#         )
+        wcs = WCS(AuthClientPassword('test_secret_username', 'test_secret_password'))
 
-#     @patch('weaviate.wcs.crud_wcs.WCS._set_bearer', Mock())
-#     @patch('weaviate.wcs.crud_wcs.WCS.get')
-#     def test_get_cluster_config(self, mock_get):
-#         """
-#         Test the `get_cluster_config` method.
-#         """
+        # invalid calls
+        ## error messages
+        connection_error_message = 'WCS cluster info was not fetched due to connection error.'
+        unexpected_error_message = 'Checking WCS instance.'
 
-#         wcs = WCS(AuthClientPassword('test_secret_username', 'test_secret_password'))
-#         wcs._auth_bearer = 'test_bearer'
+        ## connection error
+        mock_get.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.get_cluster_config('test_name')
+        check_error_message(self, error, connection_error_message)
+        mock_get.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         # invalid calls
+        ## unexpected error
+        mock_get.side_effect = None
+        mock_get.return_value = Mock(status_code=400)
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.get_cluster_config('test_name')
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_get.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         ## error messages
-#         connection_error_message = 'WCS cluster info was not fetched.'
-#         unexpected_error_message = 'Checking WCS instance'
+        # valid calls
+        mock_get.return_value = Mock(status_code=200, content='{"config": "test!"}')
+        result = wcs.get_cluster_config('test_name')
+        self.assertEqual(result, {'config': 'test!'})
+        mock_get.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         ## connection error
-#         mock_get.side_effect = WeaviateConnectionError('Test!')
-#         with self.assertRaises(WeaviateConnectionError) as error:
-#             wcs.get_cluster_config('test_name')
-#         check_error_message(self, error, connection_error_message)
-#         mock_get.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        mock_get.return_value = Mock(status_code=200, content='{"config": "test!"}')
+        result = wcs.get_cluster_config('Test_Name')
+        self.assertEqual(result, {'config': 'test!'})
+        mock_get.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         ## unexpected error
-#         mock_get.side_effect = None
-#         mock_get.return_value = Mock(status_code=400)
-#         with self.assertRaises(UnexpectedStatusCodeException) as error:
-#             wcs.get_cluster_config('test_name')
-#         check_startswith_error_message(self, error, unexpected_error_message)
-#         mock_get.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        mock_get.return_value = Mock(status_code=404)
+        result = wcs.get_cluster_config('test_name')
+        self.assertEqual(result, {})
+        mock_get.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         # valid calls
-#         return_mock = Mock(status_code=200)
-#         return_mock.json.return_value = {'clusterIDs': 'test!'}
-#         mock_get.return_value = return_mock
-#         result = wcs.get_cluster_config('test_name')
-#         self.assertEqual(result, {'clusterIDs': 'test!'})
-#         mock_get.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.delete')
+    def test_delete_cluster(self, mock_delete):
+        """
+        Test the `delete_cluster` method.
+        """
 
-#         return_mock = Mock(status_code=200)
-#         return_mock.json.return_value = {'clusterIDs': 'test!'}
-#         mock_get.return_value = return_mock
-#         result = wcs.get_cluster_config('Test_Name')
-#         self.assertEqual(result, {'clusterIDs': 'test!'})
-#         mock_get.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        wcs = WCS(AuthClientPassword('test_secret_username', 'test_password'))
 
-#         return_mock = Mock(status_code=404)
-#         return_mock.json.return_value = {'clusterIDs': 'test!'}
-#         mock_get.return_value = return_mock
-#         result = wcs.get_cluster_config('test_name')
-#         self.assertEqual(result, {})
-#         mock_get.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        # invalid calls
+        ## error messages
+        connection_error_message = 'WCS cluster was not deleted due to connection error.'
+        unexpected_error_message = 'Deleting WCS instance.'
 
-#     @patch('weaviate.wcs.crud_wcs.WCS._set_bearer', Mock())
-#     @patch('weaviate.wcs.crud_wcs.WCS.delete')
-#     def test_delete(self, mock_delete):
-#         """
-#         Test the `delete` method.
-#         """
+        ## connection error
+        mock_delete.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.delete_cluster('test_name')
+        check_error_message(self, error, connection_error_message)
+        mock_delete.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         wcs = WCS(AuthClientPassword('test_secret_username', 'test_password'))
-#         wcs._auth_bearer = 'test_bearer'
+        ## unexpected error
+        mock_delete.side_effect = None
+        mock_delete.return_value = Mock(status_code=400)
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.delete_cluster('test_name')
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_delete.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         # invalid calls
+        # valid calls
+        mock_delete.return_value = Mock(status_code=200)
+        self.assertIsNone(wcs.delete_cluster('test_name'))
+        mock_delete.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         ## error messages
-#         connection_error_message = 'WCS cluster was not deleted.'
-#         unexpected_error_message = 'Deleting WCS instance'
+        mock_delete.return_value = Mock(status_code=404)
+        self.assertIsNone(wcs.delete_cluster('test_name'))
+        mock_delete.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         ## connection error
-#         mock_delete.side_effect = WeaviateConnectionError('Test!')
-#         with self.assertRaises(WeaviateConnectionError) as error:
-#             wcs.delete_cluster('test_name')
-#         check_error_message(self, error, connection_error_message)
-#         mock_delete.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        mock_delete.return_value = Mock(status_code=404)
+        self.assertIsNone(wcs.delete_cluster('TesT_naMe'))
+        mock_delete.assert_called_with(
+            path='/clusters/test_name',
+        )
 
-#         ## unexpected error
-#         mock_delete.side_effect = None
-#         mock_delete.return_value = Mock(status_code=400)
-#         with self.assertRaises(UnexpectedStatusCodeException) as error:
-#             wcs.delete_cluster('test_name')
-#         check_startswith_error_message(self, error, unexpected_error_message)
-#         mock_delete.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.get')
+    def test_get_users_of_cluster(self, mock_get):
+        """
+        Test the `get_users_of_cluster` method.
+        """
 
-#         # valid calls
-#         mock_delete.return_value = Mock(status_code=200)
-#         self.assertIsNone(wcs.delete_cluster('test_name'))
-#         mock_delete.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        wcs = WCS(AuthClientPassword('test_secret_username', 'test_secret_password'))
 
-#         mock_delete.return_value = Mock(status_code=404)
-#         self.assertIsNone(wcs.delete_cluster('test_name'))
-#         mock_delete.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        # invalid calls
+        ## error messages
+        connection_error_message = 'Could not get users of the cluster due to connection error.'
+        unexpected_error_message = "Getting cluster's users."
 
-#         mock_delete.return_value = Mock(status_code=404)
-#         self.assertIsNone(wcs.delete_cluster('TesT_naMe'))
-#         mock_delete.assert_called_with(
-#             path='/clusters/test_name',
-#         )
+        ## connection error
+        mock_get.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.get_users_of_cluster('test_name')
+        check_error_message(self, error, connection_error_message)
+        mock_get.assert_called_with(
+            path='/clusters/test_name/users',
+        )
+
+        ## unexpected error
+        mock_get.side_effect = None
+        mock_get.return_value = Mock(status_code=400)
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.get_users_of_cluster('test_name')
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_get.assert_called_with(
+            path='/clusters/test_name/users',
+        )
+
+        # valid calls
+        mock_get.return_value = Mock(status_code=200, content='{"users": ["user1", "user2"]}')
+        result = wcs.get_users_of_cluster('test_name')
+        self.assertEqual(result, ["user1", "user2"])
+        mock_get.assert_called_with(
+            path='/clusters/test_name/users',
+        )
+
+        mock_get.return_value = Mock(status_code=200, content='{"users": ["user1"]}')
+        result = wcs.get_users_of_cluster('Test_Name')
+        self.assertEqual(result, ["user1"])
+        mock_get.assert_called_with(
+            path='/clusters/test_name/users',
+        )
+
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.post')
+    def test_add_user_to_cluster(self, mock_post):
+        """
+        Test the `add_user_to_cluster` method.
+        """
+
+        wcs = WCS(AuthClientPassword('test_secret_username', 'test_secret_password'))
+
+        # invalid calls
+        ## error messages
+        connection_error_message = 'Could not add user of the cluster due to connection error.'
+        unexpected_error_message = "Adding user to cluster."
+
+        ## connection error
+        mock_post.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.add_user_to_cluster(cluster_name='test_name', user='test_user_1')
+        check_error_message(self, error, connection_error_message)
+        mock_post.assert_called_with(
+            path='/clusters/test_name/users/test_user_1',
+        )
+
+        ## unexpected error
+        mock_post.side_effect = None
+        mock_post.return_value = Mock(status_code=400)
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.add_user_to_cluster(cluster_name='test_name', user='test_user')
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_post.assert_called_with(
+            path='/clusters/test_name/users/test_user',
+        )
+
+        # valid calls
+        mock_post.return_value = Mock(status_code=200)
+        self.assertIsNone(wcs.add_user_to_cluster(cluster_name='test_name', user='test_user'))
+        mock_post.assert_called_with(
+            path='/clusters/test_name/users/test_user',
+        )
+
+        mock_post.return_value = Mock(status_code=200)
+        self.assertIsNone(wcs.add_user_to_cluster(cluster_name='Test_nAme', user='test_user_2'))
+        mock_post.assert_called_with(
+            path='/clusters/test_name/users/test_user_2',
+        )
+
+    @patch('weaviate.wcs.crud_wcs.WCSConnection', Mock())
+    @patch('weaviate.wcs.crud_wcs.Requests.delete')
+    def test_remove_user_from_cluster(self, mock_delete):
+        """
+        Test the `remove_user_from_cluster` method.
+        """
+
+        wcs = WCS(AuthClientPassword('test_secret_username', 'test_password'))
+
+        # invalid calls
+        ## error messages
+        connection_error_message = 'Could not remove user from the cluster due to connection error.'
+        unexpected_error_message = 'Removing user from cluster.'
+
+        ## connection error
+        mock_delete.side_effect = RequestsConnectionError('Test!')
+        with self.assertRaises(RequestsConnectionError) as error:
+            wcs.remove_user_from_cluster(cluster_name='test_name', user='test_user')
+        check_error_message(self, error, connection_error_message)
+        mock_delete.assert_called_with(
+            path='/clusters/test_name/users/test_user',
+        )
+
+        ## unexpected error
+        mock_delete.side_effect = None
+        mock_delete.return_value = Mock(status_code=400)
+        with self.assertRaises(UnsuccessfulStatusCodeError) as error:
+            wcs.remove_user_from_cluster('test_name', user='test_user')
+        check_startswith_error_message(self, error, unexpected_error_message)
+        mock_delete.assert_called_with(
+            path='/clusters/test_name/users/test_user',
+        )
+
+        # valid calls
+        mock_delete.return_value = Mock(status_code=200)
+        self.assertIsNone(wcs.remove_user_from_cluster(cluster_name='test_name', user='test_user'))
+        mock_delete.assert_called_with(
+            path='/clusters/test_name/users/test_user',
+        )
+
+        mock_delete.return_value = Mock(status_code=200)
+        self.assertIsNone(wcs.remove_user_from_cluster('test_name', 'test_user2'))
+        mock_delete.assert_called_with(
+            path='/clusters/test_name/users/test_user2',
+        )
