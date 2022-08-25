@@ -1,7 +1,6 @@
 """
 Helper functions.
 """
-import os
 import base64
 import uuid as uuid_lib
 from typing import Union, Sequence, Any, List

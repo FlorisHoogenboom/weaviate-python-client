@@ -186,7 +186,7 @@ class ObjectBatchRequest(BatchRequest):
             have a vectorization module. Supported types are `list`, `numpy.ndarray`,
             `torch.Tensor` and `tf.Tensor`,
             by default None.
-        
+
         Returns
         -------
         str

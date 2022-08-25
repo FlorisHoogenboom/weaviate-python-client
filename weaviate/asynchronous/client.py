@@ -1,7 +1,7 @@
 """
 Client class definition.
 """
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from weaviate.base.connection import Connection, ClientTimeout
 from weaviate.auth import AuthCredentials
 from weaviate.exceptions import UnsuccessfulStatusCodeError, AiohttpConnectionError
@@ -47,6 +47,7 @@ class AsyncClient:
             proxies: Union[dict, str, None]=None,
             trust_env: bool=False,
             additional_headers: Optional[dict]=None,
+            **aiohttp_client_kwargs: Any,
         ):
         """
         Initialize an AsyncClient class instance.
@@ -75,7 +76,11 @@ class AsyncClient:
         additional_headers : dict or None
             Additional headers to include in the requests, used to set OpenAI key. OpenAI key looks
             like this: {'X-OpenAI-Api-Key': 'KEY'}
-
+        aiohttp_client_kwargs : Any
+            Any additional arguments to be passed to the aiohttp.client.ClientSession().
+            For example: 'connector = aiohttp.TCPConnector(limit=30)'.
+            NOTE: Do NOT set 'base_url', 'headers', 'json_serialize', 'trust_env' and any timeouts
+            to avoid unexpected behavior.
 
         Examples
         --------
@@ -113,7 +118,7 @@ class AsyncClient:
             include_aiohttp=True,
             additional_headers=additional_headers,
         )
-        self._requests = Requests(self._connection)
+        self._requests = Requests(self._connection, **aiohttp_client_kwargs)
         self.classification = Classification(self._requests)
         self.schema = Schema(self._requests)
         self.batch = Batch(self._requests)

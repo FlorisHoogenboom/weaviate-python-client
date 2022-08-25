@@ -297,6 +297,8 @@ class WCS:
                 }
             }
             config['configuration']['modules'] = get_modules_config(modules)
+            if weaviate_version:
+                config['configuration']['release'] = {'weaviate': weaviate_version.strip('v')}
         else:
             if not isinstance(config, dict):
                 raise TypeError(

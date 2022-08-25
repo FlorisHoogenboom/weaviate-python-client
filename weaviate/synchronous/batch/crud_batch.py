@@ -398,7 +398,7 @@ class Batch(BaseBatch):
         raise UnsuccessfulStatusCodeError(
             f"Create {data_type} in batch",
             status_code=response.status_code,
-            response_messages=response.text,
+            response_message=response.text,
         )
 
     def create_objects(self) -> list:

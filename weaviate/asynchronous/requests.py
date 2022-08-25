@@ -1,7 +1,8 @@
 """
 Requests class definition.
 """
-from typing import Optional
+from typing import Optional, Any
+import ujson
 from aiohttp.client import ClientSession, ClientResponse, ClientTimeout
 from weaviate.base.connection import Connection
 
@@ -14,6 +15,7 @@ class Requests:
 
     def __init__(self,
             connection: Connection,
+            **kwargs: Any,
         ):
         """
         Initialize a Requests class instance.
@@ -24,7 +26,10 @@ class Requests:
         """
 
         self._connection = connection
-        self._session = ClientSession()
+        self._session = ClientSession(
+            json_serialize=ujson.dumps,
+            **kwargs,
+        )
 
     async def close(self):
         """
