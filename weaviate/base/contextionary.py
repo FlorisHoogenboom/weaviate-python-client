@@ -42,7 +42,7 @@ class BaseContextionary(ABC):
         """
 
 
-def pre_extend(concept: str, definition: str, weight: Real) -> Dict[str, Any]:
+def pre_extend(concept: str, definition: str, weight: Real=1.0) -> Dict[str, Any]:
     """
     Validate all arguments for correct type and value, and construct the payload for weaviate
     request.
@@ -56,7 +56,7 @@ def pre_extend(concept: str, definition: str, weight: Real) -> Dict[str, Any]:
         The definition of the new concept.
     weight : Real
         The weight of the new definition compared to the old one,
-        must be in-between the interval [0.0; 1.0]
+        must be in-between the interval [0.0; 1.0], by default 1.0
 
     Returns
     -------
