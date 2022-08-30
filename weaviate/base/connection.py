@@ -16,7 +16,7 @@ from weaviate.exceptions import (
     RequestsConnectionError,
     UnsuccessfulStatusCodeError,
 )
-from weaviate.auth import AuthCredentials
+from weaviate.auth import AuthCredentials, AuthClientCredentials, AuthClientPassword
 
 
 class Proxies:
@@ -47,7 +47,9 @@ class Proxies:
         self._proxies_requests = _get_proxies_requests(proxies=proxies, trust_env=trust_env)
         self._include_aiohttp = include_aiohttp
         if include_aiohttp:
-            self._proxy_aiohttp = _get_proxy_aiohttp(proxy=proxies)
+            self._proxies_aiohttp = _get_proxy_aiohttp(proxy=proxies)
+        else:
+            self._proxies_aiohttp = None
 
     def get_proxies_requests(self) -> dict:
         """
@@ -72,10 +74,10 @@ class Proxies:
         """
 
         if self._include_aiohttp:
-            return self._proxy_aiohttp
+            return self._proxies_aiohttp
         raise AttributeError(
             "The 'aiohttp' proxy attribute is not set. This means that method is NOT called "
-            "the AsyncClient. If it is, please report the Issue."
+            "from the AsyncClient. If it is, please report the Issue."
         )
 
 
@@ -216,7 +218,7 @@ class Connection:
 
         self._api_version_path = '/v1'
         self._url = url
-        self._timeout_config = timeout_config
+        self.timeout_config = timeout_config
         self._auth_expires = 0  # unix time when auth expires
         self._auth_bearer = None
         self._auth_client_secret = auth_client_secret
@@ -316,7 +318,7 @@ class Connection:
                 proxies=self._proxies.get_proxies_requests(),
             )
         except RequestsConnectionError as error:
-            raise RequestsConnectionError("Cannot connect to weaviate.") from error
+            raise RequestsConnectionError("Cannot connect to Weaviate.") from error
         if response.status_code != 200:
             raise AuthenticationError("Cannot authenticate.", response=response)
 
@@ -370,10 +372,16 @@ class Connection:
         response_third_part_json = response_third_part.json()
 
         # Validate third part auth info
-        if 'client_credentials' not in response_third_part_json['grant_types_supported']:
+        if not (
+            isinstance(self._auth_client_secret, AuthClientCredentials) and
+            'client_credentials' in response_third_part_json['grant_types_supported']  
+        ) and not (
+            isinstance(self._auth_client_secret, AuthClientPassword) and
+            'password' in response_third_part_json['grant_types_supported'] 
+        ):
             raise AuthenticationError(
                 "The grant_types supported by the third-party authentication service are "
-                "insufficient. Please add 'client_credentials'."
+                "insufficient. Please add 'client_credentials' or 'password'."
             )
 
         request_body = self._auth_client_secret.get_credentials()
@@ -381,7 +389,7 @@ class Connection:
 
         response = requests.post(
             url=response_third_part_json['token_endpoint'],
-            data=request_body,
+            json=request_body,
             timeout=self._timeout_config.get_timeout_requests(),
             proxies=self._proxies.get_proxies_requests(),
         )
@@ -389,6 +397,12 @@ class Connection:
         if response.status_code == 401:
             raise AuthenticationError(
                 "Authentication access denied. Are the credentials correct?"
+            )
+        if response.status_code >= 300:
+            raise UnsuccessfulStatusCodeError(
+                "Could not get token.",
+                status_code=response.status_code,
+                response_message=response.text,
             )
 
         response_json = ujson.loads(response.content)
@@ -586,12 +600,6 @@ def _get_proxy_aiohttp(proxy: Union[dict, str, None]) -> Optional[str]:
 
     if isinstance(proxy, str):
         return proxy
-
-    if not isinstance(proxy, dict):
-        raise TypeError(
-            "If 'proxy' is not None, it must be of type dict or str. "
-            f"Given type: {type(proxy)}."
-            )
 
     http_proxy = proxy.get('http')
     https_proxy = proxy.get('https')
